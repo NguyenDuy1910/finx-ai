@@ -1,0 +1,125 @@
+{
+  "name": "vk_biometrics_notification",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores notifications related to biometric data and their expiry for clients.",
+  "columns": [
+    {
+      "name": "cif",
+      "type": "string",
+      "description": "Unique identifier for the client.",
+      "terms": [
+        "customer_id",
+        "client_identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_status",
+      "type": "string",
+      "description": "Current status of the client.",
+      "terms": [
+        "status",
+        "account_status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "national_id",
+      "type": "string",
+      "description": "National identification number of the client.",
+      "terms": [
+        "id_number",
+        "identity_number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "nid_type",
+      "type": "string",
+      "description": "Type of national identification document.",
+      "terms": [
+        "id_type",
+        "identity_type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "expiry_date",
+      "type": "date",
+      "description": "Date when the biometric data expires.",
+      "terms": [
+        "expiration_date",
+        "end_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day_until_expire",
+      "type": "int",
+      "description": "Number of days remaining until expiry.",
+      "terms": [
+        "days_left",
+        "days_remaining"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "expire_status",
+      "type": "string",
+      "description": "Status indicating if the biometric data is expired or valid.",
+      "terms": [
+        "expiration_status",
+        "validity_status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "event_type",
+      "type": "string",
+      "description": "Type of event or notification related to biometrics.",
+      "terms": [
+        "notification_type",
+        "alert_type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_date",
+      "type": "date",
+      "description": "Date when the notification process was executed.",
+      "terms": [
+        "execution_date",
+        "process_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "processed_at",
+      "type": "timestamp",
+      "description": "Timestamp when the record was processed.",
+      "terms": [
+        "timestamp",
+        "processed_time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "BiometricNotification",
+    "domain": "customer_management",
+    "synonyms": [
+      "BiometricAlert",
+      "NotificationRecord"
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "agents": {
+    "default_timeout": 30,
+    "max_retries": 3
+  },
+  "mcp": {
+    "endpoint": "http://localhost:8080",
+    "protocol_version": "1.0"
+  },
+  "knowledge_base": {
+    "vector_db": "qdrant",
+    "embedding_model": "sentence-transformers",
+    "chunk_size": 512,
+    "overlap": 50
+  },
+  "qdrant": {
+    "host": "localhost",
+    "port": 6333,
+    "grpc_port": 6334,
+    "prefer_grpc": false,
+    "api_key": null,
+    "default_collection": "agent_knowledge",
+    "vector_size": 384,
+    "collections": {
+      "conversations": {
+        "name": "text2sql_conversations",
+        "vector_size": 384,
+        "distance": "Cosine"
+      },
+      "insights": {
+        "name": "text2sql_insights",
+        "vector_size": 384,
+        "distance": "Cosine"
+      },
+      "sql_history": {
+        "name": "text2sql_history",
+        "vector_size": 384,
+        "distance": "Cosine"
+      },
+      "confluence_knowledge": {
+        "name": "confluence_knowledge",
+        "vector_size": 384,
+        "distance": "Cosine"
+      }
+    }
+  },
+  "postgres": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "finx_db",
+    "user": "finx_user",
+    "password": "finx_password",
+    "pool_size": 10,
+    "max_overflow": 20
+  },
+  "prompts": {
+    "temperature": 0.7,
+    "max_tokens": 2000
+  },
+  "workflow": {
+    "timeout_seconds": 120,
+    "max_retries": 3,
+    "enable_memory": true,
+    "enable_async": true
+  }
+}

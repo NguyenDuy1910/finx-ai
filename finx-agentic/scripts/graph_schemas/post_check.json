@@ -1,0 +1,158 @@
+{
+  "name": "post_check",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table is used to store the results of compliance checks performed on transactions or activities to ensure they meet certain rules or standards.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the compliance check was executed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "reference_id",
+      "type": "string",
+      "description": "A unique identifier for the compliance check record.",
+      "terms": [
+        "ref id",
+        "identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "rule_code",
+      "type": "string",
+      "description": "The code representing the specific compliance rule being checked.",
+      "terms": [
+        "rule identifier",
+        "code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "rule_name",
+      "type": "string",
+      "description": "The name of the compliance rule being applied.",
+      "terms": [
+        "rule",
+        "check name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "payload",
+      "type": "string",
+      "description": "The data or content that is being evaluated against the compliance rule.",
+      "terms": [
+        "data",
+        "content"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "The source from which the data was obtained for the compliance check.",
+      "terms": [
+        "source",
+        "data source"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "The timestamp when the compliance check record was created.",
+      "terms": [
+        "creation time",
+        "timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "The timestamp when the compliance check was completed.",
+      "terms": [
+        "processed time",
+        "completion time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year part of the date when the compliance check was executed.",
+      "terms": [
+        "year",
+        "calendar year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month part of the date when the compliance check was executed.",
+      "terms": [
+        "month",
+        "calendar month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day part of the date when the compliance check was executed.",
+      "terms": [
+        "day",
+        "calendar day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "count_cif_number_login_difference_device_in_1_day",
+      "type": "bigint",
+      "description": "The number of times a customer identification file (CIF) number logged in from different devices in one day.",
+      "terms": [
+        "CIF login count",
+        "device login count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "count_kyc_id_in_1_day",
+      "type": "bigint",
+      "description": "The number of times a Know Your Customer (KYC) ID was used in one day.",
+      "terms": [
+        "KYC count",
+        "identity check count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "PostCheck",
+    "domain": "compliance",
+    "synonyms": [
+      "ValidationCheck",
+      "PostValidation"
+    ]
+  }
+}

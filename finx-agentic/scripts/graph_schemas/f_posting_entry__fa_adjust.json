@@ -1,0 +1,543 @@
+{
+  "name": "f_posting_entry__fa_adjust",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table records financial adjustment postings, capturing detailed transaction and adjustment information for audit and processing purposes.",
+  "columns": [
+    {
+      "name": "posting_date",
+      "type": "date",
+      "description": "The date when the posting entry was recorded.",
+      "terms": [
+        "entry date",
+        "adjustment date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_time",
+      "type": "timestamp",
+      "description": "The time when the posting entry was recorded.",
+      "terms": [
+        "entry time",
+        "adjustment time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_date",
+      "type": "date",
+      "description": "The date when the transaction value is effective.",
+      "terms": [
+        "transaction date",
+        "effective date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_time",
+      "type": "timestamp",
+      "description": "The time when the transaction value is effective.",
+      "terms": [
+        "transaction time",
+        "effective time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pib_id",
+      "type": "string",
+      "description": "Unique identifier for the posting entry.",
+      "terms": [
+        "posting ID",
+        "entry ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "create_request_id",
+      "type": "string",
+      "description": "Identifier for the request that created the entry.",
+      "terms": [
+        "request ID",
+        "creation ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "client_id",
+      "type": "string",
+      "description": "Identifier for the client associated with the entry.",
+      "terms": [
+        "customer ID",
+        "account holder ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "batch_details",
+      "type": "struct<X-Request-ID:string,X-Service-Name:string,acceptor_city:string,acceptor_name:string,acquirer_id:string,acquirer_ref_no:string,approval_user:string,approved_at:string,audit_number:string,auth_code:string,bank_code:string,banking_product:string,beneficiary_party_id:string,card_number:string,case_id:string,channel:string,country_code:string,crd_acc_id_iss:string,crd_target_id:string,created_at:string,created_date:string,created_user:string,currency:string,data_raw_request:string,data_raw_response:string,force_post:string,from_account:string,from_bank_name:string,is_fee:string,local_transaction_date:string,local_transaction_time:string,mcc:string,narrative:string,original_amount:string,original_currency:string,original_date:string,processing_code:string,receiver_name:string,reference_number:string,remitter_party_id:string,rtf_posting_type:string,rtf_type:string,sender_name:string,settlementTransacionId:string,settlement_amount:string,settlement_currency:string,source_channel:string,terminal_id:string,to_account:string,to_bank_name:string,trans_condition:string,trans_type_name:string,transaction_code:string,transmission_datetime:string,x-tm-contracts-committing-journey:string>",
+      "description": "Structured details of the batch associated with the posting.",
+      "terms": [
+        "batch info",
+        "transaction batch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_instructions_id",
+      "type": "string",
+      "description": "Identifier for the instructions related to the posting.",
+      "terms": [
+        "instruction ID",
+        "posting instruction"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "Current status of the posting entry.",
+      "terms": [
+        "entry status",
+        "posting status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "error_type",
+      "type": "string",
+      "description": "Type of error encountered during processing.",
+      "terms": [
+        "error category",
+        "issue type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "error_message",
+      "type": "string",
+      "description": "Detailed message describing the error.",
+      "terms": [
+        "error details",
+        "issue message"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "description": "Unique identifier for the transaction associated with the posting.",
+      "terms": [
+        "transaction reference",
+        "txn ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "instruction_details",
+      "type": "struct<X-Request-ID:string,X-Service-Name:string,acceptor_city:string,acceptor_name:string,acctNo:string,acquiereRefNo:string,acquirerAmount:string,acquirerCurrency:string,acquirerId:string,acquirer_id:string,acquirer_ref_no:string,acquiringInstitutionId:string,approvalCode:string,approval_user:string,approved_at:string,audit_number:string,authCode:string,authReleasedTime:string,auth_code:string,authorization:string,bank_code:string,beneficiary_party_id:string,billingAmount:string,billingCurrency:string,cardAcceptorCity:string,cardAcceptorCountryCode:string,cardAcceptorId:string,cardAcceptorName:string,cardAcceptorTerminalId:string,cardNumber:string,cardPresent:string,card_number:string,case_id:string,channel:string,complianceAmount:string,complianceCurrency:string,countryCode:string,country_code:string,country_iso:string,crd_acc_id_iss:string,crd_target_id:string,createdAt:string,created_at:string,created_date:string,created_user:string,currency:string,customerExternalReference:string,customerNumber:string,description:string,event:string,feeAmount:string,forcePost:string,force_post:string,from_account:string,from_bank_name:string,internalRefCode:string,is_fee:string,mcc:string,merchantDesc:string,merchant_desc:string,mti:string,narrative:string,originTransAmt:string,originTransCcy:string,originTransDate:string,originalReferenceNumber:string,original_amount:string,original_currency:string,original_date:string,originating_account_id:string,partnerName:string,partnerTransactionType:string,posCondition:string,posEntryMode:string,processing_code:string,programName:string,rawReferenceNumber:string,rawRequest:string,receiver_name:string,referenceNumber:string,reference_number:string,remitter_party_id:string,reversal:string,rtf_posting_type:string,rtf_type:string,sender_name:string,service_code:string,settlementAmount:string,settlementAmt:string,settlementCcy:string,settlementCurrency:string,settlementDate:string,settlementTransacionId:string,settlement_amount:string,settlement_currency:string,source_channel:string,status:string,terminalId:string,terminal_id:string,to_account:string,to_bank_name:string,trans_condition:string,transactionCode:string,transactionRequest:string,transactionSource:string,transactionSourceCode:string,transactionType:string,transactionTypeCode:string,transaction_code:string,transmissionDateTime:string,transmission_datetime:string,updatedAt:string>",
+      "description": "Structured details of the instructions related to the posting.",
+      "terms": [
+        "instruction info",
+        "transaction details"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_domain",
+      "type": "string",
+      "description": "Domain classification of the transaction code.",
+      "terms": [
+        "code domain",
+        "transaction category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_family",
+      "type": "string",
+      "description": "Family classification of the transaction code.",
+      "terms": [
+        "code family",
+        "transaction group"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_subfamily",
+      "type": "string",
+      "description": "Subfamily classification of the transaction code.",
+      "terms": [
+        "code subfamily",
+        "transaction subgroup"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "General ledger code associated with the posting.",
+      "terms": [
+        "general ledger code",
+        "GL account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_gl_code",
+      "type": "string",
+      "description": "General ledger code for the debit entry.",
+      "terms": [
+        "debit GL code",
+        "debit account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_gl_code",
+      "type": "string",
+      "description": "General ledger code for the credit entry.",
+      "terms": [
+        "credit GL code",
+        "credit account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "is_reversal",
+      "type": "boolean",
+      "description": "Indicates if the posting is a reversal entry.",
+      "terms": [
+        "reversal flag",
+        "reverse entry"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sbv_code",
+      "type": "string",
+      "description": "System code associated with the posting.",
+      "terms": [
+        "SBV code",
+        "system code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_entry_id",
+      "type": "string",
+      "description": "Unique identifier for the posting entry.",
+      "terms": [
+        "entry ID",
+        "posting reference"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "posting_type",
+      "type": "string",
+      "description": "Type of posting entry.",
+      "terms": [
+        "entry type",
+        "posting category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lcy_amount",
+      "type": "string",
+      "description": "Amount of the transaction in local currency.",
+      "terms": [
+        "local currency amount",
+        "LCY value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "org_amount",
+      "type": "string",
+      "description": "Original amount of the transaction.",
+      "terms": [
+        "original amount",
+        "transaction value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ccy_code",
+      "type": "string",
+      "description": "Currency code associated with the transaction.",
+      "terms": [
+        "currency code",
+        "currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "Identifier for the account involved in the transaction.",
+      "terms": [
+        "account number",
+        "account reference"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "internal_account_id",
+      "type": "string",
+      "description": "Identifier for the internal account involved in the transaction.",
+      "terms": [
+        "internal account number",
+        "internal reference"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "account_address",
+      "type": "string",
+      "description": "Address associated with the account.",
+      "terms": [
+        "account location",
+        "account address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "asset",
+      "type": "string",
+      "description": "Type of asset involved in the transaction.",
+      "terms": [
+        "asset type",
+        "asset category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "phase",
+      "type": "string",
+      "description": "Phase of the transaction processing.",
+      "terms": [
+        "transaction phase",
+        "processing stage"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "source_module",
+      "type": "string",
+      "description": "Module from which the transaction originated.",
+      "terms": [
+        "source system",
+        "origin module"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "source_type",
+      "type": "string",
+      "description": "Type of source for the transaction.",
+      "terms": [
+        "source category",
+        "origin type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tran_type",
+      "type": "string",
+      "description": "Type of transaction.",
+      "terms": [
+        "transaction type",
+        "txn category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_type_1",
+      "type": "string",
+      "description": "Primary classification of the transaction type.",
+      "terms": [
+        "primary transaction type",
+        "main txn type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code_description",
+      "type": "string",
+      "description": "Description of the general ledger code.",
+      "terms": [
+        "GL code description",
+        "account description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "instruction_details_from_account",
+      "type": "string",
+      "description": "Details of the account from which funds are transferred.",
+      "terms": [
+        "from account details",
+        "source account info"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "instruction_details_to_account",
+      "type": "string",
+      "description": "Details of the account to which funds are transferred.",
+      "terms": [
+        "to account details",
+        "destination account info"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "originating_account_id",
+      "type": "string",
+      "description": "Identifier for the account from which the transaction originated.",
+      "terms": [
+        "origin account ID",
+        "source account number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "banking_product",
+      "type": "string",
+      "description": "Banking product associated with the transaction.",
+      "terms": [
+        "financial product",
+        "bank product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the entry was created in the data lake house.",
+      "terms": [
+        "DLH creation time",
+        "data lake house time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning in the data lake house.",
+      "terms": [
+        "DLH partition date",
+        "data lake house date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "Source system for the data lake house entry.",
+      "terms": [
+        "DLH source",
+        "data lake house source"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "Timestamp when the entry was processed in the data lake house.",
+      "terms": [
+        "DLH processing time",
+        "data lake house processed time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year when the transaction occurred.",
+      "terms": [
+        "transaction year",
+        "entry year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month when the transaction occurred.",
+      "terms": [
+        "transaction month",
+        "entry month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day when the transaction occurred.",
+      "terms": [
+        "transaction day",
+        "entry day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "FinancialAdjustmentPosting",
+    "domain": "finance",
+    "synonyms": [
+      "AdjustmentEntry",
+      "FinancialPosting"
+    ]
+  }
+}

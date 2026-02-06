@@ -1,0 +1,422 @@
+{
+  "name": "vk_cl_invoice",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores information related to invoices, including billing details, payment terms, and related financial data.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the invoice process was executed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "contract_no",
+      "type": "string",
+      "description": "The unique identifier for the contract associated with the invoice.",
+      "terms": [
+        "contract number",
+        "agreement number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "event",
+      "type": "string",
+      "description": "The type of event or transaction related to the invoice.",
+      "terms": [
+        "event type",
+        "transaction event"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_account_address",
+      "type": "string",
+      "description": "The address associated with the account where the invoice is posted.",
+      "terms": [
+        "account address",
+        "billing address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "invoice_type",
+      "type": "string",
+      "description": "The category or type of the invoice.",
+      "terms": [
+        "type of invoice",
+        "invoice category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "invoice_no",
+      "type": "string",
+      "description": "The unique identifier for the invoice.",
+      "terms": [
+        "invoice number",
+        "bill number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bill_ccy",
+      "type": "string",
+      "description": "The currency in which the invoice is billed.",
+      "terms": [
+        "billing currency",
+        "invoice currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "billed_amt",
+      "type": "string",
+      "description": "The total amount billed in the invoice.",
+      "terms": [
+        "billed amount",
+        "invoice amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bill_narrative",
+      "type": "string",
+      "description": "Additional narrative or notes related to the billing.",
+      "terms": [
+        "billing description",
+        "invoice notes"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bill_user_id",
+      "type": "string",
+      "description": "The identifier for the user responsible for the billing.",
+      "terms": [
+        "billing user ID",
+        "invoice user ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "acct_id",
+      "type": "string",
+      "description": "The unique identifier for the account related to the invoice.",
+      "terms": [
+        "account ID",
+        "account identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "value_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp indicating when the value was recorded.",
+      "terms": [
+        "value date",
+        "transaction timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_instructions_id",
+      "type": "string",
+      "description": "The identifier for the posting instructions related to the invoice.",
+      "terms": [
+        "posting ID",
+        "instructions ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "bill_date",
+      "type": "date",
+      "description": "The date when the invoice was issued.",
+      "terms": [
+        "billing date",
+        "invoice date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "due_date",
+      "type": "string",
+      "description": "The date by which the invoice payment is due.",
+      "terms": [
+        "payment due date",
+        "invoice due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "grace_period_date",
+      "type": "string",
+      "description": "The date until which payment can be made without penalty.",
+      "terms": [
+        "grace date",
+        "extended due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interest_rate",
+      "type": "string",
+      "description": "The interest rate applicable to the invoice.",
+      "terms": [
+        "interest percentage",
+        "rate of interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "late_payment_charges_on_overdue_interest_rate",
+      "type": "string",
+      "description": "The rate of charges applied on overdue interest.",
+      "terms": [
+        "late charges rate",
+        "overdue interest rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "since",
+      "type": "string",
+      "description": "The date from which the invoice terms are effective.",
+      "terms": [
+        "since date",
+        "start date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "late_payment_charges_on_overdue_interest_amount",
+      "type": "string",
+      "description": "The amount charged for late payment on overdue interest.",
+      "terms": [
+        "late charges amount",
+        "overdue interest amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sweep_amount",
+      "type": "string",
+      "description": "The amount swept from the account related to the invoice.",
+      "terms": [
+        "sweep total",
+        "sweep value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "from_due_datetime",
+      "type": "string",
+      "description": "The starting date and time for the due period.",
+      "terms": [
+        "from due date",
+        "start due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "to_due_datetime",
+      "type": "string",
+      "description": "The ending date and time for the due period.",
+      "terms": [
+        "to due date",
+        "end due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_rate",
+      "type": "string",
+      "description": "The interest rate applicable to the invoice.",
+      "terms": [
+        "interest rate",
+        "rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_to",
+      "type": "string",
+      "description": "The date until which interest is calculated.",
+      "terms": [
+        "interest to",
+        "interest end date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_from",
+      "type": "string",
+      "description": "The date from which interest is calculated.",
+      "terms": [
+        "interest from",
+        "interest start date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_no",
+      "type": "string",
+      "description": "The number of the demand draft related to the invoice.",
+      "terms": [
+        "demand draft number",
+        "DD number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_no",
+      "type": "string",
+      "description": "The unique identifier for the loan associated with the invoice.",
+      "terms": [
+        "loan number",
+        "loan ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "start_date",
+      "type": "timestamp",
+      "description": "The start date of the loan related to the invoice.",
+      "terms": [
+        "loan start date",
+        "beginning date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "principal",
+      "type": "string",
+      "description": "The principal amount of the loan related to the invoice.",
+      "terms": [
+        "principal amount",
+        "loan principal"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "outstanding",
+      "type": "string",
+      "description": "The outstanding balance on the invoice.",
+      "terms": [
+        "outstanding balance",
+        "remaining amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dpd",
+      "type": "string",
+      "description": "The number of days the payment is past due.",
+      "terms": [
+        "days past due",
+        "overdue days"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "final_settle_date",
+      "type": "timestamp",
+      "description": "The date when the invoice was fully settled.",
+      "terms": [
+        "settlement date",
+        "final payment date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "fully_settled",
+      "type": "string",
+      "description": "Indicates whether the invoice has been fully settled.",
+      "terms": [
+        "settled status",
+        "payment complete"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year in which the invoice was issued.",
+      "terms": [
+        "invoice year",
+        "billing year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month in which the invoice was issued.",
+      "terms": [
+        "invoice month",
+        "billing month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day of the month when the invoice was issued.",
+      "terms": [
+        "invoice day",
+        "billing day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "Invoice",
+    "domain": "finance",
+    "synonyms": [
+      "Billing",
+      "Statement"
+    ]
+  }
+}

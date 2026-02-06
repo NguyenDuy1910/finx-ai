@@ -1,0 +1,389 @@
+{
+  "name": "vk_card_tnx_batch",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores batch information of card transactions, including details about the transaction, account, and processing metadata.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date the batch process was run.",
+      "terms": [
+        "run date",
+        "batch date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_id_iss",
+      "type": "string",
+      "description": "The identifier for the card account issued by the bank.",
+      "terms": [
+        "issuer account ID",
+        "card account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_target_id",
+      "type": "bigint",
+      "description": "The target identifier for the card transaction.",
+      "terms": [
+        "target ID",
+        "card target ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "crd_nunber_no",
+      "type": "string",
+      "description": "The number associated with the card used in the transaction.",
+      "terms": [
+        "card number",
+        "card ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trans_id",
+      "type": "string",
+      "description": "The unique identifier for the transaction.",
+      "terms": [
+        "transaction ID",
+        "txn ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "trans_date",
+      "type": "date",
+      "description": "The date when the transaction occurred.",
+      "terms": [
+        "transaction date",
+        "txn date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "post_date",
+      "type": "date",
+      "description": "The date when the transaction was posted to the account.",
+      "terms": [
+        "posting date",
+        "post date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ccy",
+      "type": "string",
+      "description": "The currency in which the transaction was conducted.",
+      "terms": [
+        "currency",
+        "currency code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trans_amt",
+      "type": "double",
+      "description": "The amount of money involved in the transaction.",
+      "terms": [
+        "transaction amount",
+        "txn amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trans_lcy_amt",
+      "type": "bigint",
+      "description": "The transaction amount converted to the local currency.",
+      "terms": [
+        "local currency amount",
+        "LCY amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "fee_amt",
+      "type": "bigint",
+      "description": "The fee charged for the transaction.",
+      "terms": [
+        "fee amount",
+        "transaction fee"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "is_fee",
+      "type": "string",
+      "description": "Indicates whether a fee was applied to the transaction.",
+      "terms": [
+        "fee indicator",
+        "fee status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "is_vat",
+      "type": "string",
+      "description": "Indicates whether VAT was applied to the transaction.",
+      "terms": [
+        "VAT indicator",
+        "VAT status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "province",
+      "type": "string",
+      "description": "The province where the transaction took place.",
+      "terms": [
+        "province",
+        "region"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nationality",
+      "type": "string",
+      "description": "The nationality of the cardholder.",
+      "terms": [
+        "nationality",
+        "country of origin"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cad_trans_type",
+      "type": "string",
+      "description": "The type of card transaction.",
+      "terms": [
+        "transaction type",
+        "txn type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cad_trans_status",
+      "type": "string",
+      "description": "The status of the card transaction.",
+      "terms": [
+        "transaction status",
+        "txn status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cad_auth_code",
+      "type": "string",
+      "description": "The authorization code for the transaction.",
+      "terms": [
+        "authorization code",
+        "auth code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "string",
+      "description": "The identifier for the merchant involved in the transaction.",
+      "terms": [
+        "merchant ID",
+        "vendor ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "trans_details",
+      "type": "string",
+      "description": "Additional details about the transaction.",
+      "terms": [
+        "transaction details",
+        "txn details"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "terminal_id",
+      "type": "string",
+      "description": "The identifier for the terminal where the transaction was processed.",
+      "terms": [
+        "terminal ID",
+        "POS ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "source_channel",
+      "type": "string",
+      "description": "The channel through which the transaction was initiated.",
+      "terms": [
+        "source channel",
+        "transaction channel"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trans_condition",
+      "type": "string",
+      "description": "The conditions under which the transaction was processed.",
+      "terms": [
+        "transaction condition",
+        "txn condition"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "onus",
+      "type": "string",
+      "description": "Indicates whether the transaction is on-us or off-us.",
+      "terms": [
+        "onus",
+        "onus status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "The timestamp when the transaction record was created.",
+      "terms": [
+        "created time",
+        "entry time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "The date used for partitioning the data in the database.",
+      "terms": [
+        "partition date",
+        "data partition date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "The source system from which the transaction data was obtained.",
+      "terms": [
+        "data source",
+        "source system"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "The timestamp when the transaction was processed.",
+      "terms": [
+        "processed time",
+        "processing time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year in which the transaction occurred.",
+      "terms": [
+        "year",
+        "transaction year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month in which the transaction occurred.",
+      "terms": [
+        "month",
+        "transaction month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day on which the transaction occurred.",
+      "terms": [
+        "day",
+        "transaction day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "The identifier for the customer's account.",
+      "terms": [
+        "account ID",
+        "customer account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "mcc",
+      "type": "string",
+      "description": "The code representing the category of the merchant.",
+      "terms": [
+        "merchant category code",
+        "MCC"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "wallet_type",
+      "type": "string",
+      "description": "The type of wallet or payment method used for the transaction.",
+      "terms": [
+        "wallet type",
+        "payment method"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "CardTransactionBatch",
+    "domain": "finance",
+    "synonyms": [
+      "CardTransaction",
+      "TransactionBatch"
+    ]
+  }
+}

@@ -1,0 +1,708 @@
+{
+  "name": "vk_cl_drawdown",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table records the details of loan drawdowns for clients, including loan terms, client information, and transaction specifics.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the system processed this record.",
+      "terms": [
+        "system run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_no",
+      "type": "string",
+      "description": "Identifier for the branch where the transaction occurred.",
+      "terms": [
+        "branch number",
+        "branch ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_client_no",
+      "type": "string",
+      "description": "Unique identifier for the client in the Vikki system.",
+      "terms": [
+        "Vikki client number",
+        "Vikki client ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "Unique identifier for the client in the system.",
+      "terms": [
+        "client number",
+        "customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_name",
+      "type": "string",
+      "description": "Name of the client or borrower.",
+      "terms": [
+        "customer name",
+        "borrower name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_type",
+      "type": "string",
+      "description": "Type or category of the client.",
+      "terms": [
+        "customer type",
+        "borrower category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "Code for the general ledger account associated with the transaction.",
+      "terms": [
+        "general ledger code",
+        "GL account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_no",
+      "type": "string",
+      "description": "Unique identifier for the loan.",
+      "terms": [
+        "loan number",
+        "loan ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_type",
+      "type": "string",
+      "description": "Classification of the loan.",
+      "terms": [
+        "type of loan",
+        "loan category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_sub_type",
+      "type": "string",
+      "description": "Further classification of the loan type.",
+      "terms": [
+        "loan subtype",
+        "loan subcategory"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_sub_type_desc",
+      "type": "string",
+      "description": "Description of the loan subtype.",
+      "terms": [
+        "loan subtype description",
+        "loan subcategory description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "purpose",
+      "type": "string",
+      "description": "Code indicating the purpose of the loan.",
+      "terms": [
+        "loan purpose",
+        "purpose code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "purpose_desc",
+      "type": "string",
+      "description": "Description of the loan's purpose.",
+      "terms": [
+        "purpose description",
+        "loan purpose detail"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "date_applied",
+      "type": "date",
+      "description": "Date when the loan application was submitted.",
+      "terms": [
+        "application date",
+        "date of application"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "offer_expiry",
+      "type": "date",
+      "description": "Date when the loan offer expires.",
+      "terms": [
+        "offer expiry date",
+        "expiration date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "maturity_date",
+      "type": "date",
+      "description": "Date when the loan is due to be fully repaid.",
+      "terms": [
+        "loan maturity date",
+        "end date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "signed_date",
+      "type": "date",
+      "description": "Date when the loan agreement was signed.",
+      "terms": [
+        "date signed",
+        "contract date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_rate",
+      "type": "decimal(7,2)",
+      "description": "Interest rate applied to the loan.",
+      "terms": [
+        "interest rate",
+        "loan rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "description": "Date when the loan starts.",
+      "terms": [
+        "loan start date",
+        "commencement date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "review_date",
+      "type": "date",
+      "description": "Date scheduled for reviewing the loan terms.",
+      "terms": [
+        "review date",
+        "evaluation date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "auto_rec_gen",
+      "type": "string",
+      "description": "Indicates if the record was generated automatically.",
+      "terms": [
+        "auto record generation",
+        "automatic generation"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "billing_days",
+      "type": "bigint",
+      "description": "Number of days in the billing cycle.",
+      "terms": [
+        "billing period",
+        "days billed"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "description": "Identifier for the user who processed the transaction.",
+      "terms": [
+        "user identifier",
+        "operator ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "verify",
+      "type": "string",
+      "description": "Status indicating if the transaction was verified.",
+      "terms": [
+        "verification status",
+        "approval status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "verifier_id",
+      "type": "string",
+      "description": "Identifier for the person who verified the transaction.",
+      "terms": [
+        "verifier identifier",
+        "approver ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "verify_date",
+      "type": "date",
+      "description": "Date when the transaction was verified.",
+      "terms": [
+        "verification date",
+        "approval date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "last_change_date",
+      "type": "date",
+      "description": "Date when the record was last changed.",
+      "terms": [
+        "last modification date",
+        "update date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_appl_type",
+      "type": "string",
+      "description": "Type of interest application for the loan.",
+      "terms": [
+        "interest application type",
+        "interest type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_exec",
+      "type": "string",
+      "description": "Executive responsible for the account.",
+      "terms": [
+        "account executive",
+        "account manager"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "profit_centre",
+      "type": "string",
+      "description": "Business unit or division responsible for the profit.",
+      "terms": [
+        "profit center",
+        "business unit"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_no",
+      "type": "int",
+      "description": "Unique identifier for the drawdown.",
+      "terms": [
+        "drawdown number",
+        "DD ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_ccy",
+      "type": "string",
+      "description": "Currency in which the drawdown is made.",
+      "terms": [
+        "drawdown currency",
+        "currency code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_date",
+      "type": "date",
+      "description": "Date when the drawdown occurred.",
+      "terms": [
+        "drawdown date",
+        "disbursement date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no_dd",
+      "type": "string",
+      "description": "Account number associated with the drawdown.",
+      "terms": [
+        "drawdown account number",
+        "DD account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_amt",
+      "type": "bigint",
+      "description": "Amount of money disbursed in the drawdown.",
+      "terms": [
+        "drawdown amount",
+        "disbursement amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_amt_base",
+      "type": "bigint",
+      "description": "Base currency amount of the drawdown.",
+      "terms": [
+        "base drawdown amount",
+        "base disbursement"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "base_days",
+      "type": "bigint",
+      "description": "Number of days used for base calculations.",
+      "terms": [
+        "base days",
+        "calculation days"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "fixed_int_rate",
+      "type": "decimal(7,2)",
+      "description": "Fixed interest rate applied to the loan.",
+      "terms": [
+        "fixed interest rate",
+        "constant rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_repay_type",
+      "type": "string",
+      "description": "Type of principal repayment for the loan.",
+      "terms": [
+        "principal repayment type",
+        "repayment method"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_repay_freq",
+      "type": "string",
+      "description": "Frequency of principal repayments.",
+      "terms": [
+        "principal repayment frequency",
+        "repayment interval"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_repay_day",
+      "type": "int",
+      "description": "Day of the month when principal is repaid.",
+      "terms": [
+        "principal repayment day",
+        "repayment date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_repay_freq",
+      "type": "string",
+      "description": "Frequency of interest repayments.",
+      "terms": [
+        "interest repayment frequency",
+        "interest interval"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_repay_day",
+      "type": "int",
+      "description": "Day of the month when interest is repaid.",
+      "terms": [
+        "interest repayment day",
+        "interest date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_date",
+      "type": "date",
+      "description": "Date when the loan is rolled over or renewed.",
+      "terms": [
+        "rollover date",
+        "renewal date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_freq",
+      "type": "string",
+      "description": "Frequency of loan rollovers.",
+      "terms": [
+        "rollover frequency",
+        "renewal interval"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_day",
+      "type": "int",
+      "description": "Day of the month for loan rollover.",
+      "terms": [
+        "rollover day",
+        "renewal day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "narrative",
+      "type": "string",
+      "description": "Narrative or description of the transaction.",
+      "terms": [
+        "transaction narrative",
+        "description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "org_amt",
+      "type": "bigint",
+      "description": "Original amount of the loan.",
+      "terms": [
+        "original amount",
+        "initial amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "available_amt",
+      "type": "bigint",
+      "description": "Amount available for drawdown.",
+      "terms": [
+        "available amount",
+        "remaining amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no",
+      "type": "string",
+      "description": "Account number associated with the transaction.",
+      "terms": [
+        "account number",
+        "account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_instructions_id",
+      "type": "string",
+      "description": "Identifier for the posting instructions.",
+      "terms": [
+        "posting ID",
+        "instructions ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "event_type",
+      "type": "string",
+      "description": "Type of event or transaction.",
+      "terms": [
+        "transaction type",
+        "event category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "description": "Unique identifier for the transaction.",
+      "terms": [
+        "transaction identifier",
+        "transaction number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "btc_code",
+      "type": "string",
+      "description": "Code for the business transaction category.",
+      "terms": [
+        "BTC code",
+        "business transaction code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "opening_timestamp",
+      "type": "string",
+      "description": "Timestamp when the transaction was opened.",
+      "terms": [
+        "opening time",
+        "start timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "posting_value_time",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction was posted.",
+      "terms": [
+        "posting time",
+        "value timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the DLH record was created.",
+      "terms": [
+        "DLH creation time",
+        "record creation timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning the DLH data.",
+      "terms": [
+        "DLH partition date",
+        "data partition date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "Source of the DLH data.",
+      "terms": [
+        "DLH source",
+        "data source"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "Timestamp when the DLH record was processed.",
+      "terms": [
+        "DLH processing time",
+        "record processed timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year associated with the transaction.",
+      "terms": [
+        "year",
+        "fiscal year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month associated with the transaction.",
+      "terms": [
+        "month",
+        "fiscal month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day associated with the transaction.",
+      "terms": [
+        "day",
+        "fiscal day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "LoanDrawdown",
+    "domain": "finance",
+    "synonyms": [
+      "Loan Disbursement",
+      "Loan Allocation"
+    ]
+  }
+}

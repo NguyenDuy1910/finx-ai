@@ -1,0 +1,895 @@
+{
+  "name": "vk_chovay",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores detailed information about loan accounts, including account details, loan specifics, and financial metrics.",
+  "columns": [
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "Unique identifier for the loan account.",
+      "terms": [
+        "Account ID",
+        "Loan Account Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "Unique number assigned to the client.",
+      "terms": [
+        "Client Number",
+        "Customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_no",
+      "type": "string",
+      "description": "Identifier for the branch managing the loan.",
+      "terms": [
+        "Branch Number",
+        "Branch Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "Code representing the general ledger account.",
+      "terms": [
+        "General Ledger Code",
+        "GL Account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_type",
+      "type": "string",
+      "description": "Category of the loan.",
+      "terms": [
+        "Loan Type",
+        "Type of Loan"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_sub_type",
+      "type": "string",
+      "description": "Specific type within the loan category.",
+      "terms": [
+        "Loan Subtype",
+        "Subtype of Loan"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_sub_type_desc",
+      "type": "string",
+      "description": "Description of the loan subtype.",
+      "terms": [
+        "Loan Subtype Description",
+        "Subtype Description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "purpose",
+      "type": "string",
+      "description": "Intended use of the loan funds.",
+      "terms": [
+        "Loan Purpose",
+        "Purpose of Loan"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "purpose_desc",
+      "type": "string",
+      "description": "Detailed description of the loan's purpose.",
+      "terms": [
+        "Purpose Description",
+        "Loan Purpose Details"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "review_date",
+      "type": "string",
+      "description": "Date when the loan was last reviewed.",
+      "terms": [
+        "Review Date",
+        "Date of Review"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "auto_rec_gen",
+      "type": "string",
+      "description": "Indicates if the record was generated automatically.",
+      "terms": [
+        "Auto Record Generation",
+        "Automatic Record"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "billing_days",
+      "type": "int",
+      "description": "Number of days used for billing calculations.",
+      "terms": [
+        "Billing Days",
+        "Days for Billing"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "description": "Identifier for the user managing the account.",
+      "terms": [
+        "User ID",
+        "User Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "verify",
+      "type": "string",
+      "description": "Indicates if the loan details have been verified.",
+      "terms": [
+        "Verification Status",
+        "Verified"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "verifier_id",
+      "type": "string",
+      "description": "Identifier of the user who verified the loan.",
+      "terms": [
+        "Verifier ID",
+        "Verification User"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "int_appl_type",
+      "type": "string",
+      "description": "Type of interest application for the loan.",
+      "terms": [
+        "Interest Application Type",
+        "Interest Type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_exec",
+      "type": "string",
+      "description": "Executive responsible for the account.",
+      "terms": [
+        "Account Executive",
+        "Account Manager"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "profit_centre",
+      "type": "string",
+      "description": "Business unit responsible for the loan's profitability.",
+      "terms": [
+        "Profit Centre",
+        "Profit Center"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_no",
+      "type": "int",
+      "description": "Number associated with direct debit transactions.",
+      "terms": [
+        "Direct Debit Number",
+        "DD Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_loan_rate",
+      "type": "int",
+      "description": "Interest rate for direct debit loans.",
+      "terms": [
+        "Direct Debit Loan Rate",
+        "DD Loan Rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "base_days",
+      "type": "int",
+      "description": "Number of days used as a base for calculations.",
+      "terms": [
+        "Base Days",
+        "Days for Base Calculation"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "fixed_int_rate",
+      "type": "double",
+      "description": "Fixed interest rate applied to the loan.",
+      "terms": [
+        "Fixed Interest Rate",
+        "Fixed Rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_date",
+      "type": "date",
+      "description": "Date when the loan is rolled over.",
+      "terms": [
+        "Roll Date",
+        "Date of Roll"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_freq",
+      "type": "string",
+      "description": "Frequency at which the loan is rolled over.",
+      "terms": [
+        "Roll Frequency",
+        "Frequency of Roll"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "roll_day",
+      "type": "double",
+      "description": "Specific day when the loan is rolled over.",
+      "terms": [
+        "Roll Day",
+        "Day of Roll"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_adj_not_posted",
+      "type": "double",
+      "description": "Interest adjustments that have not yet been posted.",
+      "terms": [
+        "Interest Adjustment Not Posted",
+        "Unposted Interest Adjustment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_adj_posted",
+      "type": "double",
+      "description": "Interest adjustments that have been posted.",
+      "terms": [
+        "Interest Adjustment Posted",
+        "Posted Interest Adjustment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_adj_not_posted",
+      "type": "double",
+      "description": "Overdraft adjustments that have not yet been posted.",
+      "terms": [
+        "Overdraft Adjustment Not Posted",
+        "Unposted OD Adjustment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_adj_posted",
+      "type": "double",
+      "description": "Overdraft adjustments that have been posted.",
+      "terms": [
+        "Overdraft Adjustment Posted",
+        "Posted OD Adjustment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_past_due",
+      "type": "string",
+      "description": "Indicates if the overdraft is past due.",
+      "terms": [
+        "Overdraft Past Due",
+        "OD Past Due"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "narrative",
+      "type": "string",
+      "description": "Narrative description of the loan account.",
+      "terms": [
+        "Narrative",
+        "Description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "date_applied",
+      "type": "date",
+      "description": "Date when the loan application was submitted.",
+      "terms": [
+        "Date Applied",
+        "Application Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "offer_expiry",
+      "type": "date",
+      "description": "Date when the loan offer expires.",
+      "terms": [
+        "Offer Expiry",
+        "Expiry Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "maturity_date",
+      "type": "date",
+      "description": "Date when the loan matures.",
+      "terms": [
+        "Maturity Date",
+        "Loan Maturity"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "signed_date",
+      "type": "date",
+      "description": "Date when the loan agreement was signed.",
+      "terms": [
+        "Signed Date",
+        "Date of Signing"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_rate",
+      "type": "decimal(7,2)",
+      "description": "Interest rate applied to the loan.",
+      "terms": [
+        "Interest Rate",
+        "Loan Interest Rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "start_date",
+      "type": "date",
+      "description": "Date when the loan period begins.",
+      "terms": [
+        "Start Date",
+        "Loan Start Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "verify_date",
+      "type": "date",
+      "description": "Date when the loan details were verified.",
+      "terms": [
+        "Verification Date",
+        "Date Verified"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "last_change_date",
+      "type": "date",
+      "description": "Date when the loan details were last modified.",
+      "terms": [
+        "Last Change Date",
+        "Date of Last Change"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "end_date",
+      "type": "date",
+      "description": "Date when the loan period ends.",
+      "terms": [
+        "End Date",
+        "Loan End Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_ccy",
+      "type": "string",
+      "description": "Currency used for direct debit transactions.",
+      "terms": [
+        "Direct Debit Currency",
+        "DD Currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_date",
+      "type": "date",
+      "description": "Date of the direct debit transaction.",
+      "terms": [
+        "Direct Debit Date",
+        "DD Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no_dd",
+      "type": "string",
+      "description": "Account number used for direct debit transactions.",
+      "terms": [
+        "Account Number for Direct Debit",
+        "DD Account Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_amt",
+      "type": "bigint",
+      "description": "Amount involved in the direct debit transaction.",
+      "terms": [
+        "Direct Debit Amount",
+        "DD Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_amt_base",
+      "type": "bigint",
+      "description": "Base amount for the direct debit transaction.",
+      "terms": [
+        "Direct Debit Base Amount",
+        "DD Base Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "next_pri_rep_date",
+      "type": "date",
+      "description": "Date for the next principal repayment.",
+      "terms": [
+        "Next Principal Repayment Date",
+        "Next Principal Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bank_status",
+      "type": "int",
+      "description": "Current status of the loan with the bank.",
+      "terms": [
+        "Bank Status",
+        "Status with Bank"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bank_status_change",
+      "type": "date",
+      "description": "Date when the bank status was last changed.",
+      "terms": [
+        "Bank Status Change Date",
+        "Status Change Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "outstanding",
+      "type": "string",
+      "description": "Total outstanding amount on the loan.",
+      "terms": [
+        "Outstanding Amount",
+        "Amount Outstanding"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "outstanding_base",
+      "type": "string",
+      "description": "Base amount of the outstanding loan.",
+      "terms": [
+        "Outstanding Base Amount",
+        "Base Outstanding"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_recd_recble",
+      "type": "double",
+      "description": "Interest that has been received or is receivable.",
+      "terms": [
+        "Interest Received/Receivable",
+        "Interest Receivable"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_recd_recble",
+      "type": "double",
+      "description": "Principal that has been received or is receivable.",
+      "terms": [
+        "Principal Received/Receivable",
+        "Principal Receivable"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_recd_recble",
+      "type": "double",
+      "description": "Overdraft amount that has been received or is receivable.",
+      "terms": [
+        "Overdraft Received/Receivable",
+        "OD Receivable"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "last_int_rep_date",
+      "type": "date",
+      "description": "Date of the last interest repayment.",
+      "terms": [
+        "Last Interest Repayment Date",
+        "Last Interest Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "last_pri_rep_date",
+      "type": "date",
+      "description": "Date of the last principal repayment.",
+      "terms": [
+        "Last Principal Repayment Date",
+        "Last Principal Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "next_int_rep_date",
+      "type": "date",
+      "description": "Date for the next interest repayment.",
+      "terms": [
+        "Next Interest Repayment Date",
+        "Next Interest Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "in_outstanding",
+      "type": "bigint",
+      "description": "Amount of interest currently outstanding.",
+      "terms": [
+        "Interest Outstanding",
+        "Outstanding Interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "late_payment_charges",
+      "type": "bigint",
+      "description": "Charges incurred due to late payments.",
+      "terms": [
+        "Late Payment Charges",
+        "Late Fees"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "effective_datetime",
+      "type": "date",
+      "description": "Date and time when the loan terms became effective.",
+      "terms": [
+        "Effective DateTime",
+        "Effective Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_outstanding",
+      "type": "string",
+      "description": "Amount of principal currently outstanding.",
+      "terms": [
+        "Principal Outstanding",
+        "Outstanding Principal"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "date",
+      "type": "string",
+      "description": "General date associated with the record.",
+      "terms": [
+        "Date",
+        "Record Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_day",
+      "type": "double",
+      "description": "Day used for interest calculation.",
+      "terms": [
+        "Interest Day",
+        "Day for Interest Calculation"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_posted",
+      "type": "double",
+      "description": "Interest amount that has been posted.",
+      "terms": [
+        "Interest Posted",
+        "Posted Interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_posted",
+      "type": "double",
+      "description": "Overdraft amount that has been posted.",
+      "terms": [
+        "Overdraft Posted",
+        "Posted Overdraft"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_name",
+      "type": "string",
+      "description": "Name of the client associated with the loan.",
+      "terms": [
+        "Client Name",
+        "Customer Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_type",
+      "type": "string",
+      "description": "Type of client (e.g., individual, corporate).",
+      "terms": [
+        "Client Type",
+        "Customer Type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "Date when the system run was executed.",
+      "terms": [
+        "System Run Date",
+        "Symphony Run Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_outstanding",
+      "type": "double",
+      "description": "Amount of interest currently outstanding.",
+      "terms": [
+        "Interest Outstanding",
+        "Outstanding Interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_calculated",
+      "type": "double",
+      "description": "Interest amount that has been calculated.",
+      "terms": [
+        "Interest Calculated",
+        "Calculated Interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_income_mtd",
+      "type": "double",
+      "description": "Interest income accrued month-to-date.",
+      "terms": [
+        "Interest Income Month-to-Date",
+        "MTD Interest Income"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_income_ytd",
+      "type": "double",
+      "description": "Interest income accrued year-to-date.",
+      "terms": [
+        "Interest Income Year-to-Date",
+        "YTD Interest Income"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_timestamp",
+      "type": "string",
+      "description": "Timestamp indicating the value date.",
+      "terms": [
+        "Value Timestamp",
+        "Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "int_past_due",
+      "type": "double",
+      "description": "Interest amount that is past due.",
+      "terms": [
+        "Interest Past Due",
+        "Past Due Interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "od_outstanding",
+      "type": "double",
+      "description": "Amount of overdraft currently outstanding.",
+      "terms": [
+        "Overdraft Outstanding",
+        "Outstanding OD"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sweep_amount",
+      "type": "double",
+      "description": "Amount involved in a sweep transaction.",
+      "terms": [
+        "Sweep Amount",
+        "Amount Swept"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pri_past_due",
+      "type": "double",
+      "description": "Principal amount that is past due.",
+      "terms": [
+        "Principal Past Due",
+        "Past Due Principal"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year associated with the record.",
+      "terms": [
+        "Year",
+        "Calendar Year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month associated with the record.",
+      "terms": [
+        "Month",
+        "Calendar Month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day associated with the record.",
+      "terms": [
+        "Day",
+        "Calendar Day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cif_number",
+      "type": "string",
+      "description": "Unique identifier for the customer's information file.",
+      "terms": [
+        "CIF Number",
+        "Customer Information File Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "LoanAccount",
+    "domain": "finance",
+    "synonyms": [
+      "CreditAccount",
+      "LoanProfile"
+    ]
+  }
+}

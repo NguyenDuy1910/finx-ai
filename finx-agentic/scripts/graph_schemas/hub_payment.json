@@ -1,0 +1,588 @@
+{
+  "name": "hub_payment",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table records detailed information about payment transactions processed through the system.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the transaction was processed in the system.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_id",
+      "type": "string",
+      "description": "A unique identifier for each transaction.",
+      "terms": [
+        "transaction ID",
+        "transaction identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "tranx_type",
+      "type": "string",
+      "description": "The category or nature of the transaction.",
+      "terms": [
+        "transaction type",
+        "type of transaction"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_id",
+      "type": "string",
+      "description": "A unique identifier for the client involved in the transaction.",
+      "terms": [
+        "customer ID",
+        "client identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "mobile_no",
+      "type": "string",
+      "description": "The mobile number associated with the client.",
+      "terms": [
+        "mobile number",
+        "phone number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "from_acc",
+      "type": "string",
+      "description": "The account from which the transaction amount is debited.",
+      "terms": [
+        "source account",
+        "from account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "to_acc",
+      "type": "string",
+      "description": "The account to which the transaction amount is credited.",
+      "terms": [
+        "destination account",
+        "to account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "provider_code",
+      "type": "string",
+      "description": "Code representing the service provider handling the transaction.",
+      "terms": [
+        "service provider code",
+        "provider identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "service_code",
+      "type": "string",
+      "description": "Code representing the specific service used in the transaction.",
+      "terms": [
+        "service code",
+        "service identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cus_code",
+      "type": "bigint",
+      "description": "A unique code identifying the customer involved in the transaction.",
+      "terms": [
+        "customer code",
+        "customer identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "amount",
+      "type": "decimal(20,2)",
+      "description": "The total amount of money involved in the transaction.",
+      "terms": [
+        "transaction amount",
+        "payment amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_note",
+      "type": "string",
+      "description": "Additional notes or comments about the transaction.",
+      "terms": [
+        "transaction note",
+        "transaction remarks"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_status",
+      "type": "string",
+      "description": "The current status of the transaction (e.g., completed, pending).",
+      "terms": [
+        "transaction status",
+        "status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_time",
+      "type": "timestamp",
+      "description": "The exact time when the transaction was executed.",
+      "terms": [
+        "transaction time",
+        "time of transaction"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "res_code",
+      "type": "string",
+      "description": "Code indicating the outcome of the transaction processing.",
+      "terms": [
+        "response code",
+        "result code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "device_id",
+      "type": "decimal(20,2)",
+      "description": "Identifier for the device used to initiate the transaction.",
+      "terms": [
+        "device identifier",
+        "device ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "flat_fee",
+      "type": "decimal(20,2)",
+      "description": "A fixed fee charged for processing the transaction.",
+      "terms": [
+        "fixed fee",
+        "transaction fee"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "fee_on_amt",
+      "type": "decimal(20,2)",
+      "description": "A fee calculated as a percentage of the transaction amount.",
+      "terms": [
+        "fee on amount",
+        "percentage fee"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "real_amount",
+      "type": "decimal(20,2)",
+      "description": "The actual amount received after deducting fees.",
+      "terms": [
+        "net amount",
+        "actual amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ccy",
+      "type": "string",
+      "description": "The currency in which the transaction is conducted.",
+      "terms": [
+        "currency",
+        "currency code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_remark",
+      "type": "string",
+      "description": "Additional remarks or comments about the transaction.",
+      "terms": [
+        "transaction remark",
+        "remark"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "product_type",
+      "type": "string",
+      "description": "The type of product or service associated with the transaction.",
+      "terms": [
+        "product category",
+        "type of product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "discount",
+      "type": "string",
+      "description": "Any discount applied to the transaction.",
+      "terms": [
+        "discount applied",
+        "discount amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_refno",
+      "type": "string",
+      "description": "A reference number associated with the transaction.",
+      "terms": [
+        "transaction reference number",
+        "reference number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_code",
+      "type": "string",
+      "description": "Code representing the branch where the transaction was processed.",
+      "terms": [
+        "branch identifier",
+        "branch code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "service_type",
+      "type": "string",
+      "description": "The category of service provided in the transaction.",
+      "terms": [
+        "type of service",
+        "service category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "charge_to",
+      "type": "string",
+      "description": "The account that bears the charges for the transaction.",
+      "terms": [
+        "charge account",
+        "account charged"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_name_en",
+      "type": "string",
+      "description": "The name of the credit recipient in English.",
+      "terms": [
+        "credit name (English)",
+        "creditor name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_name_vn",
+      "type": "string",
+      "description": "The name of the credit recipient in Vietnamese.",
+      "terms": [
+        "credit name (Vietnamese)",
+        "creditor name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bene_bank_code",
+      "type": "string",
+      "description": "Code representing the bank of the beneficiary.",
+      "terms": [
+        "beneficiary bank code",
+        "bank code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cus_name",
+      "type": "string",
+      "description": "The name of the customer involved in the transaction.",
+      "terms": [
+        "customer name",
+        "client name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "remit_number",
+      "type": "string",
+      "description": "A number identifying the remittance associated with the transaction.",
+      "terms": [
+        "remittance number",
+        "remit ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pay_channel",
+      "type": "string",
+      "description": "The channel through which the payment was made (e.g., online, mobile).",
+      "terms": [
+        "payment channel",
+        "channel"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bill_id",
+      "type": "string",
+      "description": "An identifier for the bill associated with the transaction.",
+      "terms": [
+        "bill identifier",
+        "bill ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "from_ccy",
+      "type": "string",
+      "description": "The currency from which the transaction amount is converted.",
+      "terms": [
+        "source currency",
+        "from currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "to_ccy",
+      "type": "string",
+      "description": "The currency to which the transaction amount is converted.",
+      "terms": [
+        "target currency",
+        "to currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "pos_code",
+      "type": "string",
+      "description": "Code representing the point of sale where the transaction occurred.",
+      "terms": [
+        "point of sale code",
+        "POS code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bene_branch",
+      "type": "string",
+      "description": "The branch of the beneficiary's bank.",
+      "terms": [
+        "beneficiary branch",
+        "branch of beneficiary"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bene_pos",
+      "type": "string",
+      "description": "The point of sale associated with the beneficiary.",
+      "terms": [
+        "beneficiary point of sale",
+        "beneficiary POS"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "charge_acc",
+      "type": "string",
+      "description": "The account that incurs the charges for the transaction.",
+      "terms": [
+        "charge account",
+        "account charged"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "exchange_rate",
+      "type": "decimal(20,2)",
+      "description": "The exchange rate applied to the transaction.",
+      "terms": [
+        "currency exchange rate",
+        "rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "metadata",
+      "type": "string",
+      "description": "Additional metadata related to the transaction.",
+      "terms": [
+        "additional data",
+        "metadata"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trace_no",
+      "type": "string",
+      "description": "A number used to trace the transaction.",
+      "terms": [
+        "trace number",
+        "tracking number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tranx_method",
+      "type": "string",
+      "description": "The method used to conduct the transaction.",
+      "terms": [
+        "transaction method",
+        "method"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "os",
+      "type": "string",
+      "description": "The operating system of the device used for the transaction.",
+      "terms": [
+        "operating system",
+        "OS"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year in which the transaction took place.",
+      "terms": [
+        "year",
+        "transaction year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month in which the transaction took place.",
+      "terms": [
+        "month",
+        "transaction month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day on which the transaction took place.",
+      "terms": [
+        "day",
+        "transaction day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_domain",
+      "type": "string",
+      "description": "Code representing the domain of the transaction.",
+      "terms": [
+        "domain code",
+        "transaction domain"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_family",
+      "type": "string",
+      "description": "Code representing the family category of the transaction.",
+      "terms": [
+        "family code",
+        "transaction family"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_code_subfamily",
+      "type": "string",
+      "description": "Code representing the subfamily category of the transaction.",
+      "terms": [
+        "subfamily code",
+        "transaction subfamily"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acceptor_name_t1",
+      "type": "string",
+      "description": "The name of the entity accepting the transaction.",
+      "terms": [
+        "acceptor name",
+        "merchant name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "PaymentTransaction",
+    "domain": "finance",
+    "synonyms": [
+      "Payment",
+      "Transaction",
+      "FinancialOperation"
+    ]
+  }
+}

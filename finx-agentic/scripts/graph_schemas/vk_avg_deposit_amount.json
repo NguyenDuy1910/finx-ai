@@ -1,0 +1,169 @@
+{
+  "name": "vk_avg_deposit_amount",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores average deposit amounts and related information for client accounts.",
+  "columns": [
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "Unique identifier for the client.",
+      "terms": [
+        "customer_number",
+        "client_id"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no",
+      "type": "string",
+      "description": "Unique identifier for the client's account.",
+      "terms": [
+        "account_number",
+        "bank_account_id"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_name",
+      "type": "string",
+      "description": "Name of the client or account holder.",
+      "terms": [
+        "customer_name",
+        "account_holder_name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_type",
+      "type": "string",
+      "description": "Code representing the type of account.",
+      "terms": [
+        "account_type",
+        "type_of_account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_type_desc",
+      "type": "string",
+      "description": "Description of the account type.",
+      "terms": [
+        "account_type_description",
+        "type_of_account_description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "description": "Currency in which the account transactions are conducted.",
+      "terms": [
+        "currency_code",
+        "money_type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "avg_deposit_amount",
+      "type": "decimal(20,2)",
+      "description": "Average amount of deposits made into the account.",
+      "terms": [
+        "average_deposit",
+        "mean_deposit_amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "num_of_deposit",
+      "type": "bigint",
+      "description": "Total number of deposits made into the account.",
+      "terms": [
+        "number_of_deposits",
+        "deposit_count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "last_tran_date_time",
+      "type": "timestamp",
+      "description": "Timestamp of the last transaction made in the account.",
+      "terms": [
+        "last_transaction_date",
+        "most_recent_transaction"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sym_run_month",
+      "type": "string",
+      "description": "Symbolic representation of the month for reporting purposes.",
+      "terms": [
+        "symbolic_run_month",
+        "reporting_month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "description": "Timestamp when the record was created.",
+      "terms": [
+        "creation_timestamp",
+        "record_creation_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp",
+      "description": "Timestamp when the record was last updated.",
+      "terms": [
+        "update_timestamp",
+        "record_update_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "int",
+      "description": "Year associated with the record.",
+      "terms": [
+        "fiscal_year",
+        "calendar_year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "int",
+      "description": "Month associated with the record.",
+      "terms": [
+        "fiscal_month",
+        "calendar_month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "AccountDeposit",
+    "domain": "finance",
+    "synonyms": [
+      "DepositAccount",
+      "BankAccountDeposit"
+    ]
+  }
+}

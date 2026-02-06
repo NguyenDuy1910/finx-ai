@@ -1,0 +1,202 @@
+{
+  "name": "account_migration_user_pool",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores information related to the migration of user accounts within the non-production UAT gold zone environment.",
+  "columns": [
+    {
+      "name": "job_id",
+      "type": "string",
+      "description": "Unique identifier for the migration job.",
+      "terms": [
+        "Job Identifier",
+        "Migration Job ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "cif_number",
+      "type": "string",
+      "description": "Unique identifier for the customer in the bank's system.",
+      "terms": [
+        "Customer Information File Number",
+        "CIF"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_number",
+      "type": "string",
+      "description": "Unique number assigned to a customer's bank account.",
+      "terms": [
+        "Account ID",
+        "Bank Account Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "product_type",
+      "type": "string",
+      "description": "Type of financial product or account being migrated.",
+      "terms": [
+        "Account Type",
+        "Product Category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "data",
+      "type": "string",
+      "description": "Serialized data related to the account migration.",
+      "terms": [
+        "Migration Data",
+        "Account Data"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_date",
+      "type": "date",
+      "description": "Date when the migration job was executed.",
+      "terms": [
+        "Execution Date",
+        "Migration Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_timestamp",
+      "type": "timestamp",
+      "description": "Exact time when the migration job was executed.",
+      "terms": [
+        "Execution Timestamp",
+        "Migration Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "modified_timestamp",
+      "type": "timestamp",
+      "description": "Timestamp of the last modification made to the record.",
+      "terms": [
+        "Last Modified Time",
+        "Update Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "description": "Query used during the migration process.",
+      "terms": [
+        "SQL Query",
+        "Database Query"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registry_postgres_table",
+      "type": "string",
+      "description": "Name of the Postgres table used for registry purposes.",
+      "terms": [
+        "Registry Table",
+        "Postgres Table"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "key_template",
+      "type": "string",
+      "description": "Template for generating keys during migration.",
+      "terms": [
+        "Key Format",
+        "Template Key"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_template",
+      "type": "string",
+      "description": "Template for generating values during migration.",
+      "terms": [
+        "Value Format",
+        "Template Value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interestresolvetype",
+      "type": "string",
+      "description": "Type of interest resolution applied to the account.",
+      "terms": [
+        "Interest Resolution Type",
+        "Interest Type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "depositnonterminterestcode",
+      "type": "string",
+      "description": "Code representing the non-term interest applied to deposits.",
+      "terms": [
+        "Non-Term Interest Code",
+        "Interest Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "Current status of the migration job.",
+      "terms": [
+        "Migration Status",
+        "Job Status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "error_msg",
+      "type": "string",
+      "description": "Message describing any errors encountered during migration.",
+      "terms": [
+        "Error Message",
+        "Failure Reason"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "customer_tenant",
+      "type": "string",
+      "description": "Identifier for the customer's tenant in a multi-tenant environment.",
+      "terms": [
+        "Customer Tenant ID",
+        "Tenant Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "AccountMigration",
+    "domain": "finance",
+    "synonyms": [
+      "Account Transfer",
+      "Account Relocation"
+    ]
+  }
+}

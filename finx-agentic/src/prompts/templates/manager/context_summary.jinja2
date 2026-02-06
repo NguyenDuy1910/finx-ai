@@ -1,0 +1,9 @@
+Message count: {{ message_count }}
+Current intent: {{ intent }}
+Has SQL: {{ has_sql }}
+Has results: {{ has_results }}
+
+Recent conversation:
+{% for msg in recent_messages %}
+- {{ msg.role }}: {{ msg.content[:100] }}...
+{% endfor %}

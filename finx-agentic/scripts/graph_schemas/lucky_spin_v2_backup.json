@@ -1,0 +1,148 @@
+{
+  "name": "lucky_spin_v2_backup",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores backup records of lucky spin events for user accounts in a non-production environment.",
+  "columns": [
+    {
+      "name": "master_id",
+      "type": "string",
+      "description": "Unique identifier for each lucky spin transaction record.",
+      "terms": [
+        "identifier",
+        "ID",
+        "primary key"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the lucky spin event was processed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "balance",
+      "type": "bigint",
+      "description": "The balance amount in the user's account at the time of the lucky spin event.",
+      "terms": [
+        "account balance",
+        "credits"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lucky_spin",
+      "type": "string",
+      "description": "The result of the lucky spin event.",
+      "terms": [
+        "spin result",
+        "spin outcome"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lucky_spin_type",
+      "type": "string",
+      "description": "The type or category of the lucky spin event.",
+      "terms": [
+        "spin type",
+        "event type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_open_datetime",
+      "type": "timestamp",
+      "description": "The timestamp when the user's account was created.",
+      "terms": [
+        "account creation time",
+        "account open timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "total_used_lucky_spin",
+      "type": "int",
+      "description": "The total number of lucky spins used by the user.",
+      "terms": [
+        "total spins used",
+        "spins count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "prefix_sum_lucky_spin",
+      "type": "double",
+      "description": "The cumulative sum of lucky spins up to the current event.",
+      "terms": [
+        "cumulative spins",
+        "spin sum"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "real_lucky_spin",
+      "type": "string",
+      "description": "The actual result of the lucky spin event.",
+      "terms": [
+        "actual spin result",
+        "true spin outcome"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "processing_time",
+      "type": "timestamp",
+      "description": "The timestamp when the lucky spin event was processed.",
+      "terms": [
+        "event processing time",
+        "execution timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "schema_campaign",
+      "type": "string",
+      "description": "The schema or campaign associated with the lucky spin event.",
+      "terms": [
+        "campaign schema",
+        "promotion schema"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "The unique identifier for the user's account associated with the lucky spin event.",
+      "terms": [
+        "user ID",
+        "account identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    }
+  ],
+  "entity": {
+    "name": "LuckySpinTransaction",
+    "domain": "gaming",
+    "synonyms": [
+      "SpinEvent",
+      "SpinRecord"
+    ]
+  }
+}

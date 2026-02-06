@@ -1,0 +1,136 @@
+{
+  "name": "account_migration_reconcile_summary",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table summarizes the reconciliation of account migrations, detailing the success and discrepancies encountered during the process.",
+  "columns": [
+    {
+      "name": "run_date",
+      "type": "date",
+      "description": "The date on which the reconciliation run was executed.",
+      "terms": [
+        "execution date",
+        "process date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_timestamp",
+      "type": "timestamp",
+      "description": "The exact timestamp when the reconciliation run was executed.",
+      "terms": [
+        "execution timestamp",
+        "process timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "total_accounts",
+      "type": "bigint",
+      "description": "The total number of accounts considered in the reconciliation process.",
+      "terms": [
+        "total number of accounts",
+        "account count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "successful_accounts",
+      "type": "bigint",
+      "description": "The number of accounts that were successfully reconciled.",
+      "terms": [
+        "successful account count",
+        "reconciled accounts"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "missing_accounts",
+      "type": "bigint",
+      "description": "The number of accounts that were not found during reconciliation.",
+      "terms": [
+        "unmatched accounts",
+        "missing account count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interest_code_mismatch_accounts",
+      "type": "bigint",
+      "description": "The number of accounts with mismatched interest codes.",
+      "terms": [
+        "interest code discrepancies",
+        "interest code mismatch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interest_type_mismatch_accounts",
+      "type": "bigint",
+      "description": "The number of accounts with mismatched interest types.",
+      "terms": [
+        "interest type discrepancies",
+        "interest type mismatch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "success_percentage",
+      "type": "double",
+      "description": "The percentage of accounts successfully reconciled.",
+      "terms": [
+        "success rate",
+        "reconciliation success percentage"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "missing_percentage",
+      "type": "double",
+      "description": "The percentage of accounts that were missing during reconciliation.",
+      "terms": [
+        "missing rate",
+        "unmatched account percentage"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interest_code_mismatch_percentage",
+      "type": "double",
+      "description": "The percentage of accounts with interest code mismatches.",
+      "terms": [
+        "interest code mismatch rate",
+        "interest code discrepancy percentage"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interest_type_mismatch_percentage",
+      "type": "double",
+      "description": "The percentage of accounts with interest type mismatches.",
+      "terms": [
+        "interest type mismatch rate",
+        "interest type discrepancy percentage"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "AccountMigrationReconciliationSummary",
+    "domain": "finance",
+    "synonyms": [
+      "Account Migration Summary",
+      "Reconciliation Summary"
+    ]
+  }
+}

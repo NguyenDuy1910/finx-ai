@@ -1,0 +1,412 @@
+{
+  "name": "f_transaction__fa",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table records financial transactions, detailing both debit and credit sides, along with metadata about the transaction process.",
+  "columns": [
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "description": "Unique identifier for the transaction",
+      "terms": [
+        "Transaction ID",
+        "Transaction Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "debit_account_id",
+      "type": "string",
+      "description": "Identifier for the account from which funds are debited",
+      "terms": [
+        "Debit Account ID",
+        "Debit Account Number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "debit_account_address",
+      "type": "string",
+      "description": "Address associated with the debit account",
+      "terms": [
+        "Debit Account Address",
+        "Debit Address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_gl_code",
+      "type": "string",
+      "description": "General ledger code for the debit transaction",
+      "terms": [
+        "Debit GL Code",
+        "Debit General Ledger Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_sbv_code",
+      "type": "string",
+      "description": "Sub-balance code for the debit transaction",
+      "terms": [
+        "Debit SBV Code",
+        "Debit Sub-Balance Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_customer_id",
+      "type": "array<string>",
+      "description": "List of customer identifiers associated with the debit transaction",
+      "terms": [
+        "Debit Customer ID",
+        "Debtor Customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "debit_ccy_code",
+      "type": "string",
+      "description": "Currency code for the debit transaction",
+      "terms": [
+        "Debit Currency Code",
+        "Debit Currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_trans_code",
+      "type": "string",
+      "description": "Code representing the type of debit transaction",
+      "terms": [
+        "Debit Transaction Code",
+        "Debit Trans Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_org_amount",
+      "type": "decimal(10,0)",
+      "description": "Original amount debited in the transaction's currency",
+      "terms": [
+        "Debit Original Amount",
+        "Debit Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "debit_lcy_amount",
+      "type": "decimal(10,0)",
+      "description": "Amount debited in local currency",
+      "terms": [
+        "Debit Local Currency Amount",
+        "Debit LCY Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_account_id",
+      "type": "string",
+      "description": "Identifier for the account to which funds are credited",
+      "terms": [
+        "Credit Account ID",
+        "Credit Account Number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "credit_account_address",
+      "type": "string",
+      "description": "Address associated with the credit account",
+      "terms": [
+        "Credit Account Address",
+        "Credit Address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_gl_code",
+      "type": "string",
+      "description": "General ledger code for the credit transaction",
+      "terms": [
+        "Credit GL Code",
+        "Credit General Ledger Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_sbv_code",
+      "type": "string",
+      "description": "Sub-balance code for the credit transaction",
+      "terms": [
+        "Credit SBV Code",
+        "Credit Sub-Balance Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_customer_id",
+      "type": "array<string>",
+      "description": "List of customer identifiers associated with the credit transaction",
+      "terms": [
+        "Credit Customer ID",
+        "Creditor Customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "credit_ccy_code",
+      "type": "string",
+      "description": "Currency code for the credit transaction",
+      "terms": [
+        "Credit Currency Code",
+        "Credit Currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_trans_code",
+      "type": "string",
+      "description": "Code representing the type of credit transaction",
+      "terms": [
+        "Credit Transaction Code",
+        "Credit Trans Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_org_amount",
+      "type": "decimal(10,0)",
+      "description": "Original amount credited in the transaction's currency",
+      "terms": [
+        "Credit Original Amount",
+        "Credit Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "credit_lcy_amount",
+      "type": "decimal(10,0)",
+      "description": "Amount credited in local currency",
+      "terms": [
+        "Credit Local Currency Amount",
+        "Credit LCY Amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "other_sides",
+      "type": "array<struct<trans_type:string,debit_account_id:string,debit_account_address:string,debit_gl_code:string,debit_sbv_code:string,debit_customer_id:array<string>,debit_ccy_code:string,debit_trans_code:string,debit_org_amount:decimal(10,0),debit_lcy_amount:decimal(10,0),credit_account_id:string,credit_account_address:string,credit_gl_code:string,credit_sbv_code:string,credit_customer_id:array<string>,credit_ccy_code:string,credit_trans_code:string,credit_org_amount:decimal(10,0),credit_lcy_amount:decimal(10,0)>>",
+      "description": "Array of additional transaction details for complex transactions",
+      "terms": [
+        "Other Sides",
+        "Additional Transactions"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "authorise_time",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction was authorized",
+      "terms": [
+        "Authorise Time",
+        "Authorization Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "authorizer",
+      "type": "string",
+      "description": "Person or system that authorized the transaction",
+      "terms": [
+        "Authorizer",
+        "Approver"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "accounting_time",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction was recorded in accounting",
+      "terms": [
+        "Accounting Time",
+        "Accounting Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "Current status of the transaction",
+      "terms": [
+        "Status",
+        "Transaction Status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Description or notes about the transaction",
+      "terms": [
+        "Description",
+        "Transaction Description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "channel",
+      "type": "string",
+      "description": "Channel through which the transaction was conducted",
+      "terms": [
+        "Channel",
+        "Transaction Channel"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "location",
+      "type": "string",
+      "description": "Location where the transaction took place",
+      "terms": [
+        "Location",
+        "Transaction Location"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_code",
+      "type": "string",
+      "description": "Code identifying the branch where the transaction occurred",
+      "terms": [
+        "Branch Code",
+        "Branch Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction record was created in the data lake house",
+      "terms": [
+        "DLH Created Time",
+        "Data Lake House Creation Time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_updated_time",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction record was last updated in the data lake house",
+      "terms": [
+        "DLH Updated Time",
+        "Data Lake House Update Time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_at",
+      "type": "timestamp",
+      "description": "Timestamp when the transaction record was processed in the data lake house",
+      "terms": [
+        "DLH Processed At",
+        "Data Lake House Processing Time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "Source system from which the transaction record was ingested into the data lake house",
+      "terms": [
+        "DLH Source",
+        "Data Lake House Source"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning the transaction record in the data lake house",
+      "terms": [
+        "DLH Partition Date",
+        "Data Lake House Partition Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year when the transaction occurred",
+      "terms": [
+        "Year",
+        "Transaction Year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month when the transaction occurred",
+      "terms": [
+        "Month",
+        "Transaction Month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day when the transaction occurred",
+      "terms": [
+        "Day",
+        "Transaction Day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "FinancialTransaction",
+    "domain": "finance",
+    "synonyms": [
+      "Transaction",
+      "Financial Record",
+      "Bank Transaction"
+    ]
+  }
+}

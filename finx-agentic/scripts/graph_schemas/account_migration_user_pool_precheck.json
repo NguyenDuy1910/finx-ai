@@ -1,0 +1,92 @@
+{
+  "name": "account_migration_user_pool_precheck",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table is used to store preliminary checks for user accounts before migration in a non-production environment.",
+  "columns": [
+    {
+      "name": "run_id",
+      "type": "string",
+      "description": "Unique identifier for each migration precheck run.",
+      "terms": [
+        "execution ID",
+        "process ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "Current status of the migration precheck process.",
+      "terms": [
+        "state",
+        "condition"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "interestresolvetype",
+      "type": "string",
+      "description": "Type of interest resolution applied during the precheck.",
+      "terms": [
+        "interest resolution type",
+        "interest type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "depositnonterminterestcode",
+      "type": "string",
+      "description": "Code representing the type of non-term deposit interest.",
+      "terms": [
+        "interest code",
+        "deposit interest code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_count",
+      "type": "bigint",
+      "description": "Total number of accounts involved in the precheck.",
+      "terms": [
+        "number of accounts",
+        "account total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cif_count",
+      "type": "bigint",
+      "description": "Total number of customer information files involved in the precheck.",
+      "terms": [
+        "customer ID count",
+        "CIF total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "record_timestamp",
+      "type": "timestamp",
+      "description": "Timestamp when the record was created or last updated.",
+      "terms": [
+        "timestamp",
+        "record time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "AccountMigrationPrecheck",
+    "domain": "finance",
+    "synonyms": [
+      "Account Migration Check",
+      "Migration Precheck"
+    ]
+  }
+}

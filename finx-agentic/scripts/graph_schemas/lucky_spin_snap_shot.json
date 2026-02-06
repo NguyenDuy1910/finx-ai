@@ -1,0 +1,92 @@
+{
+  "name": "lucky_spin_snap_shot",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table captures snapshots of lucky spin events, tracking user participation and event details.",
+  "columns": [
+    {
+      "name": "master_id",
+      "type": "string",
+      "description": "Unique identifier for the user or participant involved in the lucky spin event.",
+      "terms": [
+        "user_id",
+        "participant_id"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "onboard_time",
+      "type": "timestamp",
+      "description": "Timestamp indicating when the user was onboarded to the lucky spin event.",
+      "terms": [
+        "registration_time",
+        "join_time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lucky_spin_onboard",
+      "type": "int",
+      "description": "The number of lucky spins available to the user upon onboarding.",
+      "terms": [
+        "initial_spin_count",
+        "starting_spins"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the simulation or event run occurred.",
+      "terms": [
+        "simulation_date",
+        "run_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "event_id",
+      "type": "string",
+      "description": "Unique identifier for the specific lucky spin event.",
+      "terms": [
+        "spin_event_id",
+        "game_event_id"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "event_name",
+      "type": "string",
+      "description": "The name of the lucky spin event.",
+      "terms": [
+        "spin_event_name",
+        "game_event_name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "total_lucky_spin",
+      "type": "int",
+      "description": "The total number of lucky spins available or used during the event.",
+      "terms": [
+        "total_spins",
+        "spin_count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "LuckySpinEvent",
+    "domain": "gaming",
+    "synonyms": [
+      "SpinEvent",
+      "GameEvent"
+    ]
+  }
+}

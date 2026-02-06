@@ -1,0 +1,103 @@
+{
+  "name": "dynamic_notification",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores dynamic notifications related to job executions and their associated data.",
+  "columns": [
+    {
+      "name": "job_id",
+      "type": "string",
+      "description": "A unique identifier for the job associated with the notification.",
+      "terms": [
+        "Job Identifier",
+        "Task ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "data",
+      "type": "string",
+      "description": "The content or payload of the notification.",
+      "terms": [
+        "Payload",
+        "Content"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_date",
+      "type": "date",
+      "description": "The date when the job was executed.",
+      "terms": [
+        "Execution Date",
+        "Job Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "description": "The SQL query associated with the notification.",
+      "terms": [
+        "SQL Query",
+        "Database Query"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registry_postgres_table",
+      "type": "string",
+      "description": "The name of the PostgreSQL table registered for the notification.",
+      "terms": [
+        "Registry Table",
+        "Postgres Table"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "key_template",
+      "type": "string",
+      "description": "The template used for generating keys in the notification.",
+      "terms": [
+        "Key Pattern",
+        "Identifier Template"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_template",
+      "type": "string",
+      "description": "The template used for generating values in the notification.",
+      "terms": [
+        "Value Pattern",
+        "Data Template"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "run_timestamp",
+      "type": "timestamp",
+      "description": "The exact timestamp when the job was executed.",
+      "terms": [
+        "Execution Timestamp",
+        "Job Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "Notification",
+    "domain": "communication",
+    "synonyms": [
+      "Alert",
+      "Message"
+    ]
+  }
+}

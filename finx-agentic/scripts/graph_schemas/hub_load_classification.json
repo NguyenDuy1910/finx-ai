@@ -1,0 +1,444 @@
+{
+  "name": "hub_load_classification",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table classifies loans based on various criteria and performance metrics.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the classification process was executed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_no",
+      "type": "string",
+      "description": "Identifier for the branch where the loan is managed.",
+      "terms": [
+        "branch number",
+        "branch ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "Unique identifier for the client associated with the loan.",
+      "terms": [
+        "client number",
+        "customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no",
+      "type": "string",
+      "description": "The account number linked to the loan.",
+      "terms": [
+        "account number",
+        "account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_no",
+      "type": "string",
+      "description": "Unique identifier for the loan.",
+      "terms": [
+        "loan number",
+        "loan ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loan_type",
+      "type": "string",
+      "description": "The category or type of the loan.",
+      "terms": [
+        "type of loan",
+        "loan category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dd_no",
+      "type": "int",
+      "description": "Identifier for the direct debit arrangement.",
+      "terms": [
+        "direct debit number",
+        "DD number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dbill_fail",
+      "type": "date",
+      "description": "Date when a billing attempt failed.",
+      "terms": [
+        "billing failure date",
+        "failed bill date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dbill_true",
+      "type": "date",
+      "description": "Date when a billing attempt was successful.",
+      "terms": [
+        "successful billing date",
+        "bill success date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "bill_type",
+      "type": "string",
+      "description": "Type or category of the billing process.",
+      "terms": [
+        "billing type",
+        "bill category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cdelay",
+      "type": "string",
+      "description": "Description of any delay in loan collection.",
+      "terms": [
+        "collection delay",
+        "delay in collection"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dpaytest",
+      "type": "date",
+      "description": "Date when a payment test was conducted.",
+      "terms": [
+        "payment test date",
+        "test payment date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cdtest",
+      "type": "int",
+      "description": "Count of tests conducted for collection delays.",
+      "terms": [
+        "collection delay test",
+        "delay test count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dvp",
+      "type": "date",
+      "description": "Date when payment is due.",
+      "terms": [
+        "due payment date",
+        "payment due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dth",
+      "type": "date",
+      "description": "Date marking a threshold for some criteria.",
+      "terms": [
+        "threshold date",
+        "date threshold"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cvp",
+      "type": "int",
+      "description": "Current value of the payment.",
+      "terms": [
+        "current value payment",
+        "current payment value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cth",
+      "type": "int",
+      "description": "Current threshold value.",
+      "terms": [
+        "current threshold",
+        "threshold current"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nvp",
+      "type": "int",
+      "description": "New value of the payment.",
+      "terms": [
+        "new value payment",
+        "new payment value"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nth",
+      "type": "int",
+      "description": "New threshold value.",
+      "terms": [
+        "new threshold",
+        "threshold new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cdc",
+      "type": "int",
+      "description": "Current count of delays.",
+      "terms": [
+        "current delay count",
+        "delay count current"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cgh",
+      "type": "int",
+      "description": "Current high gain value.",
+      "terms": [
+        "current gain high",
+        "gain high current"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ndc",
+      "type": "int",
+      "description": "New count of delays.",
+      "terms": [
+        "new delay count",
+        "delay count new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngh",
+      "type": "int",
+      "description": "New high gain value.",
+      "terms": [
+        "new gain high",
+        "gain high new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ncc",
+      "type": "int",
+      "description": "New count of credits.",
+      "terms": [
+        "new credit count",
+        "credit count new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ntn",
+      "type": "int",
+      "description": "New transaction number.",
+      "terms": [
+        "new transaction number",
+        "transaction number new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ndl",
+      "type": "int",
+      "description": "New level of delay.",
+      "terms": [
+        "new delay level",
+        "delay level new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nbm",
+      "type": "int",
+      "description": "New month for billing.",
+      "terms": [
+        "new billing month",
+        "billing month new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "neod",
+      "type": "int",
+      "description": "New end of day value.",
+      "terms": [
+        "new end of day",
+        "end of day new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "neom",
+      "type": "int",
+      "description": "New end of month value.",
+      "terms": [
+        "new end of month",
+        "end of month new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "profit_centre",
+      "type": "int",
+      "description": "Identifier for the profit center associated with the loan.",
+      "terms": [
+        "profit center",
+        "profit centre ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "narrative",
+      "type": "string",
+      "description": "Narrative description or notes related to the loan classification.",
+      "terms": [
+        "description",
+        "narrative text"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dtt",
+      "type": "date",
+      "description": "Date when a transaction test was conducted.",
+      "terms": [
+        "transaction test date",
+        "test transaction date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ctt",
+      "type": "int",
+      "description": "Current count of transaction tests.",
+      "terms": [
+        "current transaction test",
+        "transaction test current"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ntt",
+      "type": "int",
+      "description": "New count of transaction tests.",
+      "terms": [
+        "new transaction test",
+        "transaction test new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nguyen_nhan_nhomno",
+      "type": "string",
+      "description": "Reason for the grouping of debts.",
+      "terms": [
+        "reason group debt",
+        "debt group reason"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year associated with the data.",
+      "terms": [
+        "year",
+        "fiscal year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month associated with the data.",
+      "terms": [
+        "month",
+        "fiscal month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day associated with the data.",
+      "terms": [
+        "day",
+        "fiscal day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nqs",
+      "type": "int",
+      "description": "New quality score assigned.",
+      "terms": [
+        "new quality score",
+        "quality score new"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "LoanClassification",
+    "domain": "finance",
+    "synonyms": [
+      "LoanCategory",
+      "CreditAssessment"
+    ]
+  }
+}

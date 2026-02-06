@@ -1,0 +1,1159 @@
+{
+  "name": "vk_card_dim_batch",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table contains detailed information about credit card accounts and their transactions.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the data was processed or executed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "Unique identifier for the client.",
+      "terms": [
+        "customer number",
+        "client ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_name",
+      "type": "string",
+      "description": "The full name of the client.",
+      "terms": [
+        "customer name",
+        "client full name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_contract_id",
+      "type": "string",
+      "description": "Identifier for the credit card contract.",
+      "terms": [
+        "contract ID",
+        "agreement ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "crd_contract_open_date",
+      "type": "date",
+      "description": "The date when the credit card contract was opened.",
+      "terms": [
+        "contract start date",
+        "agreement open date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_contract_status",
+      "type": "string",
+      "description": "Current status of the credit card contract.",
+      "terms": [
+        "contract status",
+        "agreement status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_id_iss",
+      "type": "string",
+      "description": "Identifier for the issued credit card account.",
+      "terms": [
+        "account ID",
+        "issuer account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_target_id",
+      "type": "bigint",
+      "description": "Identifier for the target associated with the credit card.",
+      "terms": [
+        "target ID",
+        "goal ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "crd_nunber_no",
+      "type": "string",
+      "description": "The number assigned to the credit card.",
+      "terms": [
+        "card number",
+        "credit card number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_no",
+      "type": "string",
+      "description": "The number associated with the credit card account.",
+      "terms": [
+        "account number",
+        "card account number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_status_iss",
+      "type": "string",
+      "description": "Status of the issued credit card account.",
+      "terms": [
+        "account status",
+        "issuer account status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_status_date_iss",
+      "type": "date",
+      "description": "The date when the account status was last updated.",
+      "terms": [
+        "status date",
+        "account status date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_open_date",
+      "type": "string",
+      "description": "The date when the credit card account was opened.",
+      "terms": [
+        "account open date",
+        "card account start date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_expire_date",
+      "type": "string",
+      "description": "The date when the credit card account expires.",
+      "terms": [
+        "expiration date",
+        "expiry date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_unlock_date",
+      "type": "date",
+      "description": "The date when the account was unlocked.",
+      "terms": [
+        "unlock date",
+        "account unlock date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_destr",
+      "type": "date",
+      "description": "The date when the account was destroyed.",
+      "terms": [
+        "destruction date",
+        "account destruction date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_status",
+      "type": "string",
+      "description": "Current status of the credit card account.",
+      "terms": [
+        "account status",
+        "current status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_status_date",
+      "type": "date",
+      "description": "The date when the account status was last updated.",
+      "terms": [
+        "status date",
+        "account status update date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_prod_1",
+      "type": "string",
+      "description": "Primary product associated with the credit card account.",
+      "terms": [
+        "product 1",
+        "primary product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_prod_2",
+      "type": "string",
+      "description": "Secondary product associated with the credit card account.",
+      "terms": [
+        "product 2",
+        "secondary product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_prod_3",
+      "type": "string",
+      "description": "Tertiary product associated with the credit card account.",
+      "terms": [
+        "product 3",
+        "tertiary product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_prod_4",
+      "type": "string",
+      "description": "Quaternary product associated with the credit card account.",
+      "terms": [
+        "product 4",
+        "quaternary product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_prod_5",
+      "type": "string",
+      "description": "Quinary product associated with the credit card account.",
+      "terms": [
+        "product 5",
+        "quinary product"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_brand",
+      "type": "string",
+      "description": "Brand of the credit card.",
+      "terms": [
+        "card brand",
+        "brand"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_acc_level",
+      "type": "string",
+      "description": "Level of the credit card account.",
+      "terms": [
+        "card level",
+        "account level"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_branch_code",
+      "type": "string",
+      "description": "Code of the branch where the account is held.",
+      "terms": [
+        "branch code",
+        "bank branch code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_sale_code",
+      "type": "string",
+      "description": "Code of the sales representative associated with the account.",
+      "terms": [
+        "sales code",
+        "sales representative code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_auth_amt_contract",
+      "type": "bigint",
+      "description": "Authorized amount for the credit card contract.",
+      "terms": [
+        "authorized amount",
+        "contract authorized amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_auth_lcy_amt_contract",
+      "type": "bigint",
+      "description": "Authorized amount in local currency for the credit card contract.",
+      "terms": [
+        "local currency authorized amount",
+        "contract authorized local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_auth_amt",
+      "type": "bigint",
+      "description": "Authorized amount for the credit card.",
+      "terms": [
+        "authorized amount",
+        "card authorized amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_auth_lcy_amt",
+      "type": "bigint",
+      "description": "Authorized amount in local currency for the credit card.",
+      "terms": [
+        "local currency authorized amount",
+        "card authorized local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_group",
+      "type": "string",
+      "description": "Group classification of the credit card.",
+      "terms": [
+        "card group",
+        "account group"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_main",
+      "type": "string",
+      "description": "Indicates if the card is the main card in the account.",
+      "terms": [
+        "main card",
+        "primary card"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_replace_id",
+      "type": "string",
+      "description": "Identifier for the replacement card.",
+      "terms": [
+        "replacement ID",
+        "card replacement ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "crd_replace_reason",
+      "type": "string",
+      "description": "Reason for the card replacement.",
+      "terms": [
+        "replacement reason",
+        "card replacement reason"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_replace_date",
+      "type": "date",
+      "description": "The date when the card was replaced.",
+      "terms": [
+        "replacement date",
+        "card replacement date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "General ledger code associated with the account.",
+      "terms": [
+        "general ledger code",
+        "ledger code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_account_casa_id",
+      "type": "string",
+      "description": "Identifier for the CASA account linked to the credit card.",
+      "terms": [
+        "CASA ID",
+        "current account savings account ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "flag_crd_account_auto",
+      "type": "string",
+      "description": "Flag indicating if the account is automatically managed.",
+      "terms": [
+        "auto account flag",
+        "automatic account flag"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "flag_card_sercure",
+      "type": "string",
+      "description": "Flag indicating if the card is secured.",
+      "terms": [
+        "secure card flag",
+        "card security flag"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_collateral_id",
+      "type": "string",
+      "description": "Identifier for the collateral associated with the card.",
+      "terms": [
+        "collateral ID",
+        "security ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "crd_collateral_amt",
+      "type": "string",
+      "description": "Amount of collateral associated with the card.",
+      "terms": [
+        "collateral amount",
+        "security amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_segment_code",
+      "type": "string",
+      "description": "Code representing the market segment of the card.",
+      "terms": [
+        "segment code",
+        "market segment code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_rate",
+      "type": "string",
+      "description": "Interest rate applicable to the credit card.",
+      "terms": [
+        "interest rate",
+        "card rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_oustanding_amt",
+      "type": "bigint",
+      "description": "Total outstanding amount on the credit card.",
+      "terms": [
+        "outstanding amount",
+        "due amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_oustanding_lcy_amt",
+      "type": "bigint",
+      "description": "Outstanding amount in local currency on the credit card.",
+      "terms": [
+        "local currency outstanding amount",
+        "due local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_oustanding_bill_amt",
+      "type": "bigint",
+      "description": "Outstanding amount on the bill for the credit card.",
+      "terms": [
+        "outstanding bill amount",
+        "due bill amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_oustanding_bill_lcy_amt",
+      "type": "bigint",
+      "description": "Outstanding bill amount in local currency on the credit card.",
+      "terms": [
+        "local currency outstanding bill amount",
+        "due bill local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_revolver_oustanding_amt",
+      "type": "bigint",
+      "description": "Outstanding amount for revolving credit.",
+      "terms": [
+        "revolver outstanding amount",
+        "revolving credit amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_revolver_oustanding_lcy_amt",
+      "type": "bigint",
+      "description": "Revolving credit amount in local currency.",
+      "terms": [
+        "local currency revolver outstanding amount",
+        "revolving credit local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_interest_amt",
+      "type": "bigint",
+      "description": "Interest amount charged on the credit card.",
+      "terms": [
+        "interest amount",
+        "card interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_interest_lcy_amt",
+      "type": "bigint",
+      "description": "Interest amount in local currency charged on the credit card.",
+      "terms": [
+        "local currency interest amount",
+        "card interest local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_accrued_interest_amt",
+      "type": "bigint",
+      "description": "Total accrued interest amount on the credit card.",
+      "terms": [
+        "accrued interest amount",
+        "interest accrued"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_accrued_interest_lcy_amt",
+      "type": "bigint",
+      "description": "Accrued interest amount in local currency on the credit card.",
+      "terms": [
+        "local currency accrued interest amount",
+        "interest accrued local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_provision_amt",
+      "type": "bigint",
+      "description": "Provision amount set aside for the credit card.",
+      "terms": [
+        "provision amount",
+        "card provision"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_provision_lcy_amt",
+      "type": "bigint",
+      "description": "Provision amount in local currency set aside for the credit card.",
+      "terms": [
+        "local currency provision amount",
+        "card provision local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_payment_amt",
+      "type": "bigint",
+      "description": "Total payment amount made on the credit card.",
+      "terms": [
+        "payment amount",
+        "card payment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_payment_lcy_amt",
+      "type": "bigint",
+      "description": "Payment amount in local currency made on the credit card.",
+      "terms": [
+        "local currency payment amount",
+        "card payment local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_avg_oustanding_amt",
+      "type": "bigint",
+      "description": "Average outstanding amount on the credit card.",
+      "terms": [
+        "average outstanding amount",
+        "average due amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_avg_oustanding_lcy_amt",
+      "type": "bigint",
+      "description": "Average outstanding amount in local currency on the credit card.",
+      "terms": [
+        "local currency average outstanding amount",
+        "average due local currency amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_fee_amt",
+      "type": "bigint",
+      "description": "Total fee amount charged on the credit card.",
+      "terms": [
+        "fee amount",
+        "card fee"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_dpd_no",
+      "type": "bigint",
+      "description": "Number of days past due for payments on the credit card.",
+      "terms": [
+        "days past due",
+        "dpd"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_dpd_max_no",
+      "type": "bigint",
+      "description": "Maximum number of days past due recorded for the credit card.",
+      "terms": [
+        "maximum days past due",
+        "max dpd"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_no",
+      "type": "bigint",
+      "description": "Number of cash withdrawal transactions made on the credit card.",
+      "terms": [
+        "cash withdrawal transactions",
+        "cash withdrawal count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_amt",
+      "type": "bigint",
+      "description": "Total amount of cash withdrawals made on the credit card.",
+      "terms": [
+        "cash withdrawal amount",
+        "cash withdrawal total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_bf_bill_no",
+      "type": "bigint",
+      "description": "Number of cash withdrawal transactions made before billing.",
+      "terms": [
+        "cash withdrawal before billing transactions",
+        "pre-bill cash withdrawal count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_bf_amt",
+      "type": "bigint",
+      "description": "Total amount of cash withdrawals made before billing.",
+      "terms": [
+        "cash withdrawal before billing amount",
+        "pre-bill cash withdrawal total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_af_bill_no",
+      "type": "bigint",
+      "description": "Number of cash withdrawal transactions made after billing.",
+      "terms": [
+        "cash withdrawal after billing transactions",
+        "post-bill cash withdrawal count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_cash_wdr_af_amt",
+      "type": "bigint",
+      "description": "Total amount of cash withdrawals made after billing.",
+      "terms": [
+        "cash withdrawal after billing amount",
+        "post-bill cash withdrawal total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_no",
+      "type": "bigint",
+      "description": "Number of payment transactions made on the credit card.",
+      "terms": [
+        "payment transactions",
+        "payment count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_amt",
+      "type": "bigint",
+      "description": "Total amount of payments made on the credit card.",
+      "terms": [
+        "payment amount",
+        "total payments"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_bf_bill_no",
+      "type": "bigint",
+      "description": "Number of payment transactions made before billing.",
+      "terms": [
+        "payment before billing transactions",
+        "pre-bill payment count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_bf_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of payments made before billing.",
+      "terms": [
+        "payment before billing amount",
+        "pre-bill payment total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_af_bill_no",
+      "type": "bigint",
+      "description": "Number of payment transactions made after billing.",
+      "terms": [
+        "payment after billing transactions",
+        "post-bill payment count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_payment_af_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of payments made after billing.",
+      "terms": [
+        "payment after billing amount",
+        "post-bill payment total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_no",
+      "type": "bigint",
+      "description": "Total number of transactions made on the credit card.",
+      "terms": [
+        "transaction count",
+        "total transactions"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_amt",
+      "type": "bigint",
+      "description": "Total amount of all transactions made on the credit card.",
+      "terms": [
+        "transaction amount",
+        "total transaction amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_bf_bill_no",
+      "type": "bigint",
+      "description": "Number of transactions made before billing.",
+      "terms": [
+        "transactions before billing",
+        "pre-bill transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_bf_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of transactions made before billing.",
+      "terms": [
+        "transactions before billing amount",
+        "pre-bill transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_af_bill_no",
+      "type": "bigint",
+      "description": "Number of transactions made after billing.",
+      "terms": [
+        "transactions after billing",
+        "post-bill transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_af_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of transactions made after billing.",
+      "terms": [
+        "transactions after billing amount",
+        "post-bill transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_no",
+      "type": "bigint",
+      "description": "Number of transactions that resulted in errors.",
+      "terms": [
+        "error transactions",
+        "failed transactions count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_amt",
+      "type": "bigint",
+      "description": "Total amount of transactions that resulted in errors.",
+      "terms": [
+        "error transaction amount",
+        "failed transactions total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_bff_bill_no",
+      "type": "bigint",
+      "description": "Number of error transactions made before billing.",
+      "terms": [
+        "error transactions before billing",
+        "pre-bill error transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_bff_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of error transactions made before billing.",
+      "terms": [
+        "error transactions before billing amount",
+        "pre-bill error transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_af_bill_no",
+      "type": "bigint",
+      "description": "Number of error transactions made after billing.",
+      "terms": [
+        "error transactions after billing",
+        "post-bill error transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_error_af_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of error transactions made after billing.",
+      "terms": [
+        "error transactions after billing amount",
+        "post-bill error transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_no",
+      "type": "bigint",
+      "description": "Number of successful transactions made on the credit card.",
+      "terms": [
+        "successful transactions",
+        "completed transactions count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_amt",
+      "type": "bigint",
+      "description": "Total amount of successful transactions made on the credit card.",
+      "terms": [
+        "successful transaction amount",
+        "completed transactions total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_bf_bill_no",
+      "type": "bigint",
+      "description": "Number of successful transactions made before billing.",
+      "terms": [
+        "successful transactions before billing",
+        "pre-bill successful transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_bf_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of successful transactions made before billing.",
+      "terms": [
+        "successful transactions before billing amount",
+        "pre-bill successful transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_af_bill_no",
+      "type": "bigint",
+      "description": "Number of successful transactions made after billing.",
+      "terms": [
+        "successful transactions after billing",
+        "post-bill successful transaction count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_succ_af_bill_amt",
+      "type": "bigint",
+      "description": "Total amount of successful transactions made after billing.",
+      "terms": [
+        "successful transactions after billing amount",
+        "post-bill successful transaction total"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_break_limit_no",
+      "type": "bigint",
+      "description": "Number of transactions that breached the credit limit.",
+      "terms": [
+        "limit breach transactions",
+        "over-limit transactions count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_break_limit_bf_bill_no",
+      "type": "bigint",
+      "description": "Number of limit breach transactions made before billing.",
+      "terms": [
+        "limit breach before billing",
+        "pre-bill limit breach count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_break_limit_af_bill_no",
+      "type": "bigint",
+      "description": "Number of limit breach transactions made after billing.",
+      "terms": [
+        "limit breach after billing",
+        "post-bill limit breach count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "crd_tran_break_limit_date_no",
+      "type": "bigint",
+      "description": "Number of dates on which limit breaches occurred.",
+      "terms": [
+        "limit breach date count",
+        "over-limit date count"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the record was created.",
+      "terms": [
+        "creation timestamp",
+        "record creation time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning the data.",
+      "terms": [
+        "partition date",
+        "data partition date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "Source system from which the data was obtained.",
+      "terms": [
+        "data source",
+        "source system"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "Timestamp when the record was processed.",
+      "terms": [
+        "processing timestamp",
+        "record processing time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year associated with the record.",
+      "terms": [
+        "year",
+        "fiscal year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month associated with the record.",
+      "terms": [
+        "month",
+        "fiscal month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day associated with the record.",
+      "terms": [
+        "day",
+        "fiscal day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "CreditCardAccount",
+    "domain": "finance",
+    "synonyms": [
+      "CardAccount",
+      "CreditAccount"
+    ]
+  }
+}

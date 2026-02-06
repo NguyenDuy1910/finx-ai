@@ -1,0 +1,576 @@
+{
+  "name": "test",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table captures the details of financial transactions processed in the system, including amounts, dates, accounts, and other transaction-specific metadata.",
+  "columns": [
+    {
+      "name": "amount",
+      "type": "decimal(38,0)",
+      "description": "The total amount involved in the transaction.",
+      "terms": [
+        "transaction amount",
+        "total amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "amount_base",
+      "type": "decimal(38,0)",
+      "description": "The base currency amount of the transaction.",
+      "terms": [
+        "base amount",
+        "original amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "amount_dwh",
+      "type": "decimal(20,2)",
+      "description": "The amount as stored in the data warehouse, possibly adjusted for reporting.",
+      "terms": [
+        "data warehouse amount",
+        "stored amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "description": "The currency in which the transaction is denominated.",
+      "terms": [
+        "currency code",
+        "transaction currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "post_date",
+      "type": "date",
+      "description": "The date on which the transaction was posted.",
+      "terms": [
+        "posting date",
+        "transaction date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "post_time",
+      "type": "timestamp",
+      "description": "The time at which the transaction was posted.",
+      "terms": [
+        "posting time",
+        "transaction time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the system processed the transaction.",
+      "terms": [
+        "system run date",
+        "processing date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_date",
+      "type": "date",
+      "description": "The date on which the transaction is considered effective.",
+      "terms": [
+        "effective date",
+        "value date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "value_time",
+      "type": "timestamp",
+      "description": "The time at which the transaction is considered effective.",
+      "terms": [
+        "effective time",
+        "value time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cr_dr_ind",
+      "type": "string",
+      "description": "Indicator of whether the transaction is a credit or debit.",
+      "terms": [
+        "credit/debit indicator",
+        "transaction type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "reversal",
+      "type": "string",
+      "description": "Indicates if the transaction is a reversal of a previous transaction.",
+      "terms": [
+        "reversal flag",
+        "transaction reversal"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "The current status of the transaction.",
+      "terms": [
+        "transaction status",
+        "processing status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_no",
+      "type": "string",
+      "description": "The branch number where the transaction was processed.",
+      "terms": [
+        "branch number",
+        "bank branch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vkb_branch_no",
+      "type": "string",
+      "description": "The virtual branch number associated with the transaction.",
+      "terms": [
+        "VKB branch number",
+        "virtual branch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no",
+      "type": "string",
+      "description": "The account number associated with the transaction.",
+      "terms": [
+        "account number",
+        "customer account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cr_acct_no",
+      "type": "string",
+      "description": "The account number credited in the transaction.",
+      "terms": [
+        "credit account number",
+        "receiving account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dr_acct_no",
+      "type": "string",
+      "description": "The account number debited in the transaction.",
+      "terms": [
+        "debit account number",
+        "sending account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "The unique identifier for the client involved in the transaction.",
+      "terms": [
+        "client number",
+        "customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "The general ledger code associated with the transaction.",
+      "terms": [
+        "general ledger code",
+        "GL code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "reference",
+      "type": "string",
+      "description": "A reference number for the transaction.",
+      "terms": [
+        "transaction reference",
+        "reference number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_transaction_id",
+      "type": "string",
+      "description": "An internal identifier for the transaction.",
+      "terms": [
+        "Vikki transaction ID",
+        "internal transaction ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "client_transaction_id",
+      "type": "string",
+      "description": "An identifier for the transaction provided by the client.",
+      "terms": [
+        "client transaction ID",
+        "external transaction ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "narrative",
+      "type": "string",
+      "description": "A narrative or description of the transaction.",
+      "terms": [
+        "transaction narrative",
+        "description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "description": "The ID of the user who processed the transaction.",
+      "terms": [
+        "user identifier",
+        "operator ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "accept_user",
+      "type": "string",
+      "description": "The ID of the user who accepted or approved the transaction.",
+      "terms": [
+        "accepting user",
+        "approver ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tran_type",
+      "type": "string",
+      "description": "The type of transaction being processed.",
+      "terms": [
+        "transaction type",
+        "type code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_transaction_code_domain",
+      "type": "string",
+      "description": "The domain code for the transaction type.",
+      "terms": [
+        "transaction code domain",
+        "domain code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_transaction_code_family",
+      "type": "string",
+      "description": "The family code for the transaction type.",
+      "terms": [
+        "transaction code family",
+        "family code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_transaction_code_subfamily",
+      "type": "string",
+      "description": "The subfamily code for the transaction type.",
+      "terms": [
+        "transaction code subfamily",
+        "subfamily code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "profit_centre",
+      "type": "string",
+      "description": "The profit center associated with the transaction.",
+      "terms": [
+        "profit center",
+        "business unit"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "seq_no",
+      "type": "int",
+      "description": "A sequence number for ordering transactions.",
+      "terms": [
+        "sequence number",
+        "order number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "source_module",
+      "type": "string",
+      "description": "The module from which the transaction originated.",
+      "terms": [
+        "source module",
+        "originating module"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "source_type",
+      "type": "string",
+      "description": "The type of source that initiated the transaction.",
+      "terms": [
+        "source type",
+        "origin type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "trade_no",
+      "type": "string",
+      "description": "The trade number associated with the transaction.",
+      "terms": [
+        "trade number",
+        "transaction trade"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_gl_code_description",
+      "type": "string",
+      "description": "The description of the general ledger code.",
+      "terms": [
+        "GL code description",
+        "ledger description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "source_system",
+      "type": "string",
+      "description": "The system from which the transaction originated.",
+      "terms": [
+        "source system",
+        "origin system"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "originating_account_id",
+      "type": "string",
+      "description": "The ID of the account from which the transaction originated.",
+      "terms": [
+        "originating account ID",
+        "source account"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "eod_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp marking the end of day processing for the transaction.",
+      "terms": [
+        "end of day timestamp",
+        "EOD time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "insert_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp when the transaction record was inserted into the database.",
+      "terms": [
+        "insert time",
+        "record creation time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "instruction_details",
+      "type": "map<string,string>",
+      "description": "Details of any instructions associated with the transaction.",
+      "terms": [
+        "instruction details",
+        "transaction instructions"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "batch_details",
+      "type": "map<string,string>",
+      "description": "Details of the batch in which the transaction was processed.",
+      "terms": [
+        "batch details",
+        "batch information"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "The time when the DLH record was created.",
+      "terms": [
+        "DLH creation time",
+        "record creation time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "The date used for partitioning DLH data.",
+      "terms": [
+        "DLH partition date",
+        "data partition date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "The source from which the DLH data was obtained.",
+      "terms": [
+        "DLH source",
+        "data source"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "The time when the DLH data was processed.",
+      "terms": [
+        "DLH processed time",
+        "processing time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_backdate_enabled",
+      "type": "boolean",
+      "description": "Indicates if backdating is enabled for the transaction.",
+      "terms": [
+        "backdate enabled",
+        "backdating flag"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_backdate_start",
+      "type": "date",
+      "description": "The start date for backdating the transaction.",
+      "terms": [
+        "backdate start",
+        "backdating start date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_backdate_end",
+      "type": "date",
+      "description": "The end date for backdating the transaction.",
+      "terms": [
+        "backdate end",
+        "backdating end date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_backdate_reason",
+      "type": "string",
+      "description": "The reason for backdating the transaction.",
+      "terms": [
+        "backdate reason",
+        "backdating rationale"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processing_mode",
+      "type": "string",
+      "description": "The mode in which the transaction is processed.",
+      "terms": [
+        "processing mode",
+        "operation mode"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_invocation_id",
+      "type": "string",
+      "description": "The ID of the invocation that processed the transaction.",
+      "terms": [
+        "invocation ID",
+        "call ID"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    }
+  ],
+  "entity": {
+    "name": "Transaction",
+    "domain": "finance",
+    "synonyms": [
+      "Financial Record",
+      "Ledger Entry"
+    ]
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "name": "f_gl_balance__mnp",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table stores the general ledger balances for various accounts, products, and currencies, including both original and local currency balances.",
+  "columns": [
+    {
+      "name": "cob_date",
+      "type": "date",
+      "description": "The date at which the balance is reported.",
+      "terms": [
+        "close of business date",
+        "reporting date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sif",
+      "type": "string",
+      "description": "A unique identifier for the system or source of the data.",
+      "terms": [
+        "system identifier",
+        "source identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "The unique identifier for the account.",
+      "terms": [
+        "account identifier",
+        "account number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "product_id",
+      "type": "string",
+      "description": "The unique identifier for the product.",
+      "terms": [
+        "product identifier",
+        "product code"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "ccy_code",
+      "type": "string",
+      "description": "The three-letter code representing the currency.",
+      "terms": [
+        "currency code",
+        "currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "The code representing the general ledger account.",
+      "terms": [
+        "general ledger code",
+        "ledger code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_address",
+      "type": "string",
+      "description": "The address associated with the account.",
+      "terms": [
+        "account location",
+        "account address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_org_bal",
+      "type": "array<struct<balance_type:string,col2:decimal(10,0),col3:decimal(10,0),credit_quantity:int,col5:decimal(10,0),debit_quantity:int>>",
+      "description": "The original currency balance details, including balance type, credit and debit quantities.",
+      "terms": [
+        "original balance",
+        "GL original balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_lcy_bal",
+      "type": "array<struct<account_address:string,balance_type:string,col3:decimal(10,0),col4:decimal(10,0),credit_quantity:int,col6:decimal(10,0),debit_quantity:int>>",
+      "description": "The local currency balance details, including balance type, credit and debit quantities.",
+      "terms": [
+        "local currency balance",
+        "GL local currency balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sbv_code",
+      "type": "string",
+      "description": "A code used for supervisory or regulatory purposes.",
+      "terms": [
+        "SBV code",
+        "supervisory code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "branch_code",
+      "type": "string",
+      "description": "The code representing the branch where the account is held.",
+      "terms": [
+        "branch identifier",
+        "branch number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "The timestamp when the record was created.",
+      "terms": [
+        "creation timestamp",
+        "record creation time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "The date used for partitioning the data.",
+      "terms": [
+        "partition date",
+        "data partitioning date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "The source from which the data was obtained.",
+      "terms": [
+        "data source",
+        "source system"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "The timestamp when the record was processed.",
+      "terms": [
+        "processing timestamp",
+        "record processing time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year part of the date.",
+      "terms": [
+        "fiscal year",
+        "calendar year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month part of the date.",
+      "terms": [
+        "fiscal month",
+        "calendar month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day part of the date.",
+      "terms": [
+        "day of month",
+        "calendar day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "GeneralLedgerBalance",
+    "domain": "finance",
+    "synonyms": [
+      "GL Balance",
+      "Ledger Balance",
+      "Financial Balance"
+    ]
+  }
+}

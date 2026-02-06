@@ -1,0 +1,22 @@
+"""
+Requirements for Multi-Agent Text2SQL System
+
+Core dependencies for the Agno-based Text2SQL MVP with Qdrant memory.
+"""
+
+# Note: Project uses pyproject.toml for dependency management
+# Install with: uv sync or pip install -e .
+
+# This file is for reference only
+# Core dependencies are defined in pyproject.toml:
+#
+# - agno>=0.1.0
+# - google-genai>=1.60.0
+# - google-generativeai>=0.8.6
+# - mcp>=1.26.0
+# - pydantic>=2.0.0
+# - python-dotenv>=1.2.1
+# - fastapi>=0.109.0
+# - uvicorn[standard]>=0.27.0
+# - qdrant-client>=1.7.0
+# - sentence-transformers>=2.3.0

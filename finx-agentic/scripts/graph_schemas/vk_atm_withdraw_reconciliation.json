@@ -1,0 +1,367 @@
+{
+  "name": "vk_atm_withdraw_reconciliation",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table is used to reconcile ATM withdrawal transactions by comparing data from different sources.",
+  "columns": [
+    {
+      "name": "vikki_from_account_number",
+      "type": "string",
+      "description": "The account number from which the withdrawal was made.",
+      "terms": [
+        "source account",
+        "from account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_amount",
+      "type": "int",
+      "description": "The amount of money withdrawn in the transaction.",
+      "terms": [
+        "withdrawal amount",
+        "transaction amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_transaction_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp when the withdrawal transaction occurred.",
+      "terms": [
+        "transaction time",
+        "withdrawal time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_currency",
+      "type": "string",
+      "description": "The currency in which the transaction was made.",
+      "terms": [
+        "transaction currency",
+        "currency type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_external_reference_id",
+      "type": "string",
+      "description": "An external reference identifier for the transaction.",
+      "terms": [
+        "external ref ID",
+        "reference number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "vikki_transaction_id",
+      "type": "string",
+      "description": "The unique identifier for the transaction.",
+      "terms": [
+        "transaction ID",
+        "transaction identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "vikki_channel",
+      "type": "string",
+      "description": "The channel through which the transaction was made (e.g., ATM, online).",
+      "terms": [
+        "transaction channel",
+        "channel type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_tid",
+      "type": "string",
+      "description": "The identifier for the ATM terminal used for the transaction.",
+      "terms": [
+        "terminal ID",
+        "ATM ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_from_bank_name",
+      "type": "string",
+      "description": "The name of the bank from which the withdrawal was made.",
+      "terms": [
+        "source bank",
+        "from bank"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_posting_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp when the transaction was recorded in the system.",
+      "terms": [
+        "posting time",
+        "recorded time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_source_account_name",
+      "type": "string",
+      "description": "The name associated with the source account number.",
+      "terms": [
+        "account holder name",
+        "source account name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_narrative",
+      "type": "string",
+      "description": "A narrative or description of the transaction.",
+      "terms": [
+        "transaction narrative",
+        "transaction description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_rtf_posting_type",
+      "type": "string",
+      "description": "The type of posting related to the transaction.",
+      "terms": [
+        "posting type",
+        "RTF type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_rtf_type",
+      "type": "string",
+      "description": "The classification of the RTF (Real-Time Funds) transaction.",
+      "terms": [
+        "RTF category",
+        "RTF classification"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_auth_code",
+      "type": "string",
+      "description": "The authorization code for the transaction.",
+      "terms": [
+        "authorization code",
+        "auth code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "vikki_from_cif_number",
+      "type": "string",
+      "description": "The Customer Information File number associated with the source account.",
+      "terms": [
+        "customer ID",
+        "CIF number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_channel_id",
+      "type": "string",
+      "description": "The identifier for the channel used in the HDB system.",
+      "terms": [
+        "channel ID",
+        "HDB channel"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "hdb_from_cif_number",
+      "type": "string",
+      "description": "The Customer Information File number in the HDB system.",
+      "terms": [
+        "HDB customer ID",
+        "HDB CIF number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_from_account_number",
+      "type": "string",
+      "description": "The account number in the HDB system from which the withdrawal was made.",
+      "terms": [
+        "HDB account number",
+        "HDB source account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_account_type",
+      "type": "string",
+      "description": "The type of account in the HDB system.",
+      "terms": [
+        "account type",
+        "HDB account type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_amount",
+      "type": "int",
+      "description": "The amount of money involved in the transaction in the HDB system.",
+      "terms": [
+        "HDB amount",
+        "HDB transaction amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_currency",
+      "type": "string",
+      "description": "The currency used in the transaction in the HDB system.",
+      "terms": [
+        "HDB currency",
+        "currency type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_transaction_timestamp",
+      "type": "timestamp",
+      "description": "The timestamp of the transaction in the HDB system.",
+      "terms": [
+        "HDB transaction time",
+        "HDB withdrawal time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_rrn",
+      "type": "string",
+      "description": "The retrieval reference number for the transaction in the HDB system.",
+      "terms": [
+        "retrieval reference number",
+        "RRN"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_tid",
+      "type": "string",
+      "description": "The terminal identifier in the HDB system.",
+      "terms": [
+        "HDB terminal ID",
+        "HDB ATM ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "hdb_external_reference_id",
+      "type": "string",
+      "description": "An external reference identifier in the HDB system.",
+      "terms": [
+        "HDB external ref ID",
+        "HDB reference number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "reconciliation_result",
+      "type": "string",
+      "description": "The result of the reconciliation process for the transaction.",
+      "terms": [
+        "reconciliation status",
+        "reconciliation outcome"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "to_bank_name",
+      "type": "string",
+      "description": "The name of the bank to which the funds were transferred.",
+      "terms": [
+        "destination bank",
+        "to bank"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "transaction_direction",
+      "type": "string",
+      "description": "The direction of the transaction (e.g., debit, credit).",
+      "terms": [
+        "direction",
+        "transaction flow"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "description": "A unique identifier for the record in the table.",
+      "terms": [
+        "record ID",
+        "unique identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the synchronization or reconciliation run was executed.",
+      "terms": [
+        "run date",
+        "synchronization date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp",
+      "description": "The timestamp when the record was last updated.",
+      "terms": [
+        "last updated",
+        "modification timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "ATMWithdrawalReconciliation",
+    "domain": "finance",
+    "synonyms": [
+      "ATM Reconciliation",
+      "Withdrawal Reconciliation"
+    ]
+  }
+}

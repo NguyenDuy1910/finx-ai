@@ -1,0 +1,18 @@
+Analyze this user message and classify the intent.
+
+User message: "{{ message }}"
+
+Conversation context:
+{{ context_summary }}
+
+Classify into ONE of these categories:
+- schema_query: Questions about database structure, tables, columns, schemas
+- data_query: Requests to retrieve, filter, or query data
+- analysis_request: Requests for analysis, insights, or visualizations
+- follow_up: Follow-up questions referencing previous conversation
+- clarification: Questions about capabilities or requests for help
+
+Respond in this exact format:
+INTENT: <intent_type>
+CONFIDENCE: <0.0-1.0>
+REASONING: <brief explanation>

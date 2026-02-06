@@ -1,0 +1,158 @@
+{
+  "name": "tm_account__snp",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table captures a snapshot of account details and related product information at specific points in time.",
+  "columns": [
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "Unique identifier for the account.",
+      "terms": [
+        "Account Identifier",
+        "Account Number"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "account_name",
+      "type": "string",
+      "description": "Name associated with the account.",
+      "terms": [
+        "Account Title",
+        "Account Holder Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "product_id",
+      "type": "string",
+      "description": "Unique identifier for the product associated with the account.",
+      "terms": [
+        "Product Identifier",
+        "Product Code"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "product_version_id",
+      "type": "string",
+      "description": "Identifier for the version of the product associated with the account.",
+      "terms": [
+        "Product Version Identifier",
+        "Product Version Code"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "opening_timestamp",
+      "type": "timestamp",
+      "description": "Timestamp when the account was opened.",
+      "terms": [
+        "Account Opening Time",
+        "Start Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sif",
+      "type": "string",
+      "description": "A specific identifier related to the account, possibly a system or integration reference.",
+      "terms": [
+        "SIF Code",
+        "SIF Identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the record was created in the data lakehouse.",
+      "terms": [
+        "Data Lakehouse Created Time",
+        "Record Creation Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning data in the data lakehouse.",
+      "terms": [
+        "Data Lakehouse Partition Date",
+        "Record Partition Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "Source system from which the data was obtained.",
+      "terms": [
+        "Data Source",
+        "Origin System"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "Timestamp when the data was processed in the data lakehouse.",
+      "terms": [
+        "Data Processed Time",
+        "Processing Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "Year part of the date when the record was processed or created.",
+      "terms": [
+        "Year of Record",
+        "Record Year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "Month part of the date when the record was processed or created.",
+      "terms": [
+        "Month of Record",
+        "Record Month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "Day part of the date when the record was processed or created.",
+      "terms": [
+        "Day of Record",
+        "Record Day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "AccountSnapshot",
+    "domain": "finance",
+    "synonyms": [
+      "AccountState",
+      "AccountRecord"
+    ]
+  }
+}

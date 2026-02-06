@@ -1,0 +1,137 @@
+{
+  "name": "all_date",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table provides a comprehensive breakdown of date-related information, useful for time-based analysis and reporting.",
+  "columns": [
+    {
+      "name": "date",
+      "type": "date",
+      "description": "The complete date value.",
+      "terms": [
+        "full_date",
+        "calendar_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "bigint",
+      "description": "The year component of the date.",
+      "terms": [
+        "fiscal_year",
+        "calendar_year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month_no",
+      "type": "bigint",
+      "description": "The numeric representation of the month.",
+      "terms": [
+        "month_number",
+        "month_index"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month_name",
+      "type": "string",
+      "description": "The textual name of the month.",
+      "terms": [
+        "month_label",
+        "month_text"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month_year",
+      "type": "string",
+      "description": "The combination of month and year in a single string.",
+      "terms": [
+        "month_year_label",
+        "month_and_year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "week_no",
+      "type": "bigint",
+      "description": "The numeric representation of the week within the year.",
+      "terms": [
+        "week_number",
+        "week_index"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "week_year",
+      "type": "string",
+      "description": "The combination of week and year in a single string.",
+      "terms": [
+        "week_year_label",
+        "week_and_year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "week_day_no",
+      "type": "bigint",
+      "description": "The numeric representation of the day within the week.",
+      "terms": [
+        "weekday_number",
+        "day_of_week_index"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "week_day_name",
+      "type": "string",
+      "description": "The textual name of the day within the week.",
+      "terms": [
+        "weekday_name",
+        "day_of_week"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "bigint",
+      "description": "The numeric representation of the day within the month.",
+      "terms": [
+        "day_of_month",
+        "day_number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day_month",
+      "type": "string",
+      "description": "The combination of day and month in a single string.",
+      "terms": [
+        "day_month_label",
+        "day_and_month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "DateDimension",
+    "domain": "time_management",
+    "synonyms": [
+      "Calendar",
+      "DateReference",
+      "TimeDimension"
+    ]
+  }
+}

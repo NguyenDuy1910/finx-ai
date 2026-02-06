@@ -1,0 +1,654 @@
+{
+  "name": "d_customer__s4c",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table contains detailed information about customers, including personal details, contact information, and status.",
+  "columns": [
+    {
+      "name": "cif_number",
+      "type": "bigint",
+      "description": "Unique identifier for the customer.",
+      "terms": [
+        "Customer ID",
+        "Client Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "partner_cif",
+      "type": "string",
+      "description": "Identifier for the partner associated with the customer.",
+      "terms": [
+        "Partner ID",
+        "Associate CIF"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "religion",
+      "type": "string",
+      "description": "The religion of the customer.",
+      "terms": [
+        "Faith",
+        "Belief System"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registered_date",
+      "type": "string",
+      "description": "The date when the customer registered.",
+      "terms": [
+        "Sign-up Date",
+        "Enrollment Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "first_name_vn",
+      "type": "string",
+      "description": "Customer's first name in Vietnamese.",
+      "terms": [
+        "Vietnamese First Name",
+        "VN Given Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "first_name_en",
+      "type": "string",
+      "description": "Customer's first name in English.",
+      "terms": [
+        "English First Name",
+        "EN Given Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "full_name_vn",
+      "type": "string",
+      "description": "Customer's full name in Vietnamese.",
+      "terms": [
+        "Vietnamese Full Name",
+        "VN Complete Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "full_name_en",
+      "type": "string",
+      "description": "Customer's full name in English.",
+      "terms": [
+        "English Full Name",
+        "EN Complete Name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sector_code",
+      "type": "string",
+      "description": "Code representing the sector the customer is involved in.",
+      "terms": [
+        "Industry Code",
+        "Business Sector"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lob",
+      "type": "string",
+      "description": "The line of business the customer is associated with.",
+      "terms": [
+        "Line of Business",
+        "Business Line"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gender",
+      "type": "string",
+      "description": "The gender of the customer.",
+      "terms": [
+        "Sex",
+        "Gender Identity"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "marital_status",
+      "type": "string",
+      "description": "The marital status of the customer.",
+      "terms": [
+        "Marriage Status",
+        "Civil Status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "birth_date",
+      "type": "date",
+      "description": "The birth date of the customer.",
+      "terms": [
+        "Date of Birth",
+        "DOB"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "identity_type",
+      "type": "string",
+      "description": "The type of identity document the customer has.",
+      "terms": [
+        "ID Type",
+        "Identification Type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "identity_number",
+      "type": "string",
+      "description": "The number on the customer's identity document.",
+      "terms": [
+        "ID Number",
+        "Identification Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "identity_issued_place",
+      "type": "string",
+      "description": "The place where the identity document was issued.",
+      "terms": [
+        "ID Issued Location",
+        "Identification Issued Place"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "identity_issued_date",
+      "type": "string",
+      "description": "The date when the identity document was issued.",
+      "terms": [
+        "ID Issued Date",
+        "Identification Issued Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "identity_expired_date",
+      "type": "string",
+      "description": "The expiration date of the identity document.",
+      "terms": [
+        "ID Expiry Date",
+        "Identification Expiry Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "passport_number",
+      "type": "string",
+      "description": "The passport number of the customer.",
+      "terms": [
+        "Passport ID",
+        "Passport No"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "description": "The email address of the customer.",
+      "terms": [
+        "Email Address",
+        "Electronic Mail"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "phone_number",
+      "type": "string",
+      "description": "The phone number of the customer.",
+      "terms": [
+        "Contact Number",
+        "Telephone Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "The current status of the customer's account.",
+      "terms": [
+        "Account Status",
+        "Customer Status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nationality_code",
+      "type": "string",
+      "description": "The nationality code of the customer.",
+      "terms": [
+        "Country Code",
+        "Nationality"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "first_contact_date",
+      "type": "string",
+      "description": "The date of the first contact with the customer.",
+      "terms": [
+        "Initial Contact Date",
+        "First Interaction Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ex_identity_number",
+      "type": "string",
+      "description": "The previous identity number of the customer.",
+      "terms": [
+        "Previous ID Number",
+        "Old Identification Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ex_passport_number",
+      "type": "string",
+      "description": "The previous passport number of the customer.",
+      "terms": [
+        "Previous Passport Number",
+        "Old Passport ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ex_email",
+      "type": "string",
+      "description": "The previous email address of the customer.",
+      "terms": [
+        "Previous Email",
+        "Old Email Address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ex_phone_number",
+      "type": "string",
+      "description": "The previous phone number of the customer.",
+      "terms": [
+        "Previous Phone Number",
+        "Old Contact Number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_country",
+      "type": "string",
+      "description": "The country of the customer's current address.",
+      "terms": [
+        "Current Address Country",
+        "Residence Country"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_province",
+      "type": "string",
+      "description": "The province of the customer's current address.",
+      "terms": [
+        "Current Address Province",
+        "Residence Province"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_district",
+      "type": "string",
+      "description": "The district of the customer's current address.",
+      "terms": [
+        "Current Address District",
+        "Residence District"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_ward",
+      "type": "string",
+      "description": "The ward of the customer's current address.",
+      "terms": [
+        "Current Address Ward",
+        "Residence Ward"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_street",
+      "type": "string",
+      "description": "The street of the customer's current address.",
+      "terms": [
+        "Current Address Street",
+        "Residence Street"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_detail",
+      "type": "string",
+      "description": "Additional details of the customer's current address.",
+      "terms": [
+        "Current Address Details",
+        "Residence Details"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "c_add_full",
+      "type": "string",
+      "description": "The full current address of the customer.",
+      "terms": [
+        "Full Current Address",
+        "Complete Residence Address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_country",
+      "type": "string",
+      "description": "The country of the customer's registered address.",
+      "terms": [
+        "Registered Address Country",
+        "Permanent Country"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_province",
+      "type": "string",
+      "description": "The province of the customer's registered address.",
+      "terms": [
+        "Registered Address Province",
+        "Permanent Province"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_district",
+      "type": "string",
+      "description": "The district of the customer's registered address.",
+      "terms": [
+        "Registered Address District",
+        "Permanent District"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_ward",
+      "type": "string",
+      "description": "The ward of the customer's registered address.",
+      "terms": [
+        "Registered Address Ward",
+        "Permanent Ward"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_street",
+      "type": "string",
+      "description": "The street of the customer's registered address.",
+      "terms": [
+        "Registered Address Street",
+        "Permanent Street"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_detail",
+      "type": "string",
+      "description": "Additional details of the customer's registered address.",
+      "terms": [
+        "Registered Address Details",
+        "Permanent Details"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "r_add_full",
+      "type": "string",
+      "description": "The full registered address of the customer.",
+      "terms": [
+        "Full Registered Address",
+        "Complete Permanent Address"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tax_code",
+      "type": "string",
+      "description": "The tax code of the customer.",
+      "terms": [
+        "Tax Identification Number",
+        "TIN"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "industry_code",
+      "type": "string",
+      "description": "Code representing the industry the customer is involved in.",
+      "terms": [
+        "Business Code",
+        "Sector Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "customer_status",
+      "type": "string",
+      "description": "The status of the customer in the system.",
+      "terms": [
+        "Client Status",
+        "Account Status"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "customer_segment",
+      "type": "string",
+      "description": "The segment classification of the customer.",
+      "terms": [
+        "Client Segment",
+        "Market Segment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "priority_class",
+      "type": "string",
+      "description": "The priority class assigned to the customer.",
+      "terms": [
+        "Priority Level",
+        "Customer Priority"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "occupation",
+      "type": "string",
+      "description": "The occupation of the customer.",
+      "terms": [
+        "Job",
+        "Profession"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "work_position",
+      "type": "string",
+      "description": "The work position of the customer.",
+      "terms": [
+        "Job Title",
+        "Position"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "post_code",
+      "type": "string",
+      "description": "The postal code of the customer's address.",
+      "terms": [
+        "Postal Code",
+        "Zip Code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "payroll_company",
+      "type": "string",
+      "description": "The company where the customer is employed.",
+      "terms": [
+        "Employer",
+        "Company"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_created_time",
+      "type": "timestamp",
+      "description": "Timestamp when the record was created.",
+      "terms": [
+        "Record Creation Time",
+        "Data Created Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_partition_date",
+      "type": "date",
+      "description": "Date used for partitioning the data.",
+      "terms": [
+        "Partition Date",
+        "Data Partition Date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_source",
+      "type": "string",
+      "description": "The source from which the data was obtained.",
+      "terms": [
+        "Data Source",
+        "Source System"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "dlh_processed_time",
+      "type": "timestamp",
+      "description": "Timestamp when the data was processed.",
+      "terms": [
+        "Data Processed Time",
+        "Processing Timestamp"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "year",
+      "type": "string",
+      "description": "The year related to the data entry.",
+      "terms": [
+        "Year",
+        "Calendar Year"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "month",
+      "type": "string",
+      "description": "The month related to the data entry.",
+      "terms": [
+        "Month",
+        "Calendar Month"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "day",
+      "type": "string",
+      "description": "The day related to the data entry.",
+      "terms": [
+        "Day",
+        "Calendar Day"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "Customer",
+    "domain": "customer",
+    "synonyms": [
+      "Client",
+      "Consumer",
+      "Patron"
+    ]
+  }
+}

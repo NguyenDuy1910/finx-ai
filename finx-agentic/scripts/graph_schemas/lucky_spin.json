@@ -1,0 +1,114 @@
+{
+  "name": "lucky_spin",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table records events related to lucky spins in a gaming environment, tracking user participation and outcomes.",
+  "columns": [
+    {
+      "name": "master_id",
+      "type": "string",
+      "description": "Unique identifier for each lucky spin event.",
+      "terms": [
+        "event_id",
+        "spin_id"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the lucky spin event was executed.",
+      "terms": [
+        "event_date",
+        "spin_date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "account_id",
+      "type": "string",
+      "description": "Identifier for the account of the user participating in the lucky spin.",
+      "terms": [
+        "user_id",
+        "player_id"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "balance",
+      "type": "bigint",
+      "description": "The user's account balance at the time of the lucky spin.",
+      "terms": [
+        "account_balance",
+        "user_balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lucky_spin",
+      "type": "int",
+      "description": "The number of spins the user has in this event.",
+      "terms": [
+        "spin_count",
+        "number_of_spins"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "lucky_spin_type",
+      "type": "string",
+      "description": "Type or category of the lucky spin event.",
+      "terms": [
+        "spin_type",
+        "event_type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "card_id",
+      "type": "string",
+      "description": "Identifier for the card or reward associated with the spin.",
+      "terms": [
+        "reward_id",
+        "prize_id"
+      ],
+      "primary_key": false,
+      "foreign_key": true
+    },
+    {
+      "name": "processing_time",
+      "type": "timestamp",
+      "description": "Timestamp indicating when the lucky spin event was processed.",
+      "terms": [
+        "event_time",
+        "execution_time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "schema_campaign",
+      "type": "string",
+      "description": "The campaign or promotional schema associated with the lucky spin event.",
+      "terms": [
+        "campaign_name",
+        "promotion_name"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "LuckySpinEvent",
+    "domain": "gaming",
+    "synonyms": [
+      "SpinEvent",
+      "LuckyDraw"
+    ]
+  }
+}

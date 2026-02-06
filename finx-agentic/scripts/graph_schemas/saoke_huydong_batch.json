@@ -1,0 +1,610 @@
+{
+  "name": "saoke_huydong_batch",
+  "database": "non_prod_uat_gold_zone",
+  "description": "This table represents a batch of financial transactions, detailing various attributes related to accounts, interest, and client information.",
+  "columns": [
+    {
+      "name": "sym_run_date",
+      "type": "date",
+      "description": "The date when the batch was executed.",
+      "terms": [
+        "run date",
+        "execution date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "nhom_cn",
+      "type": "string",
+      "description": "The code representing the group of transactions.",
+      "terms": [
+        "group code",
+        "group identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cn",
+      "type": "string",
+      "description": "The code for the branch handling the transaction.",
+      "terms": [
+        "branch code",
+        "branch identifier"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ten_cn",
+      "type": "string",
+      "description": "The name of the branch handling the transaction.",
+      "terms": [
+        "branch name",
+        "branch"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ma_loai",
+      "type": "string",
+      "description": "The code representing the type of transaction.",
+      "terms": [
+        "type code",
+        "category code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "thi_truong",
+      "type": "string",
+      "description": "The market in which the transaction takes place.",
+      "terms": [
+        "market",
+        "market segment"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "thanhphan_kinhte",
+      "type": "string",
+      "description": "The economic component associated with the transaction.",
+      "terms": [
+        "economic component",
+        "economic sector"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_no",
+      "type": "string",
+      "description": "The unique number identifying the account involved in the transaction.",
+      "terms": [
+        "account number",
+        "acct no"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "period",
+      "type": "string",
+      "description": "The period over which the transaction is relevant.",
+      "terms": [
+        "time period",
+        "duration"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "period_type",
+      "type": "string",
+      "description": "The type of period (e.g., monthly, quarterly).",
+      "terms": [
+        "period category",
+        "period type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "gl_code",
+      "type": "string",
+      "description": "The code for the general ledger account associated with the transaction.",
+      "terms": [
+        "general ledger code",
+        "gl account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loai_tien",
+      "type": "string",
+      "description": "The type of currency used in the transaction.",
+      "terms": [
+        "currency type",
+        "money type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tk2",
+      "type": "string",
+      "description": "A secondary account related to the transaction.",
+      "terms": [
+        "account 2",
+        "secondary account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tk3",
+      "type": "string",
+      "description": "A tertiary account related to the transaction.",
+      "terms": [
+        "account 3",
+        "tertiary account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tk_nhnn",
+      "type": "string",
+      "description": "The account with the central bank related to the transaction.",
+      "terms": [
+        "central bank account",
+        "nhnn account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "laisuat",
+      "type": "double",
+      "description": "The interest rate applied to the transaction.",
+      "terms": [
+        "interest rate",
+        "rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tienlai_duchi",
+      "type": "decimal(20,0)",
+      "description": "The interest amount that is due but not yet paid.",
+      "terms": [
+        "accrued interest",
+        "interest due"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tienlai_thucchi",
+      "type": "decimal(20,0)",
+      "description": "The interest amount that has been paid.",
+      "terms": [
+        "paid interest",
+        "actual interest"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "kyhan_loaitien",
+      "type": "string",
+      "description": "The currency term associated with the transaction.",
+      "terms": [
+        "currency term",
+        "term currency"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "loai_kyhan",
+      "type": "string",
+      "description": "The type of maturity term for the transaction.",
+      "terms": [
+        "term type",
+        "maturity type"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "kyhan_so",
+      "type": "string",
+      "description": "The number representing the maturity term.",
+      "terms": [
+        "term number",
+        "maturity number"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "laisuat_dcv",
+      "type": "string",
+      "description": "The discount interest rate applied to the transaction.",
+      "terms": [
+        "discount interest rate",
+        "dcv rate"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "tien_denhan",
+      "type": "string",
+      "description": "The amount due at maturity.",
+      "terms": [
+        "amount due",
+        "due amount"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngay_daohan",
+      "type": "date",
+      "description": "The date when the transaction matures.",
+      "terms": [
+        "maturity date",
+        "due date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "songay_conlai",
+      "type": "string",
+      "description": "The number of days remaining until maturity.",
+      "terms": [
+        "remaining days",
+        "days left"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_no",
+      "type": "string",
+      "description": "The unique identifier for the client involved in the transaction.",
+      "terms": [
+        "client number",
+        "customer ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_name",
+      "type": "string",
+      "description": "The name of the client involved in the transaction.",
+      "terms": [
+        "customer name",
+        "client"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngay_moso_datetime",
+      "type": "timestamp",
+      "description": "The timestamp when the account was opened.",
+      "terms": [
+        "account opening timestamp",
+        "opening datetime"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngay_moso",
+      "type": "date",
+      "description": "The date when the account was opened.",
+      "terms": [
+        "account opening date",
+        "opening date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_type",
+      "type": "string",
+      "description": "The type of account involved in the transaction.",
+      "terms": [
+        "account type",
+        "type of account"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "acct_type_desc",
+      "type": "string",
+      "description": "A description of the type of account.",
+      "terms": [
+        "account type description",
+        "account category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ma_nguoiquanly",
+      "type": "string",
+      "description": "The code identifying the manager responsible for the account.",
+      "terms": [
+        "manager code",
+        "manager ID"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ten_nguoiquanly",
+      "type": "string",
+      "description": "The name of the manager responsible for the account.",
+      "terms": [
+        "manager name",
+        "account manager"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "client_type",
+      "type": "string",
+      "description": "The type of client involved in the transaction.",
+      "terms": [
+        "customer type",
+        "client category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "closing_timestamp",
+      "type": "string",
+      "description": "The timestamp when the account was closed.",
+      "terms": [
+        "closure timestamp",
+        "closing time"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "profit_centre",
+      "type": "string",
+      "description": "The profit center associated with the transaction.",
+      "terms": [
+        "profit center",
+        "revenue center"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sodu",
+      "type": "decimal(20,0)",
+      "description": "The balance of the account at the time of the transaction.",
+      "terms": [
+        "balance",
+        "account balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sodu_qd",
+      "type": "decimal(20,0)",
+      "description": "The account balance in the local currency.",
+      "terms": [
+        "balance in local currency",
+        "local balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngaymo_cif",
+      "type": "date",
+      "description": "The date when the CIF (Customer Information File) was opened.",
+      "terms": [
+        "CIF opening date",
+        "CIF start date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "state",
+      "type": "string",
+      "description": "The state or province associated with the transaction.",
+      "terms": [
+        "state",
+        "province"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "description": "The country associated with the transaction.",
+      "terms": [
+        "country",
+        "nation"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "class_5",
+      "type": "string",
+      "description": "A classification code for the transaction.",
+      "terms": [
+        "classification",
+        "class code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "industry",
+      "type": "string",
+      "description": "The industry sector associated with the transaction.",
+      "terms": [
+        "industry sector",
+        "business sector"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "business",
+      "type": "string",
+      "description": "The type of business associated with the transaction.",
+      "terms": [
+        "business type",
+        "business category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "major_category",
+      "type": "string",
+      "description": "The main category of the transaction.",
+      "terms": [
+        "major category",
+        "main category"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "cmnd_mst",
+      "type": "string",
+      "description": "The identification number or tax code of the client.",
+      "terms": [
+        "ID number",
+        "tax code"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registered_branch",
+      "type": "string",
+      "description": "The branch where the client is registered.",
+      "terms": [
+        "registered branch",
+        "branch of registration"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registered_date",
+      "type": "date",
+      "description": "The date when the client was registered.",
+      "terms": [
+        "registration date",
+        "date of registration"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registered_state",
+      "type": "string",
+      "description": "The state where the client is registered.",
+      "terms": [
+        "registration state",
+        "state of registration"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "registered_state_desc",
+      "type": "string",
+      "description": "A description of the registration state.",
+      "terms": [
+        "registration state description",
+        "state description"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngay_taituc",
+      "type": "date",
+      "description": "The date when the account or transaction was renewed.",
+      "terms": [
+        "renewal date",
+        "extension date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "date_sync_date",
+      "type": "string",
+      "description": "The date when the data was synchronized.",
+      "terms": [
+        "synchronization date",
+        "sync date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "sodu_tattoan",
+      "type": "decimal(30,0)",
+      "description": "The final balance of the account at closure.",
+      "terms": [
+        "final balance",
+        "closure balance"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    },
+    {
+      "name": "ngay_tattoan",
+      "type": "date",
+      "description": "The date when the account was closed.",
+      "terms": [
+        "closure date",
+        "account closure date"
+      ],
+      "primary_key": false,
+      "foreign_key": false
+    }
+  ],
+  "entity": {
+    "name": "FinancialTransactionBatch",
+    "domain": "finance",
+    "synonyms": [
+      "Batch",
+      "TransactionBatch",
+      "FinancialBatch"
+    ]
+  }
+}
