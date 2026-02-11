@@ -23,6 +23,8 @@ dependencies = [
     "litellm>=1.0.0",
     "graphiti-core[falkordb]>=0.5.0",
     "openai>=1.0.0",
+    "langtrace-python-sdk>=3.0.0",
+    "agentops>=0.4.21",
 ]
 
 [project.optional-dependencies]

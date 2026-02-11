@@ -1,0 +1,32 @@
+The user asked: "{{ message }}"
+
+Intent classification result:
+- Primary intent: {{ intent.intent.value }}
+- Confidence: {{ intent.confidence }}
+- Reasoning: {{ intent.reasoning }}
+{% if intent.ambiguous %}
+- Ambiguous: yes
+- Alternative intents: {{ intent.alternative_intents | join(', ') }}
+{% endif %}
+{% if intent.missing_info %}
+- Missing information: {{ intent.missing_info | join(', ') }}
+{% endif %}
+{% if intent.entities %}
+- Extracted entities: {{ intent.entities | join(', ') }}
+{% endif %}
+
+{% if graph_hints %}
+Available in the knowledge graph:
+{% for hint in graph_hints[:10] %}
+- {{ hint }}
+{% endfor %}
+{% endif %}
+
+{% if conversation_history %}
+Recent conversation:
+{% for msg in conversation_history[-3:] %}
+{{ msg.role }}: {{ msg.content[:200] }}
+{% endfor %}
+{% endif %}
+
+Generate a single clarifying question to help the user.
