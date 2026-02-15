@@ -195,6 +195,9 @@ class SchemaSearchResponse(BaseModel):
     entities: List[SearchResultItem] = Field(default_factory=list)
     patterns: List[Dict[str, Any]] = Field(default_factory=list)
     context: List[TableContextResponse] = Field(default_factory=list)
+    ranked_results: List[Dict[str, Any]] = Field(default_factory=list)
+    query_analysis: Optional[Dict[str, Any]] = None
+    search_metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class RecordQueryRequest(BaseModel):

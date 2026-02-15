@@ -1,12 +1,60 @@
-from src.knowledge.client import get_graphiti_client, GraphitiClient
-from src.knowledge.search import SemanticSearchService, SearchResult, SchemaSearchResult, TableContext
-from src.knowledge.episodes import EpisodeStore
-from src.knowledge.entities import EntityRegistry
+"""knowledge — backward-compatible re-exports from restructured sub-packages.
+
+New canonical locations
+-----------------------
+graph/schemas/  BaseNode, BaseEdge, node/edge/episode models
+graph/          GraphitiClient, get_graphiti_client, GraphCostTracker
+indexing/       SchemaIndexer, EntityIndexer, EpisodeIndexer
+retrieval/      SemanticSearchService, EntityQueries, EpisodeQueries,
+                QueryAnalyzer, SearchReranker, models
+utils/          SessionFileLogger
+"""
+
+# ── graph ────────────────────────────────────────────────────────────
+from src.knowledge.graph import (
+    GraphitiClient,
+    get_graphiti_client,
+    GraphCostTracker,
+    EmbeddingCall,
+)
+
+# ── indexing (write path) ────────────────────────────────────────────
+from src.knowledge.indexing import SchemaIndexer, EntityIndexer, EpisodeIndexer
+
+# Backward-compat aliases
+GraphLoader = SchemaIndexer
+EntityRegistry = EntityIndexer
+EpisodeStore = EpisodeIndexer
+
+# ── retrieval (read path) ───────────────────────────────────────────
+from src.knowledge.retrieval import (
+    SemanticSearchService,
+    EntityQueries,
+    EpisodeQueries,
+    SearchResult,
+    SchemaSearchResult,
+    TableContext,
+    QueryAnalyzer,
+    QueryAnalysis,
+    QueryIntent,
+    QueryComplexity,
+    SearchReranker,
+    ScoredItem,
+    RerankerWeights,
+)
+
+# ── utils ────────────────────────────────────────────────────────────
+from src.knowledge.utils import SessionFileLogger
+
+# ── memory façade ────────────────────────────────────────────────────
 from src.knowledge.memory import MemoryManager
+
+# ── constants ────────────────────────────────────────────────────────
 from src.knowledge.constants import DEFAULT_GROUP_ID, DEFAULT_TOP_K, DEFAULT_SIMILARITY_THRESHOLD
-from src.knowledge.models import BaseNode, BaseEdge
-from src.knowledge.models.nodes import (
-    NodeLabel,
+
+# ── models (canonical: graph.schemas) ───────────────────────────────
+from src.knowledge.graph.schemas import BaseNode, BaseEdge
+from src.knowledge.graph.schemas.nodes import (
     TableNode,
     ColumnNode,
     BusinessEntityNode,
@@ -15,7 +63,8 @@ from src.knowledge.models.nodes import (
     BusinessRuleNode,
     CodeSetNode,
 )
-from src.knowledge.models.edges import (
+from src.knowledge.graph.schemas.enums import NodeLabel
+from src.knowledge.graph.schemas.edges import (
     EdgeType,
     HasColumnEdge,
     JoinEdge,
@@ -31,7 +80,7 @@ from src.knowledge.models.edges import (
     HasCodeSetEdge,
     DerivedFromEdge,
 )
-from src.knowledge.models.episodes import (
+from src.knowledge.graph.schemas.episodes import (
     EpisodeCategory,
     SchemaEpisode,
     QueryEpisode,
@@ -41,18 +90,40 @@ from src.knowledge.models.episodes import (
 
 
 __all__ = [
-    # client
+    # graph
     "get_graphiti_client",
     "GraphitiClient",
-    # stores
-    "EpisodeStore",
+    "GraphCostTracker",
+    "EmbeddingCall",
+    # indexing (write path)
+    "SchemaIndexer",
+    "EntityIndexer",
+    "EpisodeIndexer",
+    # backward-compat aliases
+    "GraphLoader",
     "EntityRegistry",
-    "MemoryManager",
-    # search
+    "EpisodeStore",
+    # retrieval (read path)
     "SemanticSearchService",
+    "EntityQueries",
+    "EpisodeQueries",
+    # memory
+    "MemoryManager",
+    # search models
     "SearchResult",
     "SchemaSearchResult",
     "TableContext",
+    # query analyzer
+    "QueryAnalyzer",
+    "QueryAnalysis",
+    "QueryIntent",
+    "QueryComplexity",
+    # reranker
+    "SearchReranker",
+    "ScoredItem",
+    "RerankerWeights",
+    # utils
+    "SessionFileLogger",
     # constants
     "DEFAULT_GROUP_ID",
     "DEFAULT_TOP_K",

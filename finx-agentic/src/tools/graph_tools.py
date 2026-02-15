@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Optional
 from agno.tools import Toolkit
 
 from src.core.agentops_tracker import tool as agentops_tool
-from src.knowledge.client import GraphitiClient
+from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.memory import MemoryManager
-from src.knowledge.models.episodes import EpisodeCategory
+from src.knowledge.graph.schemas.episodes import EpisodeCategory
+from src.knowledge.retrieval.analyzer import QueryAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +55,11 @@ class GraphSearchTools(Toolkit):
         self.search_service = self.memory.search
         self.episode_store = self.memory.episodes
         self.entity_registry = self.memory.entities
+        self._analyzer = QueryAnalyzer()
 
         tools: List[Any] = [
             self.search_schema,
+            self.smart_search,
             self.get_table_details,
             self.get_table_columns,
             self.resolve_business_term,
@@ -65,6 +68,8 @@ class GraphSearchTools(Toolkit):
             self.get_query_patterns,
             self.get_similar_queries,
             self.get_recent_queries,
+            self.discover_domains,
+            self.analyze_query,
             self.store_query_episode,
             self.store_feedback,
             self.store_pattern,
@@ -74,9 +79,36 @@ class GraphSearchTools(Toolkit):
 
     @agentops_tool(name="SearchSchema")
     def search_schema(self, query: str, database: Optional[str] = None) -> str:
+        """Search the knowledge graph for tables, columns, entities and patterns
+        matching the query.  Uses multi-level retrieval: exact match, graph
+        expansion, pattern match and vector similarity, followed by intelligent
+        reranking."""
         db = database or self.default_database
         results = _run_async(self.search_service.search_all(query, db))
         return json.dumps(results, default=str, ensure_ascii=False)
+
+    @agentops_tool(name="SmartSearch")
+    def smart_search(self, query: str, database: Optional[str] = None, top_k: int = 5) -> str:
+        """Advanced multi-level search with full query analysis, reranking and
+        fallback strategies.  Returns ranked results with scoring breakdown,
+        query analysis metadata and search diagnostics.
+
+        Use this when the simpler search_schema does not return good results
+        or when you need detailed scoring information."""
+        db = database or self.default_database
+        result = _run_async(
+            self.search_service.search_schema(query, top_k=top_k, database=db)
+        )
+        response: Dict[str, Any] = {
+            "query_analysis": result.query_analysis,
+            "ranked_results": result.ranked_results,
+            "search_metadata": result.search_metadata,
+            "tables": [r.to_dict() for r in result.tables],
+            "entities": [r.to_dict() for r in result.entities],
+            "patterns": result.patterns,
+            "context": result.context,
+        }
+        return json.dumps(response, default=str, ensure_ascii=False)
 
     @agentops_tool(name="GetTableDetails")
     def get_table_details(self, table_name: str, database: Optional[str] = None) -> str:
@@ -172,6 +204,25 @@ class GraphSearchTools(Toolkit):
             )
         )
         return json.dumps(episodes, default=str, ensure_ascii=False)
+
+    @agentops_tool(name="DiscoverDomains")
+    def discover_domains(self) -> str:
+        """List all available business domains with their tables and entities.
+        Useful when no specific search yields results – presents available
+        domains so the user can refine their question."""
+        domains = _run_async(
+            self.search_service._fallback_domain_discovery()
+        )
+        return json.dumps({"domains": domains}, default=str, ensure_ascii=False)
+
+    @agentops_tool(name="AnalyzeQuery")
+    def analyze_query(self, query: str) -> str:
+        """Analyse a natural-language query to extract intent, entities,
+        complexity, temporal context and business terms WITHOUT hitting
+        the graph.  Useful for planning which tools to call next."""
+        from dataclasses import asdict
+        analysis = self._analyzer.analyze(query)
+        return json.dumps(asdict(analysis), default=str, ensure_ascii=False)
 
     @agentops_tool(name="StoreQueryEpisode")
     def store_query_episode(

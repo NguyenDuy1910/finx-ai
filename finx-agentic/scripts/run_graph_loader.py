@@ -9,7 +9,7 @@ load_dotenv()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.knowledge.client import get_graphiti_client
+from src.knowledge.graph.client import get_graphiti_client
 
 logging.basicConfig(
     level=logging.INFO,

@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.agents.knowledge import create_knowledge_agent
 from src.core.cost_tracker import CostTracker
-from src.knowledge.client import get_graphiti_client
+from src.knowledge.graph.client import get_graphiti_client
 from src.tools.graph_tools import GraphSearchTools
 
 

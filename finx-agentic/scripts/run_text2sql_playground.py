@@ -46,7 +46,7 @@ from agno.agent import Agent
 from agno.os import AgentOS
 
 from src.core.model_factory import create_model
-from src.knowledge.client import get_graphiti_client
+from src.knowledge.graph.client import get_graphiti_client
 from src.tools.graph_tools import GraphSearchTools
 from src.tools.athena_executor import AthenaExecutorTools
 from src.prompts.manager import get_prompt_manager

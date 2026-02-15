@@ -2,9 +2,9 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 
-from src.knowledge.client import GraphitiClient
-from src.knowledge.models.nodes import TableNode, ColumnNode, BusinessEntityNode, DomainNode
-from src.knowledge.models.edges import HasColumnEdge, EntityMappingEdge, BelongsToDomainEdge, ContainsEntityEdge
+from src.knowledge.graph.client import GraphitiClient
+from src.knowledge.graph.schemas.nodes import TableNode, ColumnNode, BusinessEntityNode, DomainNode
+from src.knowledge.graph.schemas.edges import HasColumnEdge, EntityMappingEdge, BelongsToDomainEdge, ContainsEntityEdge
 
 logger = logging.getLogger(__name__)
 

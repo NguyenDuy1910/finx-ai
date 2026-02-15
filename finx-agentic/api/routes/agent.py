@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.deps import get_client, get_memory, get_pg_db
 from api.models.schemas import ChatRequest, ChatResponse, Text2SQLRequest, Text2SQLResponse
 from src.core.agentops_tracker import start_trace, end_trace, update_trace_metadata
-from src.knowledge.client import GraphitiClient
+from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.memory import MemoryManager
 from src.tools.graph_tools import GraphSearchTools
 from src.workflows.text2sql import Text2SQLWorkflow

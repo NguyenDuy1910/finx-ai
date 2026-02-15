@@ -9,7 +9,7 @@ load_dotenv()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.knowledge.client import get_graphiti_client
+from src.knowledge.graph.client import get_graphiti_client
 from scripts.build_graph_schema.graph_updater import GraphUpdater
 from scripts.build_graph_schema.incremental_sync import IncrementalSchemaSync
 

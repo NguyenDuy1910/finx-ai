@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from api.deps import get_client, get_memory
 from api.models.schemas import HealthResponse, StatsResponse
-from src.knowledge.client import GraphitiClient
+from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.memory import MemoryManager
 
 router = APIRouter(tags=["health"])

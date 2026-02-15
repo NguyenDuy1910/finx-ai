@@ -35,20 +35,20 @@ from api.models.schemas import (
     TableResponse,
     TableUpdate,
 )
-from src.knowledge.entities import EntityRegistry
+from src.knowledge.indexing.entity_indexer import EntityIndexer
 from src.knowledge.memory import MemoryManager
-from src.knowledge.models.edges import (
+from src.knowledge.graph.schemas.edges import (
     EntityMappingEdge,
     ForeignKeyEdge,
     JoinEdge,
 )
-from src.knowledge.models.nodes import (
+from src.knowledge.graph.schemas.nodes import (
     BusinessEntityNode,
     ColumnNode,
     QueryPatternNode,
     TableNode,
 )
-from src.knowledge.search import SemanticSearchService
+from src.knowledge.retrieval.service import SemanticSearchService
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 @router.post("/tables", response_model=TableResponse, status_code=201)
 async def create_table(
     body: TableCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     node = TableNode(**body.model_dump())
     entity = await registry.register_table(node)
@@ -80,7 +80,7 @@ async def list_tables(
     database: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.get_all_tables(database=database, offset=offset, limit=limit)
     results = []
@@ -103,7 +103,7 @@ async def list_tables(
 async def get_table(
     table_name: str,
     database: Optional[str] = Query(None),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     row = await registry.get_table(table_name, database)
     if not row:
@@ -126,7 +126,7 @@ async def update_table(
     table_name: str,
     body: TableUpdate,
     database: Optional[str] = Query(None),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     existing = await registry.get_table(table_name, database)
     if not existing:
@@ -159,7 +159,7 @@ async def update_table(
 @router.delete("/tables/{uuid}", response_model=SuccessResponse)
 async def delete_table(
     uuid: str,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     await registry.delete_entity(uuid)
     return SuccessResponse(message=f"Deleted table {uuid}")
@@ -168,7 +168,7 @@ async def delete_table(
 @router.post("/columns", response_model=ColumnResponse, status_code=201)
 async def create_column(
     body: ColumnCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     node = ColumnNode(**body.model_dump())
     entity = await registry.register_column(node)
@@ -192,7 +192,7 @@ async def create_column(
 async def get_columns(
     table_name: str = Query(...),
     database: Optional[str] = Query(None),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.get_columns_for_table(table_name, database)
     results = []
@@ -217,7 +217,7 @@ async def get_columns(
 @router.delete("/columns/{uuid}", response_model=SuccessResponse)
 async def delete_column(
     uuid: str,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     await registry.delete_entity(uuid)
     return SuccessResponse(message=f"Deleted column {uuid}")
@@ -226,7 +226,7 @@ async def delete_column(
 @router.post("/entities", response_model=BusinessEntityResponse, status_code=201)
 async def create_business_entity(
     body: BusinessEntityCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     node = BusinessEntityNode(**body.model_dump())
     entity = await registry.register_business_entity(node)
@@ -245,7 +245,7 @@ async def create_business_entity(
 async def list_entities(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.get_all_entities(offset=offset, limit=limit)
     results = []
@@ -265,7 +265,7 @@ async def list_entities(
 @router.get("/entities/resolve", response_model=List[BusinessEntityResponse])
 async def resolve_term(
     term: str = Query(...),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.resolve_term(term)
     return [
@@ -283,7 +283,7 @@ async def resolve_term(
 @router.delete("/entities/{uuid}", response_model=SuccessResponse)
 async def delete_business_entity(
     uuid: str,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     await registry.delete_entity(uuid)
     return SuccessResponse(message=f"Deleted entity {uuid}")
@@ -292,7 +292,7 @@ async def delete_business_entity(
 @router.post("/patterns", response_model=QueryPatternResponse, status_code=201)
 async def create_query_pattern(
     body: QueryPatternCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     node = QueryPatternNode(
         name=body.name,
@@ -319,7 +319,7 @@ async def create_query_pattern(
 async def list_patterns(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.get_all_patterns(offset=offset, limit=limit)
     results = []
@@ -340,7 +340,7 @@ async def list_patterns(
 @router.delete("/patterns/{uuid}", response_model=SuccessResponse)
 async def delete_query_pattern(
     uuid: str,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     await registry.delete_entity(uuid)
     return SuccessResponse(message=f"Deleted pattern {uuid}")
@@ -349,7 +349,7 @@ async def delete_query_pattern(
 @router.post("/joins", response_model=SuccessResponse, status_code=201)
 async def create_join(
     body: JoinCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     src_table = await registry.get_table(body.source_table, body.database)
     tgt_table = await registry.get_table(body.target_table, body.database)
@@ -365,7 +365,7 @@ async def create_join(
 @router.post("/foreign-keys", response_model=SuccessResponse, status_code=201)
 async def create_foreign_key(
     body: ForeignKeyCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     src_table = await registry.get_table(body.source_table, body.database)
     tgt_table = await registry.get_table(body.target_table, body.database)
@@ -383,7 +383,7 @@ async def create_foreign_key(
 @router.post("/entity-mappings", response_model=SuccessResponse, status_code=201)
 async def create_entity_mapping(
     body: EntityMappingCreate,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     entities = await registry.resolve_term(body.entity_name)
     if not entities:
@@ -410,7 +410,7 @@ async def create_entity_mapping(
 @router.get("/edges/{table_name}", response_model=List[EdgeResponse])
 async def get_edges_for_table(
     table_name: str,
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     rows = await registry.search_entity_edges(table_name)
     return [EdgeResponse(**r) for r in rows]
@@ -420,7 +420,7 @@ async def get_edges_for_table(
 async def get_related_tables(
     table_name: str,
     database: Optional[str] = Query(None),
-    registry: EntityRegistry = Depends(get_entity_registry),
+    registry: EntityIndexer = Depends(get_entity_registry),
 ):
     return await registry.find_related_tables(table_name, database)
 
@@ -442,6 +442,9 @@ async def search_schema(
         entities=[SearchResultItem(**r.to_dict()) for r in result.entities],
         patterns=result.patterns,
         context=[TableContextResponse(**c) for c in result.context],
+        ranked_results=result.ranked_results,
+        query_analysis=result.query_analysis,
+        search_metadata=result.search_metadata,
     )
 
 
