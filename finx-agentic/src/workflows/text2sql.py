@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, Iterator, List, Optional, Union
 
 from agno.agent import RunOutput
+from agno.db.base import BaseDb
 from agno.workflow import Workflow
 
 from src.agents.query_understanding import create_query_understanding_agent, build_parse_prompt
@@ -31,11 +32,13 @@ class Text2SQLWorkflow(Workflow):
         graph_tools: Optional[GraphSearchTools] = None,
         max_retries: int = 2,
         track_cost: bool = True,
+        db: Optional[BaseDb] = None,
         **kwargs,
     ):
         super().__init__(
             name=kwargs.pop("name", "text2sql"),
-            description="End-to-end natural language to SQL workflow",
+            description=kwargs.pop("description", "End-to-end natural language to SQL workflow"),
+            db=db,
             **kwargs,
         )
         self.database = database
@@ -43,6 +46,12 @@ class Text2SQLWorkflow(Workflow):
         self.max_retries = max_retries
         self.track_cost = track_cost
         self.cost_tracker: Optional[CostTracker] = None
+
+    def _build_step_state(self, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        state = dict(self.session_state or {})
+        if extra:
+            state.update(extra)
+        return state
 
     def run(
         self,
@@ -55,11 +64,9 @@ class Text2SQLWorkflow(Workflow):
         session_state = self.session_state or {}
         conversation_history = session_state.get("conversation_history", [])
 
-        # Initialise cost tracker for this run
         tracker = CostTracker() if self.track_cost else None
         self.cost_tracker = tracker
 
-        # Update AgentOps trace metadata
         update_trace_metadata({
             "workflow": "text2sql",
             "database": self.database,
@@ -72,7 +79,11 @@ class Text2SQLWorkflow(Workflow):
 
         schema_ctx = self._step_discover(parsed, tracker)
 
-        sql_result = self._step_generate(user_query, schema_ctx, conversation_history, tracker)
+        step_context = {}
+        if schema_ctx:
+            step_context["schema_context"] = schema_ctx.model_dump_json(indent=2)
+
+        sql_result = self._step_generate(user_query, schema_ctx, conversation_history, tracker, step_context)
         if sql_result is None:
             return RunOutput(content="Failed to generate SQL")
 
@@ -97,12 +108,16 @@ class Text2SQLWorkflow(Workflow):
             validation=validation or ValidationResult(is_valid=True),
         )
 
-        self.update_session_state(conversation_history=conversation_history + [
-            {"role": "user", "content": user_query},
-            {"role": "assistant", "content": sql_result.sql},
-        ])
+        self.update_session_state(
+            conversation_history=conversation_history + [
+                {"role": "user", "content": user_query},
+                {"role": "assistant", "content": sql_result.sql},
+            ],
+            last_parsed=parsed.model_dump(),
+            last_sql=sql_result.sql,
+            last_tables=sql_result.tables_used,
+        )
 
-        # Print cost summary if tracking is enabled
         if tracker:
             tracker.print_summary()
 
@@ -117,7 +132,7 @@ class Text2SQLWorkflow(Workflow):
     ) -> Optional[ParsedQuery]:
         agent = create_query_understanding_agent(
             session_id=self.session_id,
-            session_state=self.session_state,
+            session_state=self._build_step_state(),
         )
         prompt = build_parse_prompt(
             user_query=user_query,
@@ -147,7 +162,7 @@ class Text2SQLWorkflow(Workflow):
         agent = create_schema_discovery_agent(
             graph_tools=self.graph_tools,
             session_id=self.session_id,
-            session_state=self.session_state,
+            session_state=self._build_step_state(),
         )
         prompt = build_discover_prompt(parsed_query=parsed, database=self.database)
         response: RunOutput = agent.run(prompt, output_schema=SchemaContext)
@@ -169,15 +184,12 @@ class Text2SQLWorkflow(Workflow):
         schema_ctx: Optional[SchemaContext],
         conversation_history: List[Dict[str, str]],
         tracker: Optional[CostTracker] = None,
+        step_context: Optional[Dict[str, Any]] = None,
     ) -> Optional[GeneratedSQL]:
         agent = create_sql_generator_agent(
             graph_tools=self.graph_tools,
             session_id=self.session_id,
-            session_state=self.session_state,
-        ) if self.graph_tools else create_sql_generator_agent(
-            graph_tools=self.graph_tools,
-            session_id=self.session_id,
-            session_state=self.session_state,
+            session_state=self._build_step_state(step_context),
         )
         prompt = build_generate_sql_prompt(
             user_query=user_query,
@@ -206,7 +218,7 @@ class Text2SQLWorkflow(Workflow):
     ) -> Optional[ValidationResult]:
         agent = create_validation_agent(
             session_id=self.session_id,
-            session_state=self.session_state,
+            session_state=self._build_step_state(),
         )
         prompt = build_validate_prompt(
             generated_sql=sql_result.sql,
@@ -240,7 +252,10 @@ class Text2SQLWorkflow(Workflow):
             agent = create_learning_agent(
                 graph_tools=self.graph_tools,
                 session_id=self.session_id,
-                session_state=self.session_state,
+                session_state=self._build_step_state({
+                    "last_sql": sql_result.sql,
+                    "last_tables": sql_result.tables_used,
+                }),
             )
             prompt = build_store_episode_prompt(
                 natural_language=user_query,
@@ -254,5 +269,5 @@ class Text2SQLWorkflow(Workflow):
             if tracker:
                 tracker.track(response, step="learning")
         except Exception as e:
-            logger.warning(f"Learning step failed: {e}")
+            logger.warning("Learning step failed: %s", e)
 

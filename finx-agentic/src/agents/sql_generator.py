@@ -9,19 +9,21 @@ from src.tools.graph_tools import GraphSearchTools
 
 
 def create_sql_generator_agent(
-    graph_tools: GraphSearchTools,
+    graph_tools: Optional[GraphSearchTools] = None,
     session_id: Optional[str] = None,
     session_state: Optional[Dict[str, Any]] = None,
 ) -> Agent:
     pm = get_prompt_manager()
     instructions = pm.render("sql_generator/instructions.jinja2")
 
+    tools = [graph_tools] if graph_tools else []
+
     return Agent(
         name="SQLGenerator",
         model=create_model(),
         description="Generates partition-aware SQL queries for AWS Athena",
         instructions=[instructions],
-        tools=[graph_tools],
+        tools=tools,
         output_schema=GeneratedSQL,
         markdown=False,
         add_datetime_to_context=True,

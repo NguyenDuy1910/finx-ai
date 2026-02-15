@@ -13,14 +13,6 @@ from src.knowledge.models.episodes import EpisodeCategory
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Persistent event-loop helper
-# ---------------------------------------------------------------------------
-# We keep a single background event-loop alive for the lifetime of the
-# process so that async Redis / FalkorDB connections are never invalidated
-# by a closed loop (which is what ``asyncio.run()`` does after every call).
-# ---------------------------------------------------------------------------
-
 _loop: Optional[asyncio.AbstractEventLoop] = None
 _loop_thread: Optional[threading.Thread] = None
 _lock = threading.Lock()

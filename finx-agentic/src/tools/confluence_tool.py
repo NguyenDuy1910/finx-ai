@@ -1,17 +1,3 @@
-"""
-Confluence Knowledge Base Tools with Vector Database Storage
-
-This module provides tools to load, process, and store Confluence documentation
-in a vector database for semantic search and retrieval.
-
-Features:
-- Load Confluence pages and spaces
-- Chunk content for optimal embedding
-- Generate embeddings and store in Qdrant
-- Semantic search over knowledge base
-- Update and sync documentation
-"""
-
 import json
 import logging
 from typing import Any, Dict, List, Optional, Union

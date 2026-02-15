@@ -5,14 +5,9 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
 from src.knowledge.client import GraphitiClient
+from src.knowledge.constants import DEFAULT_TOP_K, DEFAULT_SIMILARITY_THRESHOLD
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_TOP_K = 3
-DEFAULT_SIMILARITY_THRESHOLD = 0.7
-
-# Node labels supported by the generic vector search
-_SEARCHABLE_LABELS = ("Table", "Column", "BusinessEntity", "QueryPattern")
 
 
 @dataclass
@@ -29,7 +24,7 @@ class SearchResult:
 
 @dataclass
 class TableContext:
-    """Full context for a single table including columns, entities, and joins."""
+    """Full context for a single table including columns, entities, joins, domain, rules and codesets."""
 
     table: str
     database: str
@@ -38,6 +33,9 @@ class TableContext:
     columns: List[Dict[str, Any]] = field(default_factory=list)
     entities: List[Dict[str, Any]] = field(default_factory=list)
     related_tables: List[Dict[str, Any]] = field(default_factory=list)
+    domain: Optional[str] = None
+    business_rules: List[Dict[str, Any]] = field(default_factory=list)
+    codesets: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -290,15 +288,16 @@ class SemanticSearchService:
     # ------------------------------------------------------------------
 
     async def _get_table_context(self, table_name: str) -> Optional[TableContext]:
-        """Fetch full context for a table in **one** Cypher query:
-        columns, mapped business entities, and join / FK relationships.
-        """
+        """Fetch full context for a table: columns, entities, joins, domain, rules, codesets."""
         records = await self._execute(
             """
             MATCH (t:Table {name: $name})
             OPTIONAL MATCH (t)-[:HAS_COLUMN]->(c:Column)
             OPTIONAL MATCH (e:BusinessEntity)-[:ENTITY_MAPPING]->(t)
             OPTIONAL MATCH (t)-[rel:JOIN|FOREIGN_KEY]-(related:Table)
+            OPTIONAL MATCH (t)-[:BELONGS_TO_DOMAIN]->(d:Domain)
+            OPTIONAL MATCH (rule:BusinessRule)-[:APPLIES_TO]->(t)
+            OPTIONAL MATCH (c)-[:HAS_CODESET]->(cs:CodeSet)
             RETURN t.name        AS table_name,
                    t.summary     AS description,
                    t.attributes  AS table_attrs,
@@ -316,7 +315,18 @@ class SemanticSearchService:
                        name:         related.name,
                        relationship: type(rel),
                        attributes:   rel.attributes
-                   }) AS relations
+                   }) AS relations,
+                   d.name AS domain_name,
+                   collect(DISTINCT {
+                       name:       rule.name,
+                       summary:    rule.summary,
+                       attributes: rule.attributes
+                   }) AS rules,
+                   collect(DISTINCT {
+                       name:       cs.name,
+                       summary:    cs.summary,
+                       attributes: cs.attributes
+                   }) AS codesets
             """,
             name=table_name,
         )
@@ -366,6 +376,30 @@ class SemanticSearchService:
                 "join_condition": rel_attrs.get("join_condition"),
             })
 
+        business_rules = []
+        for rule in row.get("rules", []):
+            if not rule.get("name"):
+                continue
+            rule_attrs = self._parse_attrs(rule.get("attributes"))
+            business_rules.append({
+                "name": rule["name"],
+                "description": rule.get("summary", "") or "",
+                "rule_type": rule_attrs.get("rule_type", ""),
+                "expression": rule_attrs.get("expression", ""),
+            })
+
+        codesets = []
+        for cs in row.get("codesets", []):
+            if not cs.get("name"):
+                continue
+            cs_attrs = self._parse_attrs(cs.get("attributes"))
+            codesets.append({
+                "name": cs["name"],
+                "description": cs.get("summary", "") or "",
+                "codes": cs_attrs.get("codes", {}),
+                "column_name": cs_attrs.get("column_name", ""),
+            })
+
         return TableContext(
             table=table_attrs.get("table_name", row["table_name"]),
             database=table_attrs.get("database", ""),
@@ -374,6 +408,9 @@ class SemanticSearchService:
             columns=columns,
             entities=entities,
             related_tables=related_tables,
+            domain=row.get("domain_name"),
+            business_rules=business_rules,
+            codesets=codesets,
         )
 
     # ------------------------------------------------------------------

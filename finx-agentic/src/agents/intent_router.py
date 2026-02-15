@@ -5,6 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from agno.agent import Agent, RunOutput
+from agno.db.base import BaseDb
 
 from src.core.intent import (
     IntentClassification,
@@ -45,7 +46,10 @@ _CONTEXT_INTENTS = {
 }
 
 
-def _create_classifier() -> Agent:
+def _create_classifier(
+    db: Optional[BaseDb] = None,
+    session_id: Optional[str] = None,
+) -> Agent:
     pm = get_prompt_manager()
     instructions = pm.render("router/classify.jinja2")
     return Agent(
@@ -54,6 +58,11 @@ def _create_classifier() -> Agent:
         instructions=[instructions],
         output_schema=IntentClassification,
         markdown=False,
+        db=db,
+        session_id=session_id,
+        read_chat_history=db is not None,
+        add_history_to_messages=db is not None,
+        num_history_runs=3,
     )
 
 
@@ -61,6 +70,8 @@ def classify_intent(
     message: str,
     conversation_history: Optional[List[Dict[str, str]]] = None,
     available_databases: Optional[List[str]] = None,
+    db: Optional[BaseDb] = None,
+    session_id: Optional[str] = None,
 ) -> IntentClassification:
     pm = get_prompt_manager()
     prompt = pm.render(
@@ -69,7 +80,7 @@ def classify_intent(
         conversation_history=conversation_history or [],
         available_databases=available_databases or [],
     )
-    agent = _create_classifier()
+    agent = _create_classifier(db=db, session_id=session_id)
     response: RunOutput = agent.run(prompt, output_schema=IntentClassification)
 
     if response and response.content:
@@ -365,8 +376,13 @@ def route(
     conversation_history: Optional[List[Dict[str, str]]] = None,
     database: Optional[str] = None,
     available_databases: Optional[List[str]] = None,
+    db: Optional[BaseDb] = None,
+    session_id: Optional[str] = None,
 ) -> RouterResult:
-    intent = classify_intent(message, conversation_history, available_databases)
+    intent = classify_intent(
+        message, conversation_history, available_databases,
+        db=db, session_id=session_id,
+    )
     logger.info(
         "Intent: %s (%.2f) ambiguous=%s missing=%s entities=%s",
         intent.intent.value, intent.confidence, intent.ambiguous,

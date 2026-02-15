@@ -8,15 +8,9 @@ load_dotenv()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# from langtrace_python_sdk import langtrace
-
-# langtrace.init(api_key=os.getenv("LANGTRACE_API_KEY"))
-
-# ── Import agno BEFORE AgentOps init to avoid circular import ─────────
-from agno.agent import Agent, RunOutput
+from agno.agent import Agent
 from agno.os import AgentOS
 
-# ── AgentOps observability ────────────────────────────────────────────
 from src.core.agentops_tracker import init_agentops
 
 init_agentops(
@@ -25,29 +19,12 @@ init_agentops(
 )
 
 from src.core.model_factory import create_model
-from src.core.cost_tracker import CostTracker
 from src.knowledge.client import get_graphiti_client
 from src.tools.graph_tools import GraphSearchTools
 from src.tools.athena_executor import AthenaExecutorTools
 from src.prompts.manager import get_prompt_manager
+from src.storage.postgres import get_postgres_db
 
-# ── cost-tracking hook ────────────────────────────────────────────────
-tracker = CostTracker()
-
-
-# def track_cost_hook(run_output: RunOutput, **kwargs):
-#     """Post-hook: log token usage & estimated cost after every agent run."""
-#     label = "run"
-#     if run_output.input:
-#         try:
-#             label = str(run_output.input.input_content_string())[:50]
-#         except Exception:
-#             label = run_output.run_id or "run"
-#     step = tracker.track(run_output, step=label)
-#     tracker.print_summary()
-
-
-# ── setup ─────────────────────────────────────────────────────────────
 host = os.getenv("FALKORDB_HOST", "localhost")
 port = int(os.getenv("FALKORDB_PORT", "6379"))
 database = os.getenv("ATHENA_DATABASE", "non_prod_uat_gold_zone")
@@ -64,15 +41,22 @@ athena_tools = AthenaExecutorTools(
 pm = get_prompt_manager()
 instructions = pm.render("knowledge/instructions.jinja2")
 
+pg_db = get_postgres_db()
+
 knowledge_agent = Agent(
     name="Knowledge Agent",
     model=create_model(),
+    user_id="bodangdiet",
     instructions=[instructions],
     tools=[graph_tools, athena_tools],
     markdown=True,
     add_datetime_to_context=True,
-    # post_hooks=[track_cost_hook],
     debug_mode=True,
+    db=pg_db,
+    # enable_user_memories=True,
+    enable_session_summaries=True,
+    add_history_to_context=True,
+    num_history_runs=5,
 )
 
 agent_os = AgentOS(agents=[knowledge_agent])

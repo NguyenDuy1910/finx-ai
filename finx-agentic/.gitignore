@@ -19,3 +19,6 @@ build/
 .python-version
 uv.lock
 
+# Graph schemas
+scripts/graph_schemas/
+

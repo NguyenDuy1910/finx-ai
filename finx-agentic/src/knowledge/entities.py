@@ -8,16 +8,26 @@ from graphiti_core.edges import EntityEdge
 from src.knowledge.client import GraphitiClient
 from src.knowledge.models.nodes import (
     BusinessEntityNode,
+    BusinessRuleNode,
+    CodeSetNode,
     ColumnNode,
+    DomainNode,
     NodeLabel,
     QueryPatternNode,
     TableNode,
 )
 from src.knowledge.models.edges import (
+    AppliesToEdge,
+    BelongsToDomainEdge,
+    ColumnMappingEdge,
+    ContainsEntityEdge,
+    DerivedFromEdge,
     EdgeType,
     EntityMappingEdge,
     ForeignKeyEdge,
+    HasCodeSetEdge,
     HasColumnEdge,
+    HasRuleEdge,
     JoinEdge,
     QueryPatternEdge,
     SynonymEdge,
@@ -86,6 +96,21 @@ class EntityRegistry:
         entity = pattern.to_entity_node(self._group_id)
         return await self._upsert_entity(entity, NodeLabel.QUERY_PATTERN)
 
+    async def register_domain(self, domain: DomainNode) -> EntityNode:
+        """Upsert a Domain node."""
+        entity = domain.to_entity_node(self._group_id)
+        return await self._upsert_entity(entity, NodeLabel.DOMAIN)
+
+    async def register_business_rule(self, rule: BusinessRuleNode) -> EntityNode:
+        """Upsert a BusinessRule node."""
+        entity = rule.to_entity_node(self._group_id)
+        return await self._upsert_entity(entity, NodeLabel.BUSINESS_RULE)
+
+    async def register_codeset(self, codeset: CodeSetNode) -> EntityNode:
+        """Upsert a CodeSet node."""
+        entity = codeset.to_entity_node(self._group_id)
+        return await self._upsert_entity(entity, NodeLabel.CODE_SET)
+
     async def _upsert_entity(self, node: EntityNode, label: NodeLabel) -> EntityNode:
         description = (node.summary or "").replace("\n", " ").strip()
         embedding = await self._embed(description) if description else []
@@ -148,6 +173,50 @@ class EntityRegistry:
         self, edge: QueryPatternEdge, pattern_uuid: str, table_uuid: str
     ) -> None:
         entity_edge = edge.to_entity_edge(pattern_uuid, table_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    # --- new edge registrations for banking data dictionary ---
+
+    async def register_belongs_to_domain(
+        self, edge: BelongsToDomainEdge, table_uuid: str, domain_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(table_uuid, domain_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_contains_entity(
+        self, edge: ContainsEntityEdge, domain_uuid: str, entity_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(domain_uuid, entity_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_has_rule(
+        self, edge: HasRuleEdge, entity_uuid: str, rule_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(entity_uuid, rule_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_applies_to(
+        self, edge: AppliesToEdge, rule_uuid: str, target_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(rule_uuid, target_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_column_mapping(
+        self, edge: ColumnMappingEdge, column_uuid: str, entity_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(column_uuid, entity_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_has_codeset(
+        self, edge: HasCodeSetEdge, column_uuid: str, codeset_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(column_uuid, codeset_uuid, self._group_id)
+        await self._upsert_edge(entity_edge)
+
+    async def register_derived_from(
+        self, edge: DerivedFromEdge, source_uuid: str, target_uuid: str
+    ) -> None:
+        entity_edge = edge.to_entity_edge(source_uuid, target_uuid, self._group_id)
         await self._upsert_edge(entity_edge)
 
     async def _upsert_edge(self, edge: EntityEdge) -> None:
@@ -278,6 +347,253 @@ class EntityRegistry:
         return [
             {
                 "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    # ------------------------------------------------------------------
+    # domain lookups
+    # ------------------------------------------------------------------
+
+    async def get_all_domains(self, offset: int = 0, limit: int = 50) -> List[Dict]:
+        records = await self._execute(
+            """
+            MATCH (d:Domain)
+            RETURN d.uuid AS uuid, d.name AS name, d.summary AS summary, d.attributes AS attributes
+            ORDER BY d.name
+            SKIP $offset LIMIT $limit
+            """,
+            offset=offset,
+            limit=limit,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    async def get_domain(self, domain_name: str) -> Optional[Dict]:
+        """Get a domain with its tables and entities."""
+        records = await self._execute(
+            """
+            MATCH (d:Domain)
+            WHERE toLower(d.name) = toLower($name)
+            OPTIONAL MATCH (t:Table)-[:BELONGS_TO_DOMAIN]->(d)
+            OPTIONAL MATCH (d)-[:CONTAINS_ENTITY]->(e:BusinessEntity)
+            RETURN d.uuid AS uuid,
+                   d.name AS name,
+                   d.summary AS summary,
+                   d.attributes AS attributes,
+                   collect(DISTINCT t.name) AS tables,
+                   collect(DISTINCT e.name) AS entities
+            """,
+            name=domain_name,
+        )
+        if not records:
+            return None
+        row = records[0]
+        return {
+            "uuid": row["uuid"],
+            "name": row["name"],
+            "summary": row.get("summary", ""),
+            "attributes": json.loads(row["attributes"]) if row.get("attributes") else {},
+            "tables": row.get("tables", []),
+            "entities": row.get("entities", []),
+        }
+
+    async def get_tables_by_domain(self, domain_name: str) -> List[Dict]:
+        """Return all tables belonging to a domain."""
+        records = await self._execute(
+            """
+            MATCH (t:Table)-[:BELONGS_TO_DOMAIN]->(d:Domain)
+            WHERE toLower(d.name) = toLower($domain_name)
+            RETURN t.uuid AS uuid, t.name AS name, t.summary AS summary, t.attributes AS attributes
+            ORDER BY t.name
+            """,
+            domain_name=domain_name,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    # ------------------------------------------------------------------
+    # business rule lookups
+    # ------------------------------------------------------------------
+
+    async def get_all_rules(self, offset: int = 0, limit: int = 50) -> List[Dict]:
+        records = await self._execute(
+            """
+            MATCH (r:BusinessRule)
+            RETURN r.uuid AS uuid, r.name AS name, r.summary AS summary, r.attributes AS attributes
+            ORDER BY r.name
+            SKIP $offset LIMIT $limit
+            """,
+            offset=offset,
+            limit=limit,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    async def get_rules_for_table(self, table_name: str) -> List[Dict]:
+        """Return all business rules that apply to a table."""
+        records = await self._execute(
+            """
+            MATCH (rule:BusinessRule)-[:APPLIES_TO]->(t:Table)
+            WHERE t.name CONTAINS $table_name
+            RETURN rule.uuid AS uuid, rule.name AS name,
+                   rule.summary AS summary, rule.attributes AS attributes
+            ORDER BY rule.name
+            """,
+            table_name=table_name,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    async def get_rules_for_entity(self, entity_name: str) -> List[Dict]:
+        """Return business rules linked to an entity."""
+        records = await self._execute(
+            """
+            MATCH (e:BusinessEntity)-[:HAS_RULE]->(rule:BusinessRule)
+            WHERE toLower(e.name) = toLower($entity_name)
+            RETURN rule.uuid AS uuid, rule.name AS name,
+                   rule.summary AS summary, rule.attributes AS attributes
+            ORDER BY rule.name
+            """,
+            entity_name=entity_name,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    # ------------------------------------------------------------------
+    # codeset lookups
+    # ------------------------------------------------------------------
+
+    async def get_codeset_for_column(self, table_name: str, column_name: str) -> Optional[Dict]:
+        """Return the code-set attached to a specific column."""
+        records = await self._execute(
+            """
+            MATCH (c:Column)-[:HAS_CODESET]->(cs:CodeSet)
+            WHERE c.name CONTAINS $column_name
+              AND c.name CONTAINS $table_name
+            RETURN cs.uuid AS uuid, cs.name AS name,
+                   cs.summary AS summary, cs.attributes AS attributes
+            LIMIT 1
+            """,
+            table_name=table_name,
+            column_name=column_name,
+        )
+        if not records:
+            return None
+        row = records[0]
+        return {
+            "uuid": row["uuid"],
+            "name": row["name"],
+            "summary": row.get("summary", ""),
+            "attributes": json.loads(row["attributes"]) if row.get("attributes") else {},
+        }
+
+    async def get_all_codesets(self, offset: int = 0, limit: int = 50) -> List[Dict]:
+        records = await self._execute(
+            """
+            MATCH (cs:CodeSet)
+            RETURN cs.uuid AS uuid, cs.name AS name, cs.summary AS summary, cs.attributes AS attributes
+            ORDER BY cs.name
+            SKIP $offset LIMIT $limit
+            """,
+            offset=offset,
+            limit=limit,
+        )
+        return [
+            {
+                "uuid": r["uuid"],
+                "name": r["name"],
+                "summary": r.get("summary", ""),
+                "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},
+            }
+            for r in records
+        ]
+
+    # ------------------------------------------------------------------
+    # column-level entity mapping lookups
+    # ------------------------------------------------------------------
+
+    async def get_entity_for_column(self, table_name: str, column_name: str) -> Optional[Dict]:
+        """Find the business entity a column is mapped to."""
+        records = await self._execute(
+            """
+            MATCH (c:Column)-[:COLUMN_MAPPING]->(e:BusinessEntity)
+            WHERE c.name CONTAINS $column_name
+              AND c.name CONTAINS $table_name
+            RETURN e.uuid AS uuid, e.name AS name,
+                   e.summary AS summary, e.attributes AS attributes
+            LIMIT 1
+            """,
+            table_name=table_name,
+            column_name=column_name,
+        )
+        if not records:
+            return None
+        row = records[0]
+        return {
+            "uuid": row["uuid"],
+            "name": row["name"],
+            "summary": row.get("summary", ""),
+            "attributes": json.loads(row["attributes"]) if row.get("attributes") else {},
+        }
+
+    # ------------------------------------------------------------------
+    # data lineage lookups
+    # ------------------------------------------------------------------
+
+    async def get_column_lineage(self, table_name: str, column_name: str) -> List[Dict]:
+        """Trace where a column's data comes from (DERIVED_FROM edges)."""
+        records = await self._execute(
+            """
+            MATCH (c:Column)-[:DERIVED_FROM*1..3]->(source:Column)
+            WHERE c.name CONTAINS $column_name
+              AND c.name CONTAINS $table_name
+            RETURN source.name AS name, source.summary AS summary,
+                   source.attributes AS attributes
+            """,
+            table_name=table_name,
+            column_name=column_name,
+        )
+        return [
+            {
                 "name": r["name"],
                 "summary": r.get("summary", ""),
                 "attributes": json.loads(r["attributes"]) if r.get("attributes") else {},

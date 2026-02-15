@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from agno.agent import Agent
+from agno.db.base import BaseDb
 
 from src.core.model_factory import create_model
 from src.prompts.manager import get_prompt_manager
@@ -10,6 +11,7 @@ def create_manager_agent(
     team: Optional[List[Agent]] = None,
     session_id: Optional[str] = None,
     session_state: Optional[Dict[str, Any]] = None,
+    db: Optional[BaseDb] = None,
 ) -> Agent:
     pm = get_prompt_manager()
     instructions = pm.render("manager/instructions.jinja2")
@@ -23,6 +25,11 @@ def create_manager_agent(
         add_datetime_to_context=True,
         session_id=session_id,
         session_state=session_state or {},
+        db=db,
+        enable_user_memories=db is not None,
+        enable_session_summaries=db is not None,
+        add_history_to_messages=db is not None,
+        num_history_runs=3,
     )
 
 

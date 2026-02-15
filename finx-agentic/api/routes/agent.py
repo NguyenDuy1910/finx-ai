@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.deps import get_client, get_memory
+from api.deps import get_client, get_memory, get_pg_db
 from api.models.schemas import ChatRequest, ChatResponse, Text2SQLRequest, Text2SQLResponse
 from src.core.agentops_tracker import start_trace, end_trace, update_trace_metadata
 from src.knowledge.client import GraphitiClient
@@ -15,6 +15,8 @@ from src.workflows.text2sql import Text2SQLWorkflow
 from src.core.intent import RouterResult
 from src.core.types import Text2SQLResult
 from src.agents.intent_router import route as route_intent
+
+from agno.db.postgres import PostgresDb
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ async def text2sql(
     body: Text2SQLRequest,
     client: GraphitiClient = Depends(get_client),
     memory: MemoryManager = Depends(get_memory),
+    pg_db: PostgresDb = Depends(get_pg_db),
 ):
     trace = start_trace(name="text2sql-api", tags=["api", "text2sql"])
     try:
@@ -41,11 +44,11 @@ async def text2sql(
         workflow = Text2SQLWorkflow(
             database=body.database or "",
             graph_tools=graph_tools,
+            db=pg_db,
         )
         output = workflow.run(body.query)
         result = Text2SQLResult.model_validate_json(output.content)
 
-        # Persist the episode asynchronously
         episode_id: Optional[str] = None
         try:
             episode_id = await memory.record_query(
@@ -83,6 +86,7 @@ async def chat(
     body: ChatRequest,
     client: GraphitiClient = Depends(get_client),
     memory: MemoryManager = Depends(get_memory),
+    pg_db: PostgresDb = Depends(get_pg_db),
 ):
     trace = start_trace(name="chat-api", tags=["api", "chat"])
     try:
@@ -101,6 +105,7 @@ async def chat(
             conversation_history=body.conversation_history,
             database=body.database,
             available_databases=body.available_databases,
+            db=pg_db,
         )
 
         episode_id: Optional[str] = None
