@@ -1,7 +1,7 @@
 """
 Session-based file logger for search pipeline debugging.
 
-Each call to ``search_schema`` creates a separate log file under
+Each call to ``schema_retrieval`` creates a separate log file under
 ``scripts/log_process/`` with a timestamped filename so every
 request can be inspected independently.
 

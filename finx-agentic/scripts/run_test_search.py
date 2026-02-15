@@ -8,7 +8,7 @@ load_dotenv()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.knowledge import get_graphiti_client, SemanticSearchService
+from src.knowledge import get_graphiti_client, SchemaRetrievalService
 
 
 async def main():
@@ -19,7 +19,7 @@ async def main():
     print("-" * 40)
 
     client = get_graphiti_client(host=host, port=port)
-    search = SemanticSearchService(client)
+    search = SchemaRetrievalService(client)
 
     queries = [
         "show all customers active card info in 2025",
@@ -32,7 +32,7 @@ async def main():
         print(f"\nQuery: {query}")
         print("-" * 40)
 
-        result = await search.search_schema(query)
+        result = await search.schema_retrieval(query)
 
         if result.tables:
             print("Tables:")

@@ -117,7 +117,11 @@ def fetch_graph_context(
 
     if intent.intent == UserIntent.SCHEMA_EXPLORATION:
         context["schema"] = json.loads(
-            graph_tools.search_schema(message, intent.database)
+            graph_tools.schema_retrieval(
+                message, intent.database,
+                entities=intent.entities or None,
+                intent="schema_exploration",
+            )
         )
         for entity in intent.entities[:3]:
             details = graph_tools.get_table_details(entity, intent.database)
@@ -138,7 +142,11 @@ def fetch_graph_context(
 
     elif intent.intent == UserIntent.DATA_QUERY:
         context["schema"] = json.loads(
-            graph_tools.search_schema(message, intent.database)
+            graph_tools.schema_retrieval(
+                message, intent.database,
+                entities=intent.entities or None,
+                intent="data_query",
+            )
         )
         context["patterns"] = json.loads(
             graph_tools.get_query_patterns(message)
@@ -180,7 +188,11 @@ def _gather_graph_hints(
 ) -> List[str]:
     hints: List[str] = []
     try:
-        raw = graph_tools.search_schema(message, intent.database)
+        raw = graph_tools.schema_retrieval(
+            message, intent.database,
+            entities=intent.entities or None,
+            intent=intent.intent.value if intent.intent else None,
+        )
         data = json.loads(raw)
         for t in data.get("tables", [])[:5]:
             name = t.get("name", "")

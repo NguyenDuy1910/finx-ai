@@ -169,6 +169,13 @@ class SearchRequest(BaseModel):
     database: Optional[str] = None
     top_k: int = Field(5, ge=1, le=50)
     threshold: float = Field(0.5, ge=0.0, le=1.0)
+    entities: Optional[List[str]] = Field(None, description="Explicit entity/table names to boost exact matching")
+    intent: Optional[str] = Field(None, description="User intent: schema_exploration, data_query, relationship_discovery, knowledge_lookup")
+    domain: Optional[str] = Field(None, description="Business domain to focus on (e.g. payment, lending, card, party)")
+    business_terms: Optional[List[str]] = Field(None, description="Business terms / synonyms for synonym matching (e.g. ['số dư', 'balance'])")
+    column_hints: Optional[List[str]] = Field(None, description="Column names the user needs — tables with these columns get boosted")
+    include_patterns: bool = Field(True, description="Whether to include query pattern results")
+    include_context: bool = Field(True, description="Whether to fetch full table context")
 
 
 class SearchResultItem(BaseModel):

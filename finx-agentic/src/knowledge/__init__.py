@@ -5,8 +5,8 @@ New canonical locations
 graph/schemas/  BaseNode, BaseEdge, node/edge/episode models
 graph/          GraphitiClient, get_graphiti_client, GraphCostTracker
 indexing/       SchemaIndexer, EntityIndexer, EpisodeIndexer
-retrieval/      SemanticSearchService, EntityQueries, EpisodeQueries,
-                QueryAnalyzer, SearchReranker, models
+retrieval/      SchemaRetrievalService, EntityQueries, EpisodeQueries,
+                SearchReranker, models
 utils/          SessionFileLogger
 """
 
@@ -28,23 +28,19 @@ EpisodeStore = EpisodeIndexer
 
 # ── retrieval (read path) ───────────────────────────────────────────
 from src.knowledge.retrieval import (
-    SemanticSearchService,
+    SchemaRetrievalService,
     EntityQueries,
     EpisodeQueries,
     SearchResult,
     SchemaSearchResult,
     TableContext,
-    QueryAnalyzer,
-    QueryAnalysis,
-    QueryIntent,
-    QueryComplexity,
     SearchReranker,
     ScoredItem,
     RerankerWeights,
 )
 
 # ── utils ────────────────────────────────────────────────────────────
-from src.knowledge.utils import SessionFileLogger
+from src.knowledge.utils import SessionFileLogger, track_class
 
 # ── memory façade ────────────────────────────────────────────────────
 from src.knowledge.memory import MemoryManager
@@ -104,7 +100,7 @@ __all__ = [
     "EntityRegistry",
     "EpisodeStore",
     # retrieval (read path)
-    "SemanticSearchService",
+    "SchemaRetrievalService",
     "EntityQueries",
     "EpisodeQueries",
     # memory
@@ -113,17 +109,13 @@ __all__ = [
     "SearchResult",
     "SchemaSearchResult",
     "TableContext",
-    # query analyzer
-    "QueryAnalyzer",
-    "QueryAnalysis",
-    "QueryIntent",
-    "QueryComplexity",
     # reranker
     "SearchReranker",
     "ScoredItem",
     "RerankerWeights",
     # utils
     "SessionFileLogger",
+    "track_class",
     # constants
     "DEFAULT_GROUP_ID",
     "DEFAULT_TOP_K",

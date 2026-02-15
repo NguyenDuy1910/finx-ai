@@ -48,7 +48,7 @@ from src.knowledge.graph.schemas.nodes import (
     QueryPatternNode,
     TableNode,
 )
-from src.knowledge.retrieval.service import SemanticSearchService
+from src.knowledge.retrieval.schema_retrieval import SchemaRetrievalService
 
 logger = logging.getLogger(__name__)
 
@@ -426,15 +426,22 @@ async def get_related_tables(
 
 
 @router.post("/search/schema", response_model=SchemaSearchResponse)
-async def search_schema(
+async def schema_retrieval(
     body: SearchRequest,
-    search: SemanticSearchService = Depends(get_search_service),
+    search: SchemaRetrievalService = Depends(get_search_service),
 ):
-    result = await search.search_schema(
+    result = await search.schema_retrieval(
         query=body.query,
         database=body.database,
         top_k=body.top_k,
         threshold=body.threshold,
+        entities=body.entities,
+        intent=body.intent,
+        domain=body.domain,
+        business_terms=body.business_terms,
+        column_hints=body.column_hints,
+        include_patterns=body.include_patterns,
+        include_context=body.include_context,
     )
     return SchemaSearchResponse(
         tables=[SearchResultItem(**r.to_dict()) for r in result.tables],
@@ -446,38 +453,6 @@ async def search_schema(
         query_analysis=result.query_analysis,
         search_metadata=result.search_metadata,
     )
-
-
-@router.get("/search/tables", response_model=list[SearchResultItem])
-async def search_tables(
-    q: str = Query(...),
-    database: Optional[str] = Query(None),
-    top_k: int = Query(5, ge=1, le=50),
-    search: SemanticSearchService = Depends(get_search_service),
-):
-    results = await search.search_tables(q, top_k=top_k, database=database)
-    return [SearchResultItem(**r.to_dict()) for r in results]
-
-
-@router.get("/search/columns", response_model=list[SearchResultItem])
-async def search_columns(
-    q: str = Query(...),
-    database: Optional[str] = Query(None),
-    top_k: int = Query(5, ge=1, le=50),
-    search: SemanticSearchService = Depends(get_search_service),
-):
-    results = await search.search_columns(q, top_k=top_k, database=database)
-    return [SearchResultItem(**r.to_dict()) for r in results]
-
-
-@router.get("/search/entities", response_model=list[SearchResultItem])
-async def search_entities(
-    q: str = Query(...),
-    top_k: int = Query(5, ge=1, le=50),
-    search: SemanticSearchService = Depends(get_search_service),
-):
-    results = await search.search_entities(q, top_k=top_k)
-    return [SearchResultItem(**r.to_dict()) for r in results]
 
 
 @router.post("/memory/schema", response_model=EpisodeResponse, status_code=201)

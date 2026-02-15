@@ -10,7 +10,7 @@ from src.core.agentops_tracker import tool as agentops_tool
 from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.memory import MemoryManager
 from src.knowledge.graph.schemas.episodes import EpisodeCategory
-from src.knowledge.retrieval.analyzer import QueryAnalyzer
+from src.knowledge.utils.pipeline_logger import track_class
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +53,11 @@ class GraphSearchTools(Toolkit):
         self.default_database = default_database
         self.memory = MemoryManager(client)
         self.search_service = self.memory.search
-        self.episode_store = self.memory.episodes
-        self.entity_registry = self.memory.entities
-        self._analyzer = QueryAnalyzer()
+        self.episode_store = self.memory.episode_queries
+        self.entity_registry = self.memory.entity_queries
 
         tools: List[Any] = [
-            self.search_schema,
-            self.smart_search,
+            self.schema_retrieval,
             self.get_table_details,
             self.get_table_columns,
             self.resolve_business_term,
@@ -69,7 +67,6 @@ class GraphSearchTools(Toolkit):
             self.get_similar_queries,
             self.get_recent_queries,
             self.discover_domains,
-            self.analyze_query,
             self.store_query_episode,
             self.store_feedback,
             self.store_pattern,
@@ -77,38 +74,68 @@ class GraphSearchTools(Toolkit):
         ]
         super().__init__(name="graph_search_tools", tools=tools, **kwargs)
 
-    @agentops_tool(name="SearchSchema")
-    def search_schema(self, query: str, database: Optional[str] = None) -> str:
+    @agentops_tool(name="SchemaRetrieval")
+    def schema_retrieval(
+        self,
+        query: str,
+        database: Optional[str] = None,
+        entities: Optional[List[str]] = None,
+        intent: Optional[str] = None,
+        domain: Optional[str] = None,
+        business_terms: Optional[List[str]] = None,
+        column_hints: Optional[List[str]] = None,
+        top_k: int = 3,
+        include_patterns: bool = True,
+        include_context: bool = True,
+    ) -> str:
         """Search the knowledge graph for tables, columns, entities and patterns
         matching the query.  Uses multi-level retrieval: exact match, graph
         expansion, pattern match and vector similarity, followed by intelligent
-        reranking."""
-        db = database or self.default_database
-        results = _run_async(self.search_service.search_all(query, db))
-        return json.dumps(results, default=str, ensure_ascii=False)
+        reranking.
 
-    @agentops_tool(name="SmartSearch")
-    def smart_search(self, query: str, database: Optional[str] = None, top_k: int = 5) -> str:
-        """Advanced multi-level search with full query analysis, reranking and
-        fallback strategies.  Returns ranked results with scoring breakdown,
-        query analysis metadata and search diagnostics.
-
-        Use this when the simpler search_schema does not return good results
-        or when you need detailed scoring information."""
+        Parameters
+        ----------
+        query : str
+            Natural-language search query describing what the user is looking for.
+        database : str | None
+            Restrict results to a specific database.
+        entities : list[str] | None
+            Explicit entity or table names already identified from the user
+            message (e.g. ["party_v2_public_customer", "transaction"]).
+            Providing these uses them directly as Level-1 search terms.
+        intent : str | None
+            The user intent: "schema_exploration", "data_query",
+            "relationship_discovery", or "knowledge_lookup".
+            Tailors which retrieval levels execute.
+        domain : str | None
+            Business domain to focus on (e.g. "payment", "lending", "card",
+            "party", "campaign_management").  Filters Level-1 results and
+            boosts same-domain items in reranking.
+        business_terms : list[str] | None
+            Vietnamese or English business terms / synonyms extracted from
+            the user message (e.g. ["số dư", "tài khoản"] or
+            ["balance", "account"]).  Added to search terms for synonym matching.
+        column_hints : list[str] | None
+            Column names the user is interested in (e.g. ["cif_number",
+            "created_at", "status"]).  Tables containing these columns
+            receive a reranking boost.
+        top_k : int
+            Maximum number of results per category (default 5).
+        include_patterns : bool
+            Whether to include query pattern results.
+        include_context : bool
+            Whether to fetch full table context (columns, rules, codesets).
+        """
         db = database or self.default_database
         result = _run_async(
-            self.search_service.search_schema(query, top_k=top_k, database=db)
+            self.search_service.schema_retrieval(
+                query, database=db, entities=entities, intent=intent,
+                domain=domain, business_terms=business_terms, column_hints=column_hints,
+                top_k=top_k, include_patterns=include_patterns,
+                include_context=include_context,
+            )
         )
-        response: Dict[str, Any] = {
-            "query_analysis": result.query_analysis,
-            "ranked_results": result.ranked_results,
-            "search_metadata": result.search_metadata,
-            "tables": [r.to_dict() for r in result.tables],
-            "entities": [r.to_dict() for r in result.entities],
-            "patterns": result.patterns,
-            "context": result.context,
-        }
-        return json.dumps(response, default=str, ensure_ascii=False)
+        return json.dumps(result.to_dict(), default=str, ensure_ascii=False)
 
     @agentops_tool(name="GetTableDetails")
     def get_table_details(self, table_name: str, database: Optional[str] = None) -> str:
@@ -214,15 +241,6 @@ class GraphSearchTools(Toolkit):
             self.search_service._fallback_domain_discovery()
         )
         return json.dumps({"domains": domains}, default=str, ensure_ascii=False)
-
-    @agentops_tool(name="AnalyzeQuery")
-    def analyze_query(self, query: str) -> str:
-        """Analyse a natural-language query to extract intent, entities,
-        complexity, temporal context and business terms WITHOUT hitting
-        the graph.  Useful for planning which tools to call next."""
-        from dataclasses import asdict
-        analysis = self._analyzer.analyze(query)
-        return json.dumps(asdict(analysis), default=str, ensure_ascii=False)
 
     @agentops_tool(name="StoreQueryEpisode")
     def store_query_episode(

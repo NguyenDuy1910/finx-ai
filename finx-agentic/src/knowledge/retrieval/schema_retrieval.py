@@ -1,4 +1,6 @@
-"""SemanticSearchService — multi-level retrieval pipeline over the graph."""
+"""SchemaRetrievalService — multi-level retrieval pipeline over the graph."""
+
+from __future__ import annotations
 
 import asyncio
 import json
@@ -8,21 +10,23 @@ from typing import Any, Dict, List, Optional
 
 from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.constants import DEFAULT_TOP_K, DEFAULT_SIMILARITY_THRESHOLD
-from src.knowledge.retrieval.analyzer import QueryAnalyzer, QueryAnalysis
 from src.knowledge.retrieval.reranker import SearchReranker, ScoredItem, RerankerWeights
-from src.knowledge.retrieval.models import SearchResult, TableContext, SchemaSearchResult
+from src.knowledge.retrieval import SearchResult, TableContext, SchemaSearchResult
+from src.knowledge.utils.pipeline_logger import track_class
+
 
 logger = logging.getLogger(__name__)
 
 
-class SemanticSearchService:
+@track_class(entry_point="schema_retrieval")
+class SchemaRetrievalService:
     """Unified semantic search over the graph knowledge base.
 
     Multi-level retrieval pipeline:
-    1. Query Analysis — extract entities, intent, complexity, temporal context.
+    1. Term extraction — split query into searchable tokens.
     2. Level 1 — Exact match on entity names / synonyms.
     3. Level 2 — Graph expansion (1-2 hops from L1 hits).
-    4. Level 3 — Query pattern match by intent.
+    4. Level 3 — Query pattern match by text similarity.
     5. Level 4 — Vector similarity search.
     6. Context enrichment — full table context.
     7. Intelligent reranking — weighted multi-signal scoring.
@@ -33,10 +37,9 @@ class SemanticSearchService:
 
     def __init__(self, client: GraphitiClient):
         self._client = client
-        self._analyzer = QueryAnalyzer()
         self._reranker = SearchReranker(
             weights=RerankerWeights(),
-            confidence_threshold=0.35,
+            confidence_threshold=0.5,
             top_k=10,
         )
 
@@ -77,59 +80,89 @@ class SemanticSearchService:
 
     async def _level1_exact_match(
         self, terms: List[str], database: Optional[str] = None,
+        domain: Optional[str] = None,
     ) -> List[ScoredItem]:
+        """Level 1 — Exact / synonym match on entity and table names.
+
+        Uses batched Cypher queries (one for BusinessEntity, one for Table)
+        with UNWIND to match all terms in a single round-trip each.
+        """
         if not terms:
             return []
 
+        search_terms = terms[:10]
+        params: Dict[str, Any] = {"terms": search_terms}
+
+        # ── Build optional filter clauses ──
+        entity_db_filter = ""
+        table_db_filter = ""
+        if database:
+            entity_db_filter = "AND (e.attributes CONTAINS $database OR e.name CONTAINS $database)"
+            table_db_filter = "AND (t.attributes CONTAINS $database OR t.name CONTAINS $database)"
+            params["database"] = database
+
+        entity_domain_filter = ""
+        table_domain_filter = ""
+        if domain:
+            entity_domain_filter = "AND e.attributes CONTAINS $domain"
+            # FalkorDB doesn't support EXISTS { MATCH … } subqueries,
+            # so we filter by domain via table name or attributes.
+            table_domain_filter = (
+                "AND (toLower(t.name) CONTAINS toLower($domain) "
+                "OR t.attributes CONTAINS $domain)"
+            )
+            params["domain"] = domain
+
+        # ── BusinessEntity batch query ──
+        entity_coro = self._execute(
+            f"""
+            UNWIND $terms AS term
+            MATCH (e:BusinessEntity)
+            WHERE (toLower(e.name) CONTAINS toLower(term)
+               OR e.attributes CONTAINS term)
+            {entity_db_filter}
+            {entity_domain_filter}
+            RETURN DISTINCT e.name AS name, e.summary AS summary,
+                   e.attributes AS attributes
+            LIMIT 20
+            """,
+            **params,
+        )
+
+        # ── Table batch query ──
+        table_coro = self._execute(
+            f"""
+            UNWIND $terms AS term
+            MATCH (t:Table)
+            WHERE toLower(t.name) CONTAINS toLower(term)
+            {table_db_filter}
+            {table_domain_filter}
+            RETURN DISTINCT t.name AS name, t.summary AS summary,
+                   t.attributes AS attributes
+            LIMIT 20
+            """,
+            **params,
+        )
+
+        entity_records, table_records = await asyncio.gather(entity_coro, table_coro)
+
         items: List[ScoredItem] = []
-
-        for term in terms[:10]:
-            db_filter = ""
-            params: Dict[str, Any] = {"term": term}
-            if database:
-                db_filter = "AND (e.attributes CONTAINS $database OR e.name CONTAINS $database)"
-                params["database"] = database
-
-            records = await self._execute(
-                f"""
-                MATCH (e:BusinessEntity)
-                WHERE (toLower(e.name) CONTAINS toLower($term)
-                   OR e.attributes CONTAINS $term)
-                {db_filter}
-                RETURN e.name AS name, e.summary AS summary,
-                       e.attributes AS attributes, labels(e) AS lbls
-                LIMIT 5
-                """,
-                **params,
-            )
-            for r in records:
-                items.append(ScoredItem(
-                    name=r["name"], label="BusinessEntity",
-                    summary=r.get("summary") or "",
-                    attributes=self._parse_attrs(r.get("attributes")),
-                    text_match_score=1.0, graph_relevance_score=1.0,
-                    match_type="exact", hop_distance=0, source_level="level1",
-                ))
-
-            records = await self._execute(
-                f"""
-                MATCH (t:Table)
-                WHERE toLower(t.name) CONTAINS toLower($term)
-                {db_filter.replace('e.', 't.')}
-                RETURN t.name AS name, t.summary AS summary,
-                       t.attributes AS attributes
-                LIMIT 5
-                """,
-                **params,
-            )
-            for r in records:
-                items.append(ScoredItem(
-                    name=r["name"], label="Table",
-                    summary=r.get("summary") or "",
-                    attributes=self._parse_attrs(r.get("attributes")),
-                    text_match_score=1.0, graph_relevance_score=1.0,
-                    match_type="exact", hop_distance=0, source_level="level1",
-                ))
+        for r in entity_records:
+            items.append(ScoredItem(
+                name=r["name"], label="BusinessEntity",
+                summary=r.get("summary") or "",
+                attributes=self._parse_attrs(r.get("attributes")),
+                text_match_score=1.0, graph_relevance_score=1.0,
+                match_type="exact", hop_distance=0, source_level="level1",
+            ))
+        for r in table_records:
+            items.append(ScoredItem(
+                name=r["name"], label="Table",
+                summary=r.get("summary") or "",
+                attributes=self._parse_attrs(r.get("attributes")),
+                text_match_score=1.0, graph_relevance_score=1.0,
+                match_type="exact", hop_distance=0, source_level="level1",
+            ))
 
         return items
 
@@ -217,18 +250,20 @@ class SemanticSearchService:
     #  LEVEL 3 — Query Pattern Match
     # ══════════════════════════════════════════════════════════════════
 
-    async def _level3_pattern_match(self, analysis: QueryAnalysis) -> List[ScoredItem]:
+    async def _level3_pattern_match(self, query: str) -> List[ScoredItem]:
+        """Match query patterns by text similarity on the raw query string."""
         items: List[ScoredItem] = []
         records = await self._execute(
             """
             MATCH (qp:QueryPattern)
-            WHERE qp.attributes CONTAINS $intent
+            WHERE toLower(qp.summary) CONTAINS toLower($query)
+               OR toLower(qp.name) CONTAINS toLower($query)
             OPTIONAL MATCH (qp)-[:QUERY_USES_TABLE]->(t:Table)
             RETURN qp.name AS name, qp.summary AS summary,
                    qp.attributes AS attrs, collect(DISTINCT t.name) AS tables
             LIMIT 10
             """,
-            intent=analysis.intent.value,
+            query=query,
         )
         for r in records:
             attrs = self._parse_attrs(r.get("attrs"))
@@ -285,7 +320,10 @@ class SemanticSearchService:
 
     async def _enrich_scored_items(
         self, items: List[ScoredItem], target_domain: Optional[str] = None,
+        column_hints: Optional[List[str]] = None,
     ) -> List[ScoredItem]:
+        col_hints_lower = {c.lower() for c in (column_hints or [])}
+
         for item in items:
             attrs = item.attributes
             item.data_quality_score = SearchReranker.compute_data_quality(
@@ -321,6 +359,18 @@ class SemanticSearchService:
                 )
                 if ctx.domain and target_domain and ctx.domain.lower() == target_domain.lower():
                     it.business_context_score = SearchReranker.compute_business_context(same_domain=True)
+
+                # Boost tables whose columns match the LLM-provided column hints
+                if col_hints_lower and ctx.columns:
+                    matched_cols = sum(
+                        1 for c in ctx.columns
+                        if c.get("name", "").lower() in col_hints_lower
+                    )
+                    if matched_cols:
+                        # Proportional boost: up to +0.3 on text_match when all
+                        # hints are found, capped so it doesn't dominate.
+                        ratio = min(1.0, matched_cols / len(col_hints_lower))
+                        it.text_match_score = min(1.0, it.text_match_score + 0.3 * ratio)
 
         return items
 
@@ -410,74 +460,128 @@ class SemanticSearchService:
         ]
 
     # ══════════════════════════════════════════════════════════════════
-    #  PUBLIC PER-LABEL SEARCH
-    # ══════════════════════════════════════════════════════════════════
-
-    async def search_tables(
-        self, query: str, top_k: int = DEFAULT_TOP_K,
-        threshold: float = DEFAULT_SIMILARITY_THRESHOLD, database: Optional[str] = None,
-    ) -> List[SearchResult]:
-        embedding = await self._embed_query(query)
-        return await self._search_by_label("Table", embedding, top_k=top_k, threshold=threshold, database=database)
-
-    async def search_columns(
-        self, query: str, top_k: int = DEFAULT_TOP_K,
-        threshold: float = DEFAULT_SIMILARITY_THRESHOLD, database: Optional[str] = None,
-    ) -> List[SearchResult]:
-        embedding = await self._embed_query(query)
-        return await self._search_by_label("Column", embedding, top_k=top_k, threshold=threshold, database=database)
-
-    async def search_entities(
-        self, query: str, top_k: int = DEFAULT_TOP_K,
-        threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-    ) -> List[SearchResult]:
-        embedding = await self._embed_query(query)
-        return await self._search_by_label("BusinessEntity", embedding, top_k=top_k, threshold=threshold)
-
-    # ══════════════════════════════════════════════════════════════════
     #  MAIN PIPELINE
     # ══════════════════════════════════════════════════════════════════
 
-    async def search_schema(
-        self, query: str, top_k: int = DEFAULT_TOP_K,
+    async def schema_retrieval(
+        self, query: str, *,
+        top_k: int = DEFAULT_TOP_K,
         threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
         database: Optional[str] = None,
+        entities: Optional[List[str]] = None,
+        intent: Optional[str] = None,
+        domain: Optional[str] = None,
+        business_terms: Optional[List[str]] = None,
+        column_hints: Optional[List[str]] = None,
+        include_patterns: bool = True,
+        include_context: bool = True,
     ) -> SchemaSearchResult:
+        """Multi-level retrieval pipeline over the knowledge graph.
+
+        Parameters
+        ----------
+        query : str
+            Natural-language search query.
+        top_k : int
+            Maximum results per category.
+        threshold : float
+            Minimum similarity threshold for vector search.
+        database : str | None
+            Restrict results to a specific database.
+        entities : list[str] | None
+            Explicit entity / table names the LLM has already identified.
+            When provided these are used directly as Level-1 search terms
+            instead of naive tokenisation.
+        intent : str | None
+            The user intent as classified by the LLM, e.g.
+            ``"schema_exploration"``, ``"data_query"``,
+            ``"relationship_discovery"``, ``"knowledge_lookup"``.
+            Used to tailor which retrieval levels run.
+        domain : str | None
+            Business domain to focus on (e.g. ``"payment"``,
+            ``"lending"``, ``"card"``).  When provided, Level-1 queries
+            are filtered to this domain and the reranker boosts items
+            that belong to the same domain.
+        business_terms : list[str] | None
+            Vietnamese or English business terms / synonyms the LLM
+            extracted from the user message (e.g. ``["số dư", "tài khoản"]``
+            or ``["balance", "account"]``).  These are added to the
+            Level-1 search terms for synonym matching.
+        column_hints : list[str] | None
+            Column names or patterns the user is interested in (e.g.
+            ``["cif_number", "created_at"]``).  After search, tables
+            that contain matching columns receive a reranking boost.
+        include_patterns : bool
+            Whether to include QueryPattern results (Level 3).
+        include_context : bool
+            Whether to fetch full table context for top results.
+        """
         t0 = time.time()
 
-        # Step 1: Query Analysis
-        analysis = self._analyzer.analyze(query)
-        db = database or analysis.database_hint
-        search_terms = analysis.entities + analysis.key_business_terms
+        # Step 1: Build search terms — only from LLM-provided args
+        db = database
+        search_terms: List[str] = list(entities or [])
+
+        if business_terms:
+            existing_lower = {t.lower() for t in search_terms}
+            for bt in business_terms:
+                if bt.lower() not in existing_lower:
+                    search_terms.append(bt)
+                    existing_lower.add(bt.lower())
+
+        # If LLM provided nothing, use the raw query as a single term
+        if not search_terms:
+            search_terms = [query.strip()]
+
+        # Determine retrieval strategy based on intent
+        run_graph_expansion = True
+        run_pattern_match = include_patterns
+        run_vector_search = True
+
+        if intent == "relationship_discovery":
+            run_pattern_match = False
+            run_vector_search = False
+        elif intent == "knowledge_lookup":
+            run_graph_expansion = False
 
         # Step 2: Level 1 — Exact Match
         all_candidates: List[ScoredItem] = []
-        l1_items = await self._level1_exact_match(search_terms, database=db)
+        l1_items = await self._level1_exact_match(search_terms, database=db, domain=domain)
         all_candidates.extend(l1_items)
 
         best_l1 = max((it.text_match_score for it in l1_items), default=0.0)
         skip_deeper = best_l1 >= self.EARLY_STOP_SCORE and len(l1_items) >= 3
 
         # Steps 3-5: Deeper levels (if needed)
+        embedding: Optional[List[float]] = None
         if not skip_deeper:
-            embedding = await self._embed_query(query)
-            l2_items, l3_items, l4_items = await asyncio.gather(
-                self._level2_graph_expansion(l1_items),
-                self._level3_pattern_match(analysis),
-                self._level4_vector_search(embedding, top_k=top_k, threshold=threshold, database=db),
-            )
-            all_candidates.extend(l2_items)
-            all_candidates.extend(l3_items)
-            all_candidates.extend(l4_items)
-        else:
-            embedding = await self._embed_query(query)
+            needs_embedding = run_vector_search
+            if needs_embedding:
+                embedding = await self._embed_query(query)
+
+            deeper_coros = []
+            if run_graph_expansion:
+                deeper_coros.append(self._level2_graph_expansion(l1_items))
+            if run_pattern_match:
+                deeper_coros.append(self._level3_pattern_match(query))
+            if run_vector_search and embedding is not None:
+                deeper_coros.append(
+                    self._level4_vector_search(embedding, top_k=top_k, threshold=threshold, database=db)
+                )
+
+            if deeper_coros:
+                deeper_results = await asyncio.gather(*deeper_coros)
+                for items in deeper_results:
+                    all_candidates.extend(items)
 
         # Step 6: Enrich
-        target_domain = next(
+        target_domain = domain or next(
             (it.attributes.get("domain") for it in all_candidates if it.attributes.get("domain")),
             None,
         )
-        all_candidates = await self._enrich_scored_items(all_candidates, target_domain=target_domain)
+        all_candidates = await self._enrich_scored_items(
+            all_candidates, target_domain=target_domain, column_hints=column_hints,
+        )
 
         # Step 7: Rerank
         ranked = self._reranker.rerank(all_candidates, threshold=0.20, top_k=top_k)
@@ -485,9 +589,13 @@ class SemanticSearchService:
         # Step 8: Fallback
         fallback_domains: List[Dict[str, Any]] = []
         if not ranked:
+            if embedding is None:
+                embedding = await self._embed_query(query)
             relaxed = await self._fallback_relaxed_search(embedding, database=db)
             if relaxed:
-                relaxed = await self._enrich_scored_items(relaxed)
+                relaxed = await self._enrich_scored_items(
+                    relaxed, target_domain=target_domain, column_hints=column_hints,
+                )
                 ranked = self._reranker.rerank(relaxed, threshold=0.15, top_k=top_k)
 
             if not ranked:
@@ -498,7 +606,7 @@ class SemanticSearchService:
         # Build result
         tables: List[SearchResult] = []
         columns: List[SearchResult] = []
-        entities: List[SearchResult] = []
+        entities_out: List[SearchResult] = []
         patterns: List[Dict[str, Any]] = []
 
         for item in ranked:
@@ -511,7 +619,7 @@ class SemanticSearchService:
             elif item.label == "Column":
                 columns.append(sr)
             elif item.label == "BusinessEntity":
-                entities.append(sr)
+                entities_out.append(sr)
             elif item.label == "QueryPattern":
                 patterns.append({
                     "name": item.name, "summary": item.summary,
@@ -519,33 +627,44 @@ class SemanticSearchService:
                 })
 
         # Fetch full context for top tables
-        table_names = self._collect_table_names(tables, columns, entities)
-        raw_contexts = await asyncio.gather(
-            *[self._get_table_context(name) for name in table_names]
-        )
-        context = [ctx.to_dict() for ctx in raw_contexts if ctx is not None]
+        context: List[Dict[str, Any]] = []
+        if include_context:
+            table_names = self._collect_table_names(tables, columns, entities_out)
+            raw_contexts = await asyncio.gather(
+                *[self._get_table_context(name) for name in table_names]
+            )
+            context = [ctx.to_dict() for ctx in raw_contexts if ctx is not None]
+
+        # Determine which levels actually ran
+        levels: List[str] = ["L1"]
+        if not skip_deeper:
+            if run_graph_expansion:
+                levels.append("L2")
+            if run_pattern_match:
+                levels.append("L3")
+            if run_vector_search:
+                levels.append("L4")
 
         elapsed_ms = round((time.time() - t0) * 1000)
-        logger.debug("search_schema completed in %dms — tables=%d columns=%d entities=%d",
-                      elapsed_ms, len(tables), len(columns), len(entities))
+        logger.debug("schema_retrieval completed in %dms — tables=%d columns=%d entities=%d",
+                      elapsed_ms, len(tables), len(columns), len(entities_out))
 
         return SchemaSearchResult(
-            tables=tables, columns=columns, entities=entities,
+            tables=tables, columns=columns, entities=entities_out,
             patterns=patterns, context=context,
             ranked_results=[it.to_dict() for it in ranked],
             query_analysis={
-                "intent": analysis.intent.value,
-                "complexity": analysis.complexity.value,
-                "entities": analysis.entities,
-                "temporal_context": analysis.temporal_context,
-                "aggregation_functions": analysis.aggregation_functions,
-                "business_terms": analysis.key_business_terms,
-                "database_hint": analysis.database_hint,
-                "is_vietnamese": analysis.is_vietnamese,
+                "search_terms": search_terms,
+                "database": db,
+                "intent": intent,
+                "domain": domain,
+                "explicit_entities": entities or [],
+                "business_terms": business_terms or [],
+                "column_hints": column_hints or [],
             },
             search_metadata={
                 "elapsed_ms": elapsed_ms,
-                "levels_executed": "L1" if skip_deeper else "L1-L4",
+                "levels_executed": "-".join(levels),
                 "total_candidates": len(all_candidates),
                 "after_rerank": len(ranked),
                 "early_stopped": skip_deeper,
@@ -553,26 +672,6 @@ class SemanticSearchService:
                 "fallback_domains": fallback_domains,
             },
         )
-
-    # ══════════════════════════════════════════════════════════════════
-    #  SEARCH ALL
-    # ══════════════════════════════════════════════════════════════════
-
-    async def search_all(
-        self, query: str, database: Optional[str] = None,
-        top_k: int = DEFAULT_TOP_K, threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
-    ) -> Dict[str, Any]:
-        result = await self.search_schema(query, top_k=top_k, threshold=threshold, database=database)
-        return {
-            "tables": [r.to_dict() for r in result.tables],
-            "columns": [r.to_dict() for r in result.columns],
-            "entities": [r.to_dict() for r in result.entities],
-            "patterns": result.patterns,
-            "context": result.context,
-            "ranked_results": result.ranked_results,
-            "query_analysis": result.query_analysis,
-            "search_metadata": result.search_metadata,
-        }
 
     # ══════════════════════════════════════════════════════════════════
     #  TABLE CONTEXT

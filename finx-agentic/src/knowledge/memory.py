@@ -6,9 +6,11 @@ from typing import Any, Dict, List, Optional
 from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.indexing.episode_indexer import EpisodeIndexer
 from src.knowledge.indexing.entity_indexer import EntityIndexer
-from src.knowledge.retrieval.service import SemanticSearchService
-from src.knowledge.retrieval.models import SchemaSearchResult
+from src.knowledge.retrieval.schema_retrieval import SchemaRetrievalService
+from src.knowledge.retrieval.entity_queries import EntityQueries
+from src.knowledge.retrieval import SchemaSearchResult
 from src.knowledge.retrieval.episode_queries import EpisodeQueries
+from src.knowledge.utils.pipeline_logger import track_class
 from src.knowledge.graph.schemas.episodes import (
     EpisodeCategory,
     FeedbackEpisode,
@@ -33,6 +35,7 @@ from src.knowledge.graph.schemas.edges import (
 logger = logging.getLogger(__name__)
 
 
+@track_class(entry_point="get_context")
 class MemoryManager:
     """Unified façade over the graph-based memory system.
 
@@ -55,7 +58,8 @@ class MemoryManager:
         self.episodes = EpisodeIndexer(client)
         self.episode_queries = EpisodeQueries(client)
         self.entities = EntityIndexer(client)
-        self.search = SemanticSearchService(client)
+        self.entity_queries = EntityQueries(client)
+        self.search = SchemaRetrievalService(client)
 
     # ── initialisation ───────────────────────────────────────────────
 
@@ -222,9 +226,10 @@ class MemoryManager:
         database: Optional[str] = None,
         top_k: int = 5,
     ) -> Dict[str, Any]:
-        schema_ctx = await self.search.search_all(
+        result = await self.search.schema_retrieval(
             query, database=database, top_k=top_k,
         )
+        schema_ctx = result.to_dict()
         similar_queries = await self.episode_queries.search_similar_queries(
             query, top_k=top_k,
         )
@@ -237,13 +242,25 @@ class MemoryManager:
             "feedback": feedback,
         }
 
-    async def search_schema(
+    async def schema_retrieval(
         self,
         query: str,
         top_k: int = 5,
         database: Optional[str] = None,
+        entities: Optional[List[str]] = None,
+        intent: Optional[str] = None,
+        domain: Optional[str] = None,
+        business_terms: Optional[List[str]] = None,
+        column_hints: Optional[List[str]] = None,
+        include_patterns: bool = True,
+        include_context: bool = True,
     ) -> SchemaSearchResult:
-        return await self.search.search_schema(query, top_k=top_k, database=database)
+        return await self.search.schema_retrieval(
+            query, top_k=top_k, database=database,
+            entities=entities, intent=intent,
+            domain=domain, business_terms=business_terms, column_hints=column_hints,
+            include_patterns=include_patterns, include_context=include_context,
+        )
 
     # ── stats / lifecycle ────────────────────────────────────────────
 

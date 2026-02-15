@@ -9,7 +9,7 @@ from src.knowledge.graph.client import GraphitiClient, get_graphiti_client
 from src.knowledge.indexing.entity_indexer import EntityIndexer
 from src.knowledge.indexing.episode_indexer import EpisodeIndexer
 from src.knowledge.memory import MemoryManager
-from src.knowledge.retrieval.service import SemanticSearchService
+from src.knowledge.retrieval.schema_retrieval import SchemaRetrievalService
 from src.storage.postgres import get_postgres_db
 
 
@@ -34,7 +34,7 @@ def get_episode_store() -> EpisodeIndexer:
     return get_memory().episodes
 
 
-def get_search_service() -> SemanticSearchService:
+def get_search_service() -> SchemaRetrievalService:
     return get_memory().search
 
 
