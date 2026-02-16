@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 from agno.agent import RunOutput
 from agno.db.base import BaseDb
@@ -35,13 +36,13 @@ class IntentRouterWorkflow(Workflow):
         self.database = database
         self.available_databases = available_databases or []
 
-    def run(
+    async def arun(
         self,
         input: Union[str, List, Dict, Any],
         *,
         stream: Optional[bool] = None,
         **kwargs,
-    ) -> Union[RunOutput, Iterator]:
+    ) -> Union[RunOutput, AsyncIterator]:
         message = input if isinstance(input, str) else str(input)
         session_state = self.session_state or {}
         conversation_history = session_state.get("conversation_history", [])
@@ -54,7 +55,7 @@ class IntentRouterWorkflow(Workflow):
         if not self.graph_tools:
             return RunOutput(content="Graph tools not configured")
 
-        result = route(
+        result = await route(
             message=message,
             graph_tools=self.graph_tools,
             conversation_history=conversation_history,
@@ -70,3 +71,13 @@ class IntentRouterWorkflow(Workflow):
         ])
 
         return RunOutput(content=result.model_dump_json(indent=2))
+
+    def run(
+        self,
+        input: Union[str, List, Dict, Any],
+        *,
+        stream: Optional[bool] = None,
+        **kwargs,
+    ) -> Union[RunOutput, Iterator]:
+        """Sync wrapper – delegates to arun()."""
+        return asyncio.run(self.arun(input, stream=stream, **kwargs))

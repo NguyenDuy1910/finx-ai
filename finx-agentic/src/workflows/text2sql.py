@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
 from agno.agent import RunOutput
 from agno.db.base import BaseDb
@@ -53,13 +54,13 @@ class Text2SQLWorkflow(Workflow):
             state.update(extra)
         return state
 
-    def run(
+    async def arun(
         self,
         input: Union[str, List, Dict, Any],
         *,
         stream: Optional[bool] = None,
         **kwargs,
-    ) -> Union[RunOutput, Iterator]:
+    ) -> Union[RunOutput, AsyncIterator]:
         user_query = input if isinstance(input, str) else str(input)
         session_state = self.session_state or {}
         conversation_history = session_state.get("conversation_history", [])
@@ -73,21 +74,21 @@ class Text2SQLWorkflow(Workflow):
             "query": user_query[:200],
         })
 
-        parsed = self._step_parse(user_query, conversation_history, tracker)
+        parsed = await self._step_parse(user_query, conversation_history, tracker)
         if parsed is None:
             return RunOutput(content="Failed to parse query")
 
-        schema_ctx = self._step_discover(parsed, tracker)
+        schema_ctx = await self._step_discover(parsed, tracker)
 
         step_context = {}
         if schema_ctx:
             step_context["schema_context"] = schema_ctx.model_dump_json(indent=2)
 
-        sql_result = self._step_generate(user_query, schema_ctx, conversation_history, tracker, step_context)
+        sql_result = await self._step_generate(user_query, schema_ctx, conversation_history, tracker, step_context)
         if sql_result is None:
             return RunOutput(content="Failed to generate SQL")
 
-        validation = self._step_validate(sql_result, schema_ctx, user_query, tracker)
+        validation = await self._step_validate(sql_result, schema_ctx, user_query, tracker)
 
         if validation and not validation.is_valid and validation.corrected_sql:
             sql_result = GeneratedSQL(
@@ -98,7 +99,7 @@ class Text2SQLWorkflow(Workflow):
                 has_partition_filter=sql_result.has_partition_filter,
             )
 
-        self._step_learn(user_query, sql_result, parsed, tracker)
+        await self._step_learn(user_query, sql_result, parsed, tracker)
 
         result = Text2SQLResult(
             query=user_query,
@@ -123,8 +124,18 @@ class Text2SQLWorkflow(Workflow):
 
         return RunOutput(content=result.model_dump_json(indent=2))
 
+    def run(
+        self,
+        input: Union[str, List, Dict, Any],
+        *,
+        stream: Optional[bool] = None,
+        **kwargs,
+    ) -> Union[RunOutput, Iterator]:
+        """Sync wrapper – delegates to arun()."""
+        return asyncio.run(self.arun(input, stream=stream, **kwargs))
+
     @operation(name="text2sql_parse_query")
-    def _step_parse(
+    async def _step_parse(
         self,
         user_query: str,
         conversation_history: List[Dict[str, str]],
@@ -138,7 +149,7 @@ class Text2SQLWorkflow(Workflow):
             user_query=user_query,
             conversation_history=conversation_history,
         )
-        response: RunOutput = agent.run(prompt, output_schema=ParsedQuery)
+        response: RunOutput = await agent.arun(prompt, output_schema=ParsedQuery)
         if tracker:
             tracker.track(response, step="query_understanding")
         if response and response.content:
@@ -152,7 +163,7 @@ class Text2SQLWorkflow(Workflow):
         return ParsedQuery(original_text=user_query)
 
     @operation(name="text2sql_discover_schema")
-    def _step_discover(
+    async def _step_discover(
         self,
         parsed: ParsedQuery,
         tracker: Optional[CostTracker] = None,
@@ -165,7 +176,7 @@ class Text2SQLWorkflow(Workflow):
             session_state=self._build_step_state(),
         )
         prompt = build_discover_prompt(parsed_query=parsed, database=self.database)
-        response: RunOutput = agent.run(prompt, output_schema=SchemaContext)
+        response: RunOutput = await agent.arun(prompt, output_schema=SchemaContext)
         if tracker:
             tracker.track(response, step="schema_discovery")
         if response and response.content:
@@ -178,7 +189,7 @@ class Text2SQLWorkflow(Workflow):
         return None
 
     @operation(name="text2sql_generate_sql")
-    def _step_generate(
+    async def _step_generate(
         self,
         user_query: str,
         schema_ctx: Optional[SchemaContext],
@@ -196,7 +207,7 @@ class Text2SQLWorkflow(Workflow):
             schema_context=schema_ctx,
             conversation_history=conversation_history,
         )
-        response: RunOutput = agent.run(prompt, output_schema=GeneratedSQL)
+        response: RunOutput = await agent.arun(prompt, output_schema=GeneratedSQL)
         if tracker:
             tracker.track(response, step="sql_generation")
         if response and response.content:
@@ -209,7 +220,7 @@ class Text2SQLWorkflow(Workflow):
         return None
 
     @operation(name="text2sql_validate_sql")
-    def _step_validate(
+    async def _step_validate(
         self,
         sql_result: GeneratedSQL,
         schema_ctx: Optional[SchemaContext],
@@ -226,7 +237,7 @@ class Text2SQLWorkflow(Workflow):
             schema_context=schema_ctx,
             original_query=original_query,
         )
-        response: RunOutput = agent.run(prompt, output_schema=ValidationResult)
+        response: RunOutput = await agent.arun(prompt, output_schema=ValidationResult)
         if tracker:
             tracker.track(response, step="validation")
         if response and response.content:
@@ -239,7 +250,7 @@ class Text2SQLWorkflow(Workflow):
         return None
 
     @operation(name="text2sql_learn")
-    def _step_learn(
+    async def _step_learn(
         self,
         user_query: str,
         sql_result: GeneratedSQL,
@@ -265,7 +276,7 @@ class Text2SQLWorkflow(Workflow):
                 intent=parsed.intent.value,
                 success=True,
             )
-            response = agent.run(prompt)
+            response = await agent.arun(prompt)
             if tracker:
                 tracker.track(response, step="learning")
         except Exception as e:

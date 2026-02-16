@@ -17,7 +17,7 @@ class UserIntent(str, Enum):
 
 
 class IntentClassification(BaseModel):
-    intent: UserIntent = UserIntent.GENERAL
+    intent: UserIntent
     confidence: float = 0.0
     entities: List[str] = Field(default_factory=list)
     database: Optional[str] = None

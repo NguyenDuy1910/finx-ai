@@ -38,7 +38,7 @@ async def main():
     for query in queries:
         print(f"\nQ: {query}")
         print("-" * 60)
-        response = agent.run(query)
+        response = await agent.arun(query)
         tracker.track(response, step=query[:40])
         print(response.content)
         print("=" * 60)

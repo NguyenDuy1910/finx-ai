@@ -61,12 +61,11 @@ def _create_classifier(
         db=db,
         session_id=session_id,
         read_chat_history=db is not None,
-        add_history_to_messages=db is not None,
         num_history_runs=3,
     )
 
 
-def classify_intent(
+async def classify_intent(
     message: str,
     conversation_history: Optional[List[Dict[str, str]]] = None,
     available_databases: Optional[List[str]] = None,
@@ -81,7 +80,7 @@ def classify_intent(
         available_databases=available_databases or [],
     )
     agent = _create_classifier(db=db, session_id=session_id)
-    response: RunOutput = agent.run(prompt, output_schema=IntentClassification)
+    response: RunOutput = await agent.arun(prompt, output_schema=IntentClassification)
 
     if response and response.content:
         if isinstance(response.content, IntentClassification):
@@ -108,7 +107,7 @@ def classify_intent(
         return IntentClassification(intent=UserIntent.GENERAL, confidence=0.3)
 
 
-def fetch_graph_context(
+async def fetch_graph_context(
     intent: IntentClassification,
     message: str,
     graph_tools: GraphSearchTools,
@@ -117,14 +116,14 @@ def fetch_graph_context(
 
     if intent.intent == UserIntent.SCHEMA_EXPLORATION:
         context["schema"] = json.loads(
-            graph_tools.schema_retrieval(
+            await graph_tools.schema_retrieval(
                 message, intent.database,
                 entities=intent.entities or None,
                 intent="schema_exploration",
             )
         )
         for entity in intent.entities[:3]:
-            details = graph_tools.get_table_details(entity, intent.database)
+            details = await graph_tools.get_table_details(entity, intent.database)
             parsed = json.loads(details)
             if parsed.get("table"):
                 context.setdefault("table_details", {})[entity] = parsed
@@ -133,34 +132,34 @@ def fetch_graph_context(
         entities = intent.entities
         if len(entities) >= 2:
             context["join_path"] = json.loads(
-                graph_tools.find_join_path(entities[0], entities[1], intent.database)
+                await graph_tools.find_join_path(entities[0], entities[1], intent.database)
             )
         for entity in entities[:3]:
             context.setdefault("related", {})[entity] = json.loads(
-                graph_tools.find_related_tables(entity, intent.database)
+                await graph_tools.find_related_tables(entity, intent.database)
             )
 
     elif intent.intent == UserIntent.DATA_QUERY:
         context["schema"] = json.loads(
-            graph_tools.schema_retrieval(
+            await graph_tools.schema_retrieval(
                 message, intent.database,
                 entities=intent.entities or None,
                 intent="data_query",
             )
         )
         context["patterns"] = json.loads(
-            graph_tools.get_query_patterns(message)
+            await graph_tools.get_query_patterns(message)
         )
 
     elif intent.intent == UserIntent.KNOWLEDGE_LOOKUP:
         context["similar_queries"] = json.loads(
-            graph_tools.get_similar_queries(message, top_k=5)
+            await graph_tools.get_similar_queries(message, top_k=5)
         )
         context["patterns"] = json.loads(
-            graph_tools.get_query_patterns(message)
+            await graph_tools.get_query_patterns(message)
         )
         for entity in intent.entities[:3]:
-            resolved = json.loads(graph_tools.resolve_business_term(entity))
+            resolved = json.loads(await graph_tools.resolve_business_term(entity))
             if resolved:
                 context.setdefault("resolved_terms", {})[entity] = resolved
 
@@ -181,14 +180,14 @@ def _needs_clarification(intent: IntentClassification) -> bool:
     return False
 
 
-def _gather_graph_hints(
+async def _gather_graph_hints(
     intent: IntentClassification,
     message: str,
     graph_tools: GraphSearchTools,
 ) -> List[str]:
     hints: List[str] = []
     try:
-        raw = graph_tools.schema_retrieval(
+        raw = await graph_tools.schema_retrieval(
             message, intent.database,
             entities=intent.entities or None,
             intent=intent.intent.value if intent.intent else None,
@@ -209,7 +208,7 @@ def _gather_graph_hints(
     return hints
 
 
-def _generate_clarification(
+async def _generate_clarification(
     message: str,
     intent: IntentClassification,
     graph_hints: List[str],
@@ -230,11 +229,11 @@ def _generate_clarification(
         instructions=[instructions],
         markdown=True,
     )
-    response: RunOutput = agent.run(prompt)
+    response: RunOutput = await agent.arun(prompt)
     return str(response.content) if response and response.content else ""
 
 
-def _respond_with_context(
+async def _respond_with_context(
     message: str,
     intent: UserIntent,
     context: Dict[str, Any],
@@ -270,11 +269,11 @@ def _respond_with_context(
     if history_str:
         prompt += f"\n\nConversation History:{history_str}"
 
-    response: RunOutput = agent.run(prompt)
+    response: RunOutput = await agent.arun(prompt)
     return str(response.content) if response and response.content else ""
 
 
-def _run_text2sql(
+async def _run_text2sql(
     message: str,
     context: Dict[str, Any],
     graph_tools: GraphSearchTools,
@@ -287,7 +286,7 @@ def _run_text2sql(
 
     parse_agent = create_query_understanding_agent()
     parse_prompt = build_parse_prompt(message, conversation_history)
-    parse_response = parse_agent.run(parse_prompt, output_schema=ParsedQuery)
+    parse_response = await parse_agent.arun(parse_prompt, output_schema=ParsedQuery)
     parsed = None
     if parse_response and parse_response.content:
         if isinstance(parse_response.content, ParsedQuery):
@@ -321,7 +320,7 @@ def _run_text2sql(
         schema_context=schema_ctx,
         conversation_history=conversation_history,
     )
-    sql_response = sql_agent.run(sql_prompt, output_schema=GeneratedSQL)
+    sql_response = await sql_agent.arun(sql_prompt, output_schema=GeneratedSQL)
     sql_result = None
     if sql_response and sql_response.content:
         if isinstance(sql_response.content, GeneratedSQL):
@@ -347,7 +346,7 @@ def _run_text2sql(
         schema_context=schema_ctx,
         original_query=message,
     )
-    val_response = val_agent.run(val_prompt, output_schema=ValidationResult)
+    val_response = await val_agent.arun(val_prompt, output_schema=ValidationResult)
     validation = None
     if val_response and val_response.content:
         if isinstance(val_response.content, ValidationResult):
@@ -382,7 +381,7 @@ def _run_text2sql(
     )
 
 
-def route(
+async def route(
     message: str,
     graph_tools: GraphSearchTools,
     conversation_history: Optional[List[Dict[str, str]]] = None,
@@ -391,7 +390,7 @@ def route(
     db: Optional[BaseDb] = None,
     session_id: Optional[str] = None,
 ) -> RouterResult:
-    intent = classify_intent(
+    intent = await classify_intent(
         message, conversation_history, available_databases,
         db=db, session_id=session_id,
     )
@@ -405,8 +404,8 @@ def route(
         database = intent.database
 
     if _needs_clarification(intent):
-        graph_hints = _gather_graph_hints(intent, message, graph_tools)
-        question = _generate_clarification(message, intent, graph_hints, conversation_history)
+        graph_hints = await _gather_graph_hints(intent, message, graph_tools)
+        question = await _generate_clarification(message, intent, graph_hints, conversation_history)
 
         suggestions = []
         for h in graph_hints[:5]:
@@ -427,19 +426,19 @@ def route(
     context: Dict[str, Any] = {}
     if intent.intent in _CONTEXT_INTENTS:
         try:
-            context = fetch_graph_context(intent, message, graph_tools)
+            context = await fetch_graph_context(intent, message, graph_tools)
         except Exception:
             logger.warning("Failed to fetch graph context", exc_info=True)
 
     if intent.intent == UserIntent.DATA_QUERY:
-        return _run_text2sql(message, context, graph_tools, database, conversation_history)
+        return await _run_text2sql(message, context, graph_tools, database, conversation_history)
 
     if intent.intent in (
         UserIntent.SCHEMA_EXPLORATION,
         UserIntent.RELATIONSHIP_DISCOVERY,
         UserIntent.KNOWLEDGE_LOOKUP,
     ):
-        response = _respond_with_context(message, intent.intent, context, conversation_history)
+        response = await _respond_with_context(message, intent.intent, context, conversation_history)
         return RouterResult(
             intent=intent.intent,
             response=response,
@@ -453,8 +452,8 @@ def route(
         )
 
     if intent.intent == UserIntent.CLARIFICATION:
-        graph_hints = _gather_graph_hints(intent, message, graph_tools)
-        question = _generate_clarification(message, intent, graph_hints, conversation_history)
+        graph_hints = await _gather_graph_hints(intent, message, graph_tools)
+        question = await _generate_clarification(message, intent, graph_hints, conversation_history)
         return RouterResult(
             intent=UserIntent.CLARIFICATION,
             response=question,

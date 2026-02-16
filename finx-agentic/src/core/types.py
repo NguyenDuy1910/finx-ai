@@ -18,10 +18,10 @@ class QueryIntent(str, Enum):
 
 class ParsedQuery(BaseModel):
     original_text: str
-    intent: QueryIntent = QueryIntent.UNKNOWN
+    intent: QueryIntent
     entities: List[str] = Field(default_factory=list)
-    filters: Dict[str, Any] = Field(default_factory=dict)
-    time_range: Optional[Dict[str, str]] = None
+    filters: List[str] = Field(default_factory=list)
+    time_range: Optional[str] = None
     aggregations: List[str] = Field(default_factory=list)
     sort_fields: List[str] = Field(default_factory=list)
     limit: Optional[int] = None

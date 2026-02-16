@@ -28,7 +28,6 @@ def create_manager_agent(
         db=db,
         enable_user_memories=db is not None,
         enable_session_summaries=db is not None,
-        add_history_to_messages=db is not None,
         num_history_runs=3,
     )
 

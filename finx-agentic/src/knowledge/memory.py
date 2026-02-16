@@ -265,8 +265,8 @@ class MemoryManager:
     # ── stats / lifecycle ────────────────────────────────────────────
 
     async def get_stats(self) -> Dict[str, Any]:
-        entity_stats = await self.entities.get_stats()
-        episode_stats = await self.episodes.get_stats()
+        entity_stats = await self.entity_queries.get_stats()
+        episode_stats = await self.episode_queries.get_stats()
         return {"entities": entity_stats, "episodes": episode_stats}
 
     async def close(self) -> None:

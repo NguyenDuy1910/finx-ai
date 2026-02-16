@@ -68,12 +68,20 @@ class GraphitiClient:
         "Table", "Column", "BusinessEntity", "Domain", "BusinessRule", "CodeSet",
     ]
 
+    _EMBEDDING_DIM = 3072
+
     async def _create_vector_indexes(self) -> None:
         driver = self.graphiti.driver
         for label in self._VECTOR_LABELS:
             try:
                 await driver.execute_query(
-                    f"CREATE VECTOR INDEX FOR (n:{label}) ON (n.embedding)"
+                    f"DROP INDEX ON :{label}(embedding)"
+                )
+            except Exception:
+                pass
+            try:
+                await driver.execute_query(
+                    f"CREATE VECTOR INDEX FOR (n:{label}) ON (n.embedding) OPTIONS {{dimension: {self._EMBEDDING_DIM}, similarityFunction: 'cosine'}}"
                 )
             except Exception:
                 pass

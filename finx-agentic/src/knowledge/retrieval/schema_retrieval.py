@@ -52,8 +52,8 @@ class SchemaRetrievalService:
         _ = self._client.graphiti
         return self._client._embedder
 
-    async def _execute(self, query: str, **kwargs) -> List[Dict]:
-        result = await self._driver.execute_query(query, **kwargs)
+    async def _execute(self, cypher: str, **kwargs) -> List[Dict]:
+        result = await self._driver.execute_query(cypher, **kwargs)
         if result is None:
             return []
         records, _, _ = result
