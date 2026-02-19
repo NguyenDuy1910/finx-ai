@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   X,
   Bot,
@@ -10,15 +10,11 @@ import {
   Loader2,
   AlertTriangle,
   Sparkles,
-  Brain,
-  Wrench,
-  ChevronDown,
-  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from "./markdown-content";
 import { useClipboard } from "@/hooks/use-clipboard";
-import type { MemberRunData, ToolCallData, ReasoningData } from "@/types";
+import type { MemberRunData } from "@/types";
 
 // ── Agent style mapping (shared with delegation block) ───────
 const AGENT_STYLES: Record<
@@ -103,128 +99,6 @@ function StatusBadge({ status }: { status: MemberRunData["status"] }) {
     default:
       return null;
   }
-}
-
-// ── Main side panel ──────────────────────────────────────────
-
-// ── Side panel thinking block ────────────────────────────────
-function SidePanelThinkingBlock({ reasoning }: { reasoning: ReasoningData }) {
-  const [expanded, setExpanded] = useState(false);
-
-  if (reasoning.isActive && !reasoning.content) {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-        <Brain className="h-4 w-4 animate-pulse text-amber-500" />
-        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Thinking…</span>
-        <div className="flex items-center gap-0.5">
-          <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500/60 [animation-delay:-0.3s]" />
-          <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500/60 [animation-delay:-0.15s]" />
-          <span className="h-1 w-1 animate-bounce rounded-full bg-amber-500/60" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!reasoning.content) return null;
-
-  return (
-    <div className="overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/5">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-amber-500/10"
-      >
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-        <span className="flex-1 text-xs text-amber-700 dark:text-amber-300">
-          {reasoning.isActive ? "Thinking…" : "Thought process"}
-        </span>
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-amber-500/60" />
-        ) : (
-          <Eye className="h-3 w-3 shrink-0 text-amber-500/40" />
-        )}
-      </button>
-      {expanded && (
-        <div className="border-t border-amber-500/10 px-3 py-2">
-          <div className="max-h-[200px] overflow-y-auto">
-            <p className="whitespace-pre-wrap text-xs leading-relaxed text-amber-800/70 dark:text-amber-200/60">
-              {reasoning.content}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Side panel tool call block ───────────────────────────────
-function SidePanelToolCall({ toolCall }: { toolCall: ToolCallData }) {
-  const [expanded, setExpanded] = useState(false);
-  const isRunning = toolCall.status === "running";
-  const hasError = toolCall.status === "error";
-
-  return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-xl border",
-        hasError
-          ? "border-red-500/20 bg-red-500/5"
-          : isRunning
-            ? "border-blue-500/20 bg-blue-500/5"
-            : "border-emerald-500/20 bg-emerald-500/5"
-      )}
-    >
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-      >
-        {isRunning ? (
-          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" />
-        ) : (
-          <Wrench className={cn("h-3.5 w-3.5 shrink-0", hasError ? "text-red-500" : "text-emerald-500")} />
-        )}
-        <span className="flex-1 truncate text-xs font-medium text-foreground/80">
-          {isRunning ? "Calling" : "Called"}{" "}
-          <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-[11px] dark:bg-white/10">
-            {toolCall.name}
-          </code>
-        </span>
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
-        ) : (
-          <Eye className="h-3 w-3 text-muted-foreground/40" />
-        )}
-      </button>
-      {expanded && (
-        <div className="space-y-0 border-t border-inherit">
-          {toolCall.args && JSON.stringify(toolCall.args) !== "{}" && (
-            <div className="border-b border-inherit px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Args</p>
-              <pre className="overflow-x-auto rounded bg-black/5 p-2 text-[11px] leading-relaxed text-foreground/70 dark:bg-white/5">
-                <code>{JSON.stringify(toolCall.args, null, 2)}</code>
-              </pre>
-            </div>
-          )}
-          {toolCall.result && (
-            <div className="px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                {hasError ? "Error" : "Result"}
-              </p>
-              <pre
-                className={cn(
-                  "max-h-[150px] overflow-auto rounded p-2 text-[11px] leading-relaxed",
-                  hasError ? "bg-red-500/10 text-red-700 dark:text-red-300" : "bg-black/5 text-foreground/70 dark:bg-white/5"
-                )}
-              >
-                <code>{toolCall.result}</code>
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface AgentDetailSidePanelProps {
@@ -328,30 +202,13 @@ export function AgentDetailSidePanel({ member, onClose }: AgentDetailSidePanelPr
 
       {/* ── Content ───────────────────────────────────────── */}
       <div ref={panelRef} className="flex-1 overflow-y-auto">
-        {/* Reasoning / thinking */}
-        {member.reasoning && (member.reasoning.content || member.reasoning.isActive) && (
-          <div className="mx-4 mt-4">
-            <SidePanelThinkingBlock reasoning={member.reasoning} />
-          </div>
-        )}
-
-        {/* Tool calls */}
-        {member.toolCalls && member.toolCalls.length > 0 && (
-          <div className="mx-4 mt-3 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              Tool Calls
-            </p>
-            {member.toolCalls.map((tc) => (
-              <SidePanelToolCall key={tc.id} toolCall={tc} />
-            ))}
-          </div>
-        )}
-
         {/* Main output */}
         <div className="px-4 py-4">
           {member.content ? (
-            <div className="prose-sm text-sm leading-relaxed text-foreground/85">
-              <MarkdownContent content={member.content} />
+            <div className="prose-sm min-w-0 overflow-hidden text-sm leading-relaxed text-foreground/85">
+              <div className="break-words [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-all [&_table]:w-full [&_img]:max-w-full [&_img]:h-auto">
+                <MarkdownContent content={member.content} />
+              </div>
             </div>
           ) : isRunning ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
@@ -372,11 +229,11 @@ export function AgentDetailSidePanel({ member, onClose }: AgentDetailSidePanelPr
           <div className="mx-4 mb-4 rounded-lg border border-red-500/15 bg-red-500/5 px-4 py-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-red-600 dark:text-red-400">
                   Error
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-red-600/80 dark:text-red-400/80">
+                <p className="mt-1 break-words text-xs leading-relaxed text-red-600/80 dark:text-red-400/80">
                   {member.error}
                 </p>
               </div>

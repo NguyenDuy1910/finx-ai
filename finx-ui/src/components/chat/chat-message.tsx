@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 import { Bot, User, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SQLBlock } from "./sql-block";
 import { MarkdownContent } from "./markdown-content";
-import { ThinkingBlock } from "./thinking-block";
-import { ToolCallList } from "./tool-call-block";
 import { AgentDelegationBlock } from "./agent-delegation-block";
 import { RunMetricsBlock } from "./run-metrics-block";
 import { KnowledgePanel, type KnowledgeData } from "./knowledge-panel";
@@ -112,7 +110,7 @@ export function ChatMessage({
         </div>
 
         {/* Content */}
-        <div className="min-w-0 flex-1 space-y-3 sm:space-y-3.5">
+        <div className="min-w-0 flex-1 overflow-hidden space-y-3 sm:space-y-3.5">
           {/* Role label */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
@@ -128,19 +126,6 @@ export function ChatMessage({
             )}
           </div>
 
-          {/* Thinking / reasoning block */}
-          {!isUser && reasoning && (reasoning.content || reasoning.isActive) && (
-            <ThinkingBlock
-              content={reasoning.content}
-              isActive={reasoning.isActive}
-            />
-          )}
-
-          {/* Tool calls */}
-          {!isUser && toolCalls && toolCalls.length > 0 && (
-            <ToolCallList toolCalls={toolCalls} />
-          )}
-
           {/* Agent delegation (team member runs) */}
           {!isUser && memberRuns && memberRuns.length > 0 && (
             <AgentDelegationBlock members={memberRuns} onMemberClick={onMemberClick} />
@@ -154,7 +139,7 @@ export function ChatMessage({
               </p>
             </div>
           ) : (
-            <div className="text-sm leading-relaxed">
+            <div className="min-w-0 max-w-full overflow-hidden text-sm leading-relaxed">
               <MarkdownContent content={displayContent} />
               {streaming && (
                 <span

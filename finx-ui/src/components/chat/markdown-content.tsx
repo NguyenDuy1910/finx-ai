@@ -12,7 +12,7 @@ interface MarkdownContentProps {
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
   return (
-    <div className={cn("prose-sm", className)}>
+    <div className={cn("prose-sm min-w-0 max-w-full", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -35,7 +35,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
 
         // Paragraphs
         p: ({ children }) => (
-          <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
+          <p className="mb-2 last:mb-0 break-words leading-relaxed">{children}</p>
         ),
 
         // Bold / italic
@@ -54,7 +54,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
             {children}
           </ol>
         ),
-        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+        li: ({ children }) => <li className="break-words leading-relaxed">{children}</li>,
 
         // Inline code
         code: ({ className, children, ...props }) => {
@@ -73,7 +73,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
             );
           }
           return (
-            <code className="rounded bg-accent px-1 py-0.5 text-xs font-mono">
+            <code className="break-all rounded bg-accent px-1 py-0.5 text-xs font-mono">
               {children}
             </code>
           );
@@ -84,13 +84,13 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           // Extract text content for copy button
           const textContent = extractTextFromChildren(children);
           return (
-            <div className="group/code relative my-2 overflow-hidden rounded-lg border border-border last:mb-0">
+            <div className="group/code relative my-2 min-w-0 max-w-full overflow-hidden rounded-lg border border-border last:mb-0">
               {textContent && (
                 <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover/code:opacity-100">
                   <CopyButton text={textContent} className="h-7 w-7 bg-zinc-800 p-0 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100" />
                 </div>
               )}
-              <pre className="overflow-x-auto">
+              <pre className="max-w-full overflow-x-auto">
                 {children}
               </pre>
             </div>
@@ -99,7 +99,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
 
         // Tables
         table: ({ children }) => (
-          <div className="my-2 overflow-x-auto rounded-lg border border-border last:mb-0">
+          <div className="my-2 min-w-0 max-w-full overflow-x-auto rounded-lg border border-border last:mb-0">
             <table className="min-w-full text-xs">{children}</table>
           </div>
         ),
@@ -107,12 +107,14 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           <thead className="bg-muted/50">{children}</thead>
         ),
         th: ({ children }) => (
-          <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">
+          <th className="whitespace-nowrap px-3 py-1.5 text-left font-medium text-muted-foreground">
             {children}
           </th>
         ),
         td: ({ children }) => (
-          <td className="border-t border-border px-3 py-1.5">{children}</td>
+          <td className="max-w-[200px] truncate border-t border-border px-3 py-1.5">
+            {children}
+          </td>
         ),
 
         // Blockquotes
