@@ -1,8 +1,8 @@
-import type { NavPage } from "@/types/common.types";
+import type { NavPage } from "@/types";
 
 export const NAV_LABELS: Record<NavPage, string> = {
   chat: "Chat",
   explore: "Schema Explorer",
-  playground: "SQL Playground",
+  playground: "AI Playground",
   admin: "Admin",
 };

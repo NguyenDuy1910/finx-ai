@@ -49,7 +49,7 @@ def init_agentops(
         agentops.init(**init_kwargs)
 
         _initialized = True
-        logger.info("AgentOps initialised successfully ✓")
+        logger.info("AgentOps initialised successfully")
         return True
 
     except Exception as exc:

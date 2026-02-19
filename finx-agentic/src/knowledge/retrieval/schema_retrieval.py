@@ -1,5 +1,3 @@
-"""SchemaRetrievalService — multi-level retrieval pipeline over the graph."""
-
 from __future__ import annotations
 
 import asyncio
@@ -12,26 +10,11 @@ from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.constants import DEFAULT_TOP_K, DEFAULT_SIMILARITY_THRESHOLD
 from src.knowledge.retrieval.reranker import SearchReranker, ScoredItem, RerankerWeights
 from src.knowledge.retrieval import SearchResult, TableContext, SchemaSearchResult
-from src.knowledge.utils.pipeline_logger import track_class
-
 
 logger = logging.getLogger(__name__)
 
 
-@track_class(entry_point="schema_retrieval")
 class SchemaRetrievalService:
-    """Unified semantic search over the graph knowledge base.
-
-    Multi-level retrieval pipeline:
-    1. Term extraction — split query into searchable tokens.
-    2. Level 1 — Exact match on entity names / synonyms.
-    3. Level 2 — Graph expansion (1-2 hops from L1 hits).
-    4. Level 3 — Query pattern match by text similarity.
-    5. Level 4 — Vector similarity search.
-    6. Context enrichment — full table context.
-    7. Intelligent reranking — weighted multi-signal scoring.
-    8. Fallback strategies — relaxed search, domain discovery.
-    """
 
     EARLY_STOP_SCORE = 0.90
 
@@ -74,26 +57,16 @@ class SchemaRetrievalService:
         except (json.JSONDecodeError, TypeError):
             return {}
 
-    # ══════════════════════════════════════════════════════════════════
-    #  LEVEL 1 — Exact / Synonym Match
-    # ══════════════════════════════════════════════════════════════════
-
     async def _level1_exact_match(
         self, terms: List[str], database: Optional[str] = None,
         domain: Optional[str] = None,
     ) -> List[ScoredItem]:
-        """Level 1 — Exact / synonym match on entity and table names.
-
-        Uses batched Cypher queries (one for BusinessEntity, one for Table)
-        with UNWIND to match all terms in a single round-trip each.
-        """
         if not terms:
             return []
 
         search_terms = terms[:10]
         params: Dict[str, Any] = {"terms": search_terms}
 
-        # ── Build optional filter clauses ──
         entity_db_filter = ""
         table_db_filter = ""
         if database:
@@ -105,15 +78,12 @@ class SchemaRetrievalService:
         table_domain_filter = ""
         if domain:
             entity_domain_filter = "AND e.attributes CONTAINS $domain"
-            # FalkorDB doesn't support EXISTS { MATCH … } subqueries,
-            # so we filter by domain via table name or attributes.
             table_domain_filter = (
                 "AND (toLower(t.name) CONTAINS toLower($domain) "
                 "OR t.attributes CONTAINS $domain)"
             )
             params["domain"] = domain
 
-        # ── BusinessEntity batch query ──
         entity_coro = self._execute(
             f"""
             UNWIND $terms AS term
@@ -129,7 +99,6 @@ class SchemaRetrievalService:
             **params,
         )
 
-        # ── Table batch query ──
         table_coro = self._execute(
             f"""
             UNWIND $terms AS term
@@ -165,10 +134,6 @@ class SchemaRetrievalService:
             ))
 
         return items
-
-    # ══════════════════════════════════════════════════════════════════
-    #  LEVEL 2 — Graph Expansion
-    # ══════════════════════════════════════════════════════════════════
 
     async def _level2_graph_expansion(
         self, l1_items: List[ScoredItem], max_hops: int = 2,
@@ -246,12 +211,7 @@ class SchemaRetrievalService:
 
         return items
 
-    # ══════════════════════════════════════════════════════════════════
-    #  LEVEL 3 — Query Pattern Match
-    # ══════════════════════════════════════════════════════════════════
-
     async def _level3_pattern_match(self, query: str) -> List[ScoredItem]:
-        """Match query patterns by text similarity on the raw query string."""
         items: List[ScoredItem] = []
         records = await self._execute(
             """
@@ -279,10 +239,6 @@ class SchemaRetrievalService:
                 context={"tables_involved": r.get("tables", [])},
             ))
         return items
-
-    # ══════════════════════════════════════════════════════════════════
-    #  LEVEL 4 — Vector Similarity
-    # ══════════════════════════════════════════════════════════════════
 
     async def _level4_vector_search(
         self, embedding: List[float], *,
@@ -313,10 +269,6 @@ class SchemaRetrievalService:
             _vec_search("QueryPattern"),
         )
         return tables + columns + entities + patterns
-
-    # ══════════════════════════════════════════════════════════════════
-    #  CONTEXT ENRICHMENT
-    # ══════════════════════════════════════════════════════════════════
 
     async def _enrich_scored_items(
         self, items: List[ScoredItem], target_domain: Optional[str] = None,
@@ -360,23 +312,16 @@ class SchemaRetrievalService:
                 if ctx.domain and target_domain and ctx.domain.lower() == target_domain.lower():
                     it.business_context_score = SearchReranker.compute_business_context(same_domain=True)
 
-                # Boost tables whose columns match the LLM-provided column hints
                 if col_hints_lower and ctx.columns:
                     matched_cols = sum(
                         1 for c in ctx.columns
                         if c.get("name", "").lower() in col_hints_lower
                     )
                     if matched_cols:
-                        # Proportional boost: up to +0.3 on text_match when all
-                        # hints are found, capped so it doesn't dominate.
                         ratio = min(1.0, matched_cols / len(col_hints_lower))
                         it.text_match_score = min(1.0, it.text_match_score + 0.3 * ratio)
 
         return items
-
-    # ══════════════════════════════════════════════════════════════════
-    #  FALLBACK STRATEGIES
-    # ══════════════════════════════════════════════════════════════════
 
     async def _fallback_domain_discovery(self) -> List[Dict[str, Any]]:
         records = await self._execute(
@@ -424,10 +369,6 @@ class SchemaRetrievalService:
         except Exception:
             logger.debug("Could not log missing query: %s", query[:80])
 
-    # ══════════════════════════════════════════════════════════════════
-    #  GENERIC VECTOR SEARCH (single label)
-    # ══════════════════════════════════════════════════════════════════
-
     async def _search_by_label(
         self, label: str, embedding: List[float], *,
         top_k: int = DEFAULT_TOP_K,
@@ -459,10 +400,6 @@ class SchemaRetrievalService:
             for r in records
         ]
 
-    # ══════════════════════════════════════════════════════════════════
-    #  MAIN PIPELINE
-    # ══════════════════════════════════════════════════════════════════
-
     async def schema_retrieval(
         self, query: str, *,
         top_k: int = DEFAULT_TOP_K,
@@ -476,49 +413,8 @@ class SchemaRetrievalService:
         include_patterns: bool = True,
         include_context: bool = True,
     ) -> SchemaSearchResult:
-        """Multi-level retrieval pipeline over the knowledge graph.
-
-        Parameters
-        ----------
-        query : str
-            Natural-language search query.
-        top_k : int
-            Maximum results per category.
-        threshold : float
-            Minimum similarity threshold for vector search.
-        database : str | None
-            Restrict results to a specific database.
-        entities : list[str] | None
-            Explicit entity / table names the LLM has already identified.
-            When provided these are used directly as Level-1 search terms
-            instead of naive tokenisation.
-        intent : str | None
-            The user intent as classified by the LLM, e.g.
-            ``"schema_exploration"``, ``"data_query"``,
-            ``"relationship_discovery"``, ``"knowledge_lookup"``.
-            Used to tailor which retrieval levels run.
-        domain : str | None
-            Business domain to focus on (e.g. ``"payment"``,
-            ``"lending"``, ``"card"``).  When provided, Level-1 queries
-            are filtered to this domain and the reranker boosts items
-            that belong to the same domain.
-        business_terms : list[str] | None
-            Vietnamese or English business terms / synonyms the LLM
-            extracted from the user message (e.g. ``["số dư", "tài khoản"]``
-            or ``["balance", "account"]``).  These are added to the
-            Level-1 search terms for synonym matching.
-        column_hints : list[str] | None
-            Column names or patterns the user is interested in (e.g.
-            ``["cif_number", "created_at"]``).  After search, tables
-            that contain matching columns receive a reranking boost.
-        include_patterns : bool
-            Whether to include QueryPattern results (Level 3).
-        include_context : bool
-            Whether to fetch full table context for top results.
-        """
         t0 = time.time()
 
-        # Step 1: Build search terms — only from LLM-provided args
         db = database
         search_terms: List[str] = list(entities or [])
 
@@ -529,11 +425,9 @@ class SchemaRetrievalService:
                     search_terms.append(bt)
                     existing_lower.add(bt.lower())
 
-        # If LLM provided nothing, use the raw query as a single term
         if not search_terms:
             search_terms = [query.strip()]
 
-        # Determine retrieval strategy based on intent
         run_graph_expansion = True
         run_pattern_match = include_patterns
         run_vector_search = True
@@ -544,7 +438,6 @@ class SchemaRetrievalService:
         elif intent == "knowledge_lookup":
             run_graph_expansion = False
 
-        # Step 2: Level 1 — Exact Match
         all_candidates: List[ScoredItem] = []
         l1_items = await self._level1_exact_match(search_terms, database=db, domain=domain)
         all_candidates.extend(l1_items)
@@ -552,7 +445,6 @@ class SchemaRetrievalService:
         best_l1 = max((it.text_match_score for it in l1_items), default=0.0)
         skip_deeper = best_l1 >= self.EARLY_STOP_SCORE and len(l1_items) >= 3
 
-        # Steps 3-5: Deeper levels (if needed)
         embedding: Optional[List[float]] = None
         if not skip_deeper:
             needs_embedding = run_vector_search
@@ -583,10 +475,8 @@ class SchemaRetrievalService:
             all_candidates, target_domain=target_domain, column_hints=column_hints,
         )
 
-        # Step 7: Rerank
         ranked = self._reranker.rerank(all_candidates, threshold=0.20, top_k=top_k)
 
-        # Step 8: Fallback
         fallback_domains: List[Dict[str, Any]] = []
         if not ranked:
             if embedding is None:
@@ -673,9 +563,6 @@ class SchemaRetrievalService:
             },
         )
 
-    # ══════════════════════════════════════════════════════════════════
-    #  TABLE CONTEXT
-    # ══════════════════════════════════════════════════════════════════
 
     async def _get_table_context(self, table_name: str) -> Optional[TableContext]:
         records = await self._execute(

@@ -1,5 +1,3 @@
-"""GraphitiClient — connection management and index setup."""
-
 import json
 import logging
 import os
@@ -20,15 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class GraphitiClient:
-    """Thin wrapper around the Graphiti driver + embedder.
-
-    Responsibilities:
-    - Connection lifecycle (init / close / ping)
-    - Vector-index creation
-    - Low-level node / edge persistence (add_node, add_edge)
-
-    Graph *loading* logic lives in :class:`GraphLoader`.
-    """
 
     def __init__(
         self,
@@ -58,8 +47,6 @@ class GraphitiClient:
             self._graphiti = Graphiti(graph_driver=driver, embedder=self._embedder)
         return self._graphiti
 
-    # ── Initialisation ───────────────────────────────────────────────
-
     async def initialize(self) -> None:
         await self.graphiti.build_indices_and_constraints()
         await self._create_vector_indexes()
@@ -67,36 +54,24 @@ class GraphitiClient:
     _VECTOR_LABELS = [
         "Table", "Column", "BusinessEntity", "Domain", "BusinessRule", "CodeSet",
     ]
-
     _EMBEDDING_DIM = 3072
 
     async def _create_vector_indexes(self) -> None:
         driver = self.graphiti.driver
         for label in self._VECTOR_LABELS:
             try:
-                await driver.execute_query(
-                    f"DROP INDEX ON :{label}(embedding)"
-                )
+                await driver.execute_query(f"DROP INDEX ON :{label}(embedding)")
             except Exception:
                 pass
             try:
                 await driver.execute_query(
-                    f"CREATE VECTOR INDEX FOR (n:{label}) ON (n.embedding) OPTIONS {{dimension: {self._EMBEDDING_DIM}, similarityFunction: 'cosine'}}"
+                    f"CREATE VECTOR INDEX FOR (n:{label}) ON (n.embedding) "
+                    f"OPTIONS {{dimension: {self._EMBEDDING_DIM}, similarityFunction: 'cosine'}}"
                 )
             except Exception:
                 pass
 
-    # ── Low-level persistence ────────────────────────────────────────
-
-    async def _node_exists(self, label: str, name: str) -> bool:
-        result = await self.graphiti.driver.execute_query(
-            f"MATCH (n:{label} {{name: $name}}) RETURN n.uuid LIMIT 1",
-            name=name,
-        )
-        return bool(result and result[0])
-
     async def add_node(self, node: EntityNode) -> EntityNode:
-        """Upsert a node (MERGE on name+group_id), embed its summary."""
         description = (node.summary or "").replace("\n", " ").strip()
         embedding: List[float] = []
         if description:
@@ -136,7 +111,6 @@ class GraphitiClient:
         return node
 
     async def add_edge(self, edge: EntityEdge) -> EntityEdge:
-        """Upsert an edge (MERGE on source+target UUIDs)."""
         await self.graphiti.driver.execute_query(
             f"""
             MATCH (source {{uuid: $source_uuid}})
@@ -161,8 +135,6 @@ class GraphitiClient:
         )
         return edge
 
-    # ── Lifecycle ────────────────────────────────────────────────────
-
     async def close(self) -> None:
         if self._graphiti is not None:
             await self._graphiti.close()
@@ -175,8 +147,6 @@ class GraphitiClient:
         except Exception:
             return False
 
-
-# ── Singleton factory ────────────────────────────────────────────────
 
 _client_instance: Optional[GraphitiClient] = None
 

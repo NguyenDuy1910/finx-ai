@@ -1,21 +1,14 @@
-import asyncio
 import json
 import logging
-import threading
 from typing import Any, Dict, List, Optional
 
 from agno.tools import Toolkit
 
-from src.core.agentops_tracker import tool as agentops_tool
 from src.knowledge.graph.client import GraphitiClient
 from src.knowledge.memory import MemoryManager
 from src.knowledge.graph.schemas.episodes import EpisodeCategory
-from src.knowledge.utils.pipeline_logger import track_class
 
 logger = logging.getLogger(__name__)
-
-_lock = threading.Lock()
-
 
 
 class GraphSearchTools(Toolkit):
@@ -51,7 +44,6 @@ class GraphSearchTools(Toolkit):
         ]
         super().__init__(name="graph_search_tools", tools=tools, **kwargs)
 
-    @agentops_tool(name="SchemaRetrieval")
     async def schema_retrieval(
         self,
         query: str,
@@ -65,44 +57,7 @@ class GraphSearchTools(Toolkit):
         include_patterns: bool = True,
         include_context: bool = True,
     ) -> str:
-        """Search the knowledge graph for tables, columns, entities and patterns
-        matching the query.  Uses multi-level retrieval: exact match, graph
-        expansion, pattern match and vector similarity, followed by intelligent
-        reranking.
-
-        Parameters
-        ----------
-        query : str
-            Natural-language search query describing what the user is looking for.
-        database : str | None
-            Restrict results to a specific database.
-        entities : list[str] | None
-            Explicit entity or table names already identified from the user
-            message (e.g. ["party_v2_public_customer", "transaction"]).
-            Providing these uses them directly as Level-1 search terms.
-        intent : str | None
-            The user intent: "schema_exploration", "data_query",
-            "relationship_discovery", or "knowledge_lookup".
-            Tailors which retrieval levels execute.
-        domain : str | None
-            Business domain to focus on (e.g. "payment", "lending", "card",
-            "party", "campaign_management").  Filters Level-1 results and
-            boosts same-domain items in reranking.
-        business_terms : list[str] | None
-            Vietnamese or English business terms / synonyms extracted from
-            the user message (e.g. ["số dư", "tài khoản"] or
-            ["balance", "account"]).  Added to search terms for synonym matching.
-        column_hints : list[str] | None
-            Column names the user is interested in (e.g. ["cif_number",
-            "created_at", "status"]).  Tables containing these columns
-            receive a reranking boost.
-        top_k : int
-            Maximum number of results per category (default 5).
-        include_patterns : bool
-            Whether to include query pattern results.
-        include_context : bool
-            Whether to fetch full table context (columns, rules, codesets).
-        """
+        """Search the knowledge graph for tables, columns, entities and patterns."""
         db = database or self.default_database
         result = await self.search_service.schema_retrieval(
             query, database=db, entities=entities, intent=intent,
@@ -112,7 +67,6 @@ class GraphSearchTools(Toolkit):
         )
         return json.dumps(result.to_dict(), default=str, ensure_ascii=False)
 
-    @agentops_tool(name="GetTableDetails")
     async def get_table_details(self, table_name: str, database: Optional[str] = None) -> str:
         db = database or self.default_database
         table_info = await self.entity_registry.get_table(table_name, db)
@@ -124,24 +78,20 @@ class GraphSearchTools(Toolkit):
             "edges": edges,
         }, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="GetTableColumns")
     async def get_table_columns(self, table_name: str, database: Optional[str] = None) -> str:
         db = database or self.default_database
         columns = await self.entity_registry.get_columns_for_table(table_name, db)
         return json.dumps(columns, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="ResolveBusinessTerm")
     async def resolve_business_term(self, term: str) -> str:
         results = await self.entity_registry.resolve_term(term)
         return json.dumps(results, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="FindRelatedTables")
     async def find_related_tables(self, table_name: str, database: Optional[str] = None) -> str:
         db = database or self.default_database
         related = await self.entity_registry.find_related_tables(table_name, db)
         return json.dumps({"relations": related}, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="FindJoinPath")
     async def find_join_path(self, source_table: str, target_table: str, database: Optional[str] = None) -> str:
         db = database or self.default_database
         source_rels = await self.entity_registry.find_related_tables(source_table, db)
@@ -165,7 +115,6 @@ class GraphSearchTools(Toolkit):
             "target_relations": target_rels,
         }, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="GetQueryPatterns")
     async def get_query_patterns(self, query: str) -> str:
         patterns = await self.entity_registry.search_patterns(query)
         similar = await self.episode_store.search_similar_queries(query, top_k=3)
@@ -174,7 +123,6 @@ class GraphSearchTools(Toolkit):
             "similar_queries": similar,
         }, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="GetSimilarQueries")
     async def get_similar_queries(self, query: str, top_k: int = 5) -> str:
         similar = await self.episode_store.search_similar_queries(query, top_k=top_k)
         return json.dumps(similar, default=str, ensure_ascii=False)
@@ -185,15 +133,11 @@ class GraphSearchTools(Toolkit):
         )
         return json.dumps(episodes, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="DiscoverDomains")
     async def discover_domains(self) -> str:
-        """List all available business domains with their tables and entities.
-        Useful when no specific search yields results – presents available
-        domains so the user can refine their question."""
+        """List all available business domains with their tables and entities."""
         domains = await self.search_service._fallback_domain_discovery()
         return json.dumps({"domains": domains}, default=str, ensure_ascii=False)
 
-    @agentops_tool(name="StoreQueryEpisode")
     async def store_query_episode(
         self,
         natural_language: str,
@@ -216,7 +160,6 @@ class GraphSearchTools(Toolkit):
         )
         return json.dumps({"episode_id": episode_id, "status": "stored"})
 
-    @agentops_tool(name="StoreFeedback")
     async def store_feedback(
         self,
         natural_language: str,
@@ -234,7 +177,6 @@ class GraphSearchTools(Toolkit):
         )
         return json.dumps({"episode_id": episode_id, "status": "stored"})
 
-    @agentops_tool(name="StorePattern")
     async def store_pattern(
         self,
         intent: str,
@@ -259,4 +201,3 @@ class GraphSearchTools(Toolkit):
     async def get_full_context(self, query: str, database: Optional[str] = None) -> Dict[str, Any]:
         db = database or self.default_database
         return await self.memory.get_context(query, database=db)
-

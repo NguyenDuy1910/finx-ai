@@ -12,9 +12,6 @@ import uvicorn
 
 from src.web.app import create_app
 
-# create_app() now returns an AgentOS-enhanced FastAPI app.
-# All native AgentOS routes (agent runs, workflows, sessions, etc.)
-# are merged automatically alongside your custom /api/v1/* routes.
 app = create_app()
 
 if __name__ == "__main__":

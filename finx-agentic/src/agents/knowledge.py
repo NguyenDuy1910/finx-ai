@@ -4,12 +4,14 @@ from agno.agent import Agent
 from agno.db.base import BaseDb
 
 from src.core.model_factory import create_model
+from src.knowledge.graph.client import GraphitiClient
+from src.knowledge.graph_knowledge import GraphKnowledge
 from src.prompts.manager import get_prompt_manager
-from src.tools.graph_tools import GraphSearchTools
 
 
 def create_knowledge_agent(
-    graph_tools: GraphSearchTools,
+    graphiti_client: GraphitiClient,
+    default_database: Optional[str] = None,
     session_id: Optional[str] = None,
     session_state: Optional[Dict[str, Any]] = None,
     db: Optional[BaseDb] = None,
@@ -17,18 +19,30 @@ def create_knowledge_agent(
     pm = get_prompt_manager()
     instructions = pm.render("knowledge/instructions.jinja2")
 
+    knowledge = GraphKnowledge(
+        client=graphiti_client,
+        default_database=default_database,
+        max_results=5,
+    )
+
     return Agent(
-        name="Knowledge",
+        name="Knowledge Agent",
+        id="knowledge-agent",
         model=create_model(),
-        description="Explores and manages the schema knowledge graph",
+        description=(
+            "Explores the schema knowledge graph. Use this agent when the user "
+            "asks about table structures, column meanings, business terms, "
+            "relationships between tables, or what data is available. "
+            "Also use it to discover relevant schemas before generating SQL."
+        ),
         instructions=[instructions],
-        tools=[graph_tools],
+        knowledge=knowledge,
+        add_knowledge_to_context=True,
+        search_knowledge=True,
         markdown=True,
         add_datetime_to_context=True,
+        debug_mode=True,
         session_id=session_id,
         session_state=session_state or {},
         db=db,
-        enable_user_memories=db is not None,
-        enable_session_summaries=db is not None,
-        num_history_runs=5,
     )

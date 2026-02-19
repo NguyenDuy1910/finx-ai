@@ -1,9 +1,8 @@
 export type NavPage = "chat" | "explore" | "playground" | "admin";
 
-export type ChatMode = "sql" | "agent";
+export type ChatMode = "agent";
 
 export const CHAT_MODE_LABELS: Record<ChatMode, string> = {
-  sql: "SQL Assistant",
   agent: "Knowledge Agent",
 };
 

@@ -1,5 +1,3 @@
-"""MemoryManager — unified façade over the graph-based memory system."""
-
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -10,7 +8,6 @@ from src.knowledge.retrieval.schema_retrieval import SchemaRetrievalService
 from src.knowledge.retrieval.entity_queries import EntityQueries
 from src.knowledge.retrieval import SchemaSearchResult
 from src.knowledge.retrieval.episode_queries import EpisodeQueries
-from src.knowledge.utils.pipeline_logger import track_class
 from src.knowledge.graph.schemas.episodes import (
     EpisodeCategory,
     FeedbackEpisode,
@@ -35,23 +32,7 @@ from src.knowledge.graph.schemas.edges import (
 logger = logging.getLogger(__name__)
 
 
-@track_class(entry_point="get_context")
 class MemoryManager:
-    """Unified façade over the graph-based memory system.
-
-    Usage::
-
-        client = get_graphiti_client()
-        memory = MemoryManager(client)
-        await memory.record_query(
-            natural_language="total card transactions today",
-            generated_sql="SELECT count(*) FROM vk_card_tnx ...",
-            tables_used=["vk_card_tnx"],
-            database="gold_zone",
-            intent="aggregation",
-        )
-        ctx = await memory.get_context("card transaction fees")
-    """
 
     def __init__(self, client: GraphitiClient):
         self._client = client
@@ -60,8 +41,6 @@ class MemoryManager:
         self.entities = EntityIndexer(client)
         self.entity_queries = EntityQueries(client)
         self.search = SchemaRetrievalService(client)
-
-    # ── initialisation ───────────────────────────────────────────────
 
     async def initialize(self) -> None:
         await self._client.initialize()
@@ -76,8 +55,6 @@ class MemoryManager:
             )
         except Exception:
             pass
-
-    # ── record events ────────────────────────────────────────────────
 
     async def record_schema(
         self,
@@ -218,8 +195,6 @@ class MemoryManager:
 
         return episode_id
 
-    # ── retrieval ────────────────────────────────────────────────────
-
     async def get_context(
         self,
         query: str,
@@ -261,8 +236,6 @@ class MemoryManager:
             domain=domain, business_terms=business_terms, column_hints=column_hints,
             include_patterns=include_patterns, include_context=include_context,
         )
-
-    # ── stats / lifecycle ────────────────────────────────────────────
 
     async def get_stats(self) -> Dict[str, Any]:
         entity_stats = await self.entity_queries.get_stats()

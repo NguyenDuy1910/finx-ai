@@ -5,8 +5,6 @@ from typing import Any, Dict, List, Optional
 
 from agno.tools import Toolkit
 
-from src.core.agentops_tracker import tool as agentops_tool
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -34,7 +32,6 @@ class AthenaExecutorTools(Toolkit):
         ]
         super().__init__(name="athena_executor_tools", tools=tools, **kwargs)
 
-    @agentops_tool(name="ExecuteSQL")
     def execute_sql(self, sql: str, database: Optional[str] = None, timeout: int = 60) -> str:
         db = database or self.database
         try:
@@ -61,7 +58,6 @@ class AthenaExecutorTools(Toolkit):
             logger.error(f"Athena execution failed: {e}")
             return json.dumps({"error": str(e)})
 
-    @agentops_tool(name="ValidateSQLSyntax")
     def validate_sql_syntax(self, sql: str, database: Optional[str] = None) -> str:
         db = database or self.database
         explain_sql = f"EXPLAIN {sql}"

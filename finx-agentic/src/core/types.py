@@ -2,7 +2,6 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-from datetime import datetime, timezone
 
 
 class QueryIntent(str, Enum):
@@ -13,12 +12,13 @@ class QueryIntent(str, Enum):
     TREND = "trend"
     FILTER = "filter"
     JOIN = "join"
+    CLARIFICATION_NEEDED = "clarification_needed"
     UNKNOWN = "unknown"
 
 
 class ParsedQuery(BaseModel):
-    original_text: str
-    intent: QueryIntent
+    original_text: str = ""
+    intent: QueryIntent = QueryIntent.UNKNOWN
     entities: List[str] = Field(default_factory=list)
     filters: List[str] = Field(default_factory=list)
     time_range: Optional[str] = None
@@ -26,6 +26,8 @@ class ParsedQuery(BaseModel):
     sort_fields: List[str] = Field(default_factory=list)
     limit: Optional[int] = None
     confidence: float = 0.0
+    clarification_question: Optional[str] = None
+    ambiguity_reason: Optional[str] = None
 
 
 class SchemaMatch(BaseModel):
@@ -37,11 +39,24 @@ class SchemaMatch(BaseModel):
     partition_keys: List[str] = Field(default_factory=list)
 
 
+class SchemaRelationship(BaseModel):
+    from_table: str = ""
+    from_column: str = ""
+    to_table: str = ""
+    to_column: str = ""
+    relationship_type: str = ""
+
+
+class PartitionFilter(BaseModel):
+    table_name: str = ""
+    filter_expression: str = ""
+
+
 class SchemaContext(BaseModel):
     tables: List[SchemaMatch] = Field(default_factory=list)
-    relationships: List[Dict[str, str]] = Field(default_factory=list)
+    relationships: List[SchemaRelationship] = Field(default_factory=list)
     suggested_joins: List[str] = Field(default_factory=list)
-    partition_filters: Dict[str, str] = Field(default_factory=dict)
+    partition_filters: List[PartitionFilter] = Field(default_factory=list)
 
 
 class GeneratedSQL(BaseModel):
@@ -59,25 +74,4 @@ class ValidationResult(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     suggestions: List[str] = Field(default_factory=list)
     corrected_sql: Optional[str] = None
-
-
-class QueryEpisode(BaseModel):
-    natural_language: str
-    parsed_query: ParsedQuery
-    schema_context: SchemaContext
-    generated_sql: GeneratedSQL
-    validation: ValidationResult
-    execution_success: bool = False
-    user_feedback: Optional[str] = None
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class Text2SQLResult(BaseModel):
-    query: str
-    parsed: ParsedQuery
-    schema_context: SchemaContext
-    sql: GeneratedSQL
-    validation: ValidationResult
-    execution_result: Optional[Dict[str, Any]] = None
-    episode_id: Optional[str] = None
 

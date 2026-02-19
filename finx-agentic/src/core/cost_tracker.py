@@ -10,9 +10,6 @@ from agno.agent import RunOutput
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Pricing tables (USD per 1 M tokens) – update as prices change
-# ---------------------------------------------------------------------------
 # fmt: off
 MODEL_PRICING: Dict[str, Dict[str, float]] = {
     # Google Gemini
@@ -88,10 +85,7 @@ class CostTracker:
     steps: List[StepMetrics] = field(default_factory=list)
     _wall_start: float = field(default_factory=time.monotonic)
 
-    # ----- public API -----
-
     def track(self, response: RunOutput, step: str = "") -> StepMetrics:
-        """Extract metrics from a RunOutput and append them."""
         m = response.metrics
         model = response.model
 
@@ -126,8 +120,6 @@ class CostTracker:
         self.steps.append(sm)
         return sm
 
-    # ----- aggregation -----
-
     @property
     def total_input_tokens(self) -> int:
         return sum(s.input_tokens for s in self.steps)
@@ -152,8 +144,6 @@ class CostTracker:
     def wall_time_s(self) -> float:
         return round(time.monotonic() - self._wall_start, 3)
 
-    # ----- output -----
-
     def to_dict(self) -> Dict[str, Any]:
         return {
             "steps": [s.to_dict() for s in self.steps],
@@ -172,9 +162,8 @@ class CostTracker:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     def print_summary(self) -> None:
-        """Print a human-readable cost summary table."""
         print("\n" + "=" * 80)
-        print("📊  AGENT RUN COST SUMMARY")
+        print("AGENT RUN COST SUMMARY")
         print("=" * 80)
         print(
             f"{'Step':<25} {'Model':<22} {'In Tok':>8} {'Out Tok':>8} "

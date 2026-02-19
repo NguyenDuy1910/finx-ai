@@ -6,14 +6,6 @@ from src.core.types import (
     SchemaContext,
     GeneratedSQL,
     ValidationResult,
-    QueryEpisode,
-    Text2SQLResult,
-)
-from src.core.intent import (
-    UserIntent,
-    IntentClassification,
-    RouterContext,
-    RouterResult,
 )
 from src.core.exceptions import (
     Text2SQLError,

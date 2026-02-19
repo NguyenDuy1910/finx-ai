@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import {
   Play,
   XCircle,
   Loader2,
   Sparkles,
   RotateCcw,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { SQLResultCard } from "./sql-result-card";
-import { generateSQL } from "@/services/text2sql.service";
-import type { Text2SQLResponse } from "@/types/search.types";
+import { MarkdownContent } from "@/components/chat/markdown-content";
 
 interface PlaygroundContainerProps {
   database: string;
@@ -23,41 +24,77 @@ interface PlaygroundContainerProps {
 interface HistoryEntry {
   id: string;
   query: string;
-  result: Text2SQLResponse;
+  response: string;
   timestamp: Date;
 }
 
 export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Text2SQLResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sessionIdRef = useRef<string | undefined>(undefined);
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    error: chatError,
+    stop,
+    setMessages,
+  } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/team-chat",
+      body: () => ({
+        session_id: sessionIdRef.current,
+      }),
+    }),
+    onFinish: ({ message }) => {
+      const content = message.parts
+        .filter((p) => p.type === "text")
+        .map((p) => ("text" in p ? p.text : ""))
+        .join("");
+
+      if (content) {
+        setHistory((prev) => [
+          {
+            id: crypto.randomUUID(),
+            query: query.trim(),
+            response: content,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ]);
+      }
+
+      // Extract session_id from data parts
+      const sessionPart = message.parts.find((p) => p.type === "data-session");
+      if (sessionPart && "data" in sessionPart) {
+        const data = (sessionPart as { data: { session_id?: string } }).data;
+        if (data.session_id) {
+          sessionIdRef.current = data.session_id;
+        }
+      }
+    },
+    onData: (dataPart) => {
+      if (!dataPart || typeof dataPart !== "object") return;
+      const part = dataPart as Record<string, unknown>;
+      if ("session_id" in part) {
+        sessionIdRef.current = part.session_id as string;
+      }
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const loading = status === "streaming" || status === "submitted";
 
   const handleGenerate = useCallback(async () => {
     if (!query.trim() || loading) return;
-    setLoading(true);
     setError(null);
-    setResult(null);
-    try {
-      const data = await generateSQL(query.trim(), database);
-      setResult(data);
-      setHistory((prev) => [
-        {
-          id: crypto.randomUUID(),
-          query: query.trim(),
-          result: data,
-          timestamp: new Date(),
-        },
-        ...prev,
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [query, database, loading]);
+    sendMessage({ text: query.trim() });
+  }, [query, loading, sendMessage]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -71,16 +108,28 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
 
   const loadFromHistory = useCallback((entry: HistoryEntry) => {
     setQuery(entry.query);
-    setResult(entry.result);
     setError(null);
   }, []);
 
   const clearAll = useCallback(() => {
     setQuery("");
-    setResult(null);
+    setMessages([]);
     setError(null);
+    sessionIdRef.current = undefined;
     textareaRef.current?.focus();
-  }, []);
+  }, [setMessages]);
+
+  // Get the latest assistant response
+  const latestResponse =
+    messages.length > 0
+      ? messages.filter((m) => m.role === "assistant").pop()
+      : null;
+
+  const latestContent =
+    latestResponse?.parts
+      .filter((p) => p.type === "text")
+      .map((p) => ("text" in p ? p.text : ""))
+      .join("") || null;
 
   return (
     <div className="flex h-full">
@@ -89,18 +138,18 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
           <div className="mx-auto max-w-4xl">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Text to SQL</h2>
+              <h2 className="text-lg font-semibold">AI Playground</h2>
               <Badge variant="default" className="ml-2">
                 {database}
               </Badge>
             </div>
             <p className="mb-4 text-sm text-muted-foreground">
-              Describe what data you want in natural language and get a SQL
-              query. Press{" "}
+              Ask questions in natural language and get answers from the AI agent
+              team. Press{" "}
               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">
                 Cmd Enter
               </kbd>{" "}
-              to generate.
+              to send.
             </p>
             <div className="relative">
               <Textarea
@@ -113,7 +162,7 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
                 disabled={loading}
               />
               <div className="absolute bottom-3 right-3 flex gap-2">
-                {query && (
+                {query && !loading && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -123,19 +172,27 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={loading || !query.trim()}
-                  className="h-8 gap-1.5"
-                >
-                  {loading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
+                {loading ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => stop()}
+                    className="h-8 gap-1.5"
+                  >
+                    <Square className="h-3.5 w-3.5" />
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleGenerate}
+                    disabled={!query.trim()}
+                    className="h-8 gap-1.5"
+                  >
                     <Play className="h-3.5 w-3.5" />
-                  )}
-                  Generate
-                </Button>
+                    Send
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -143,15 +200,17 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
 
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-4xl space-y-4">
-            {error && (
+            {(error || chatError) && (
               <Card className="border-destructive/30 bg-destructive/5 p-4">
                 <div className="flex items-start gap-3">
                   <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                   <div>
                     <p className="text-sm font-medium text-destructive">
-                      Generation Failed
+                      Request Failed
                     </p>
-                    <p className="mt-1 text-sm text-destructive/80">{error}</p>
+                    <p className="mt-1 text-sm text-destructive/80">
+                      {error || chatError?.message}
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -162,26 +221,32 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
                 <div className="flex items-center gap-3">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   <div>
-                    <p className="text-sm font-medium">Generating SQL...</p>
+                    <p className="text-sm font-medium">
+                      Processing your query…
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Analyzing schema and building query
+                      The agent team is working on your request
                     </p>
                   </div>
                 </div>
               </Card>
             )}
 
-            {result && <SQLResultCard result={result} />}
+            {latestContent && !loading && (
+              <Card className="p-6">
+                <MarkdownContent content={latestContent} />
+              </Card>
+            )}
 
-            {!result && !loading && !error && (
+            {!latestContent && !loading && !(error || chatError) && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="mb-4 rounded-full bg-muted p-4">
                   <Sparkles className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-sm font-medium">Ready to generate SQL</h3>
+                <h3 className="text-sm font-medium">Ready to ask</h3>
                 <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-                  Type a natural language question about your data and we will
-                  generate an optimized SQL query with reasoning.
+                  Type a natural language question about your data and the AI
+                  agent team will provide an answer.
                 </p>
               </div>
             )}
@@ -209,19 +274,11 @@ export function PlaygroundContainer({ database }: PlaygroundContainerProps) {
               onClick={() => loadFromHistory(entry)}
               className="w-full border-b border-border/50 px-4 py-3 text-left transition-colors hover:bg-accent/50"
             >
-              <p className="line-clamp-2 text-xs font-medium">
-                {entry.query}
-              </p>
+              <p className="line-clamp-2 text-xs font-medium">{entry.query}</p>
               <div className="mt-1.5 flex items-center gap-2">
-                {entry.result.is_valid ? (
-                  <Badge variant="success" className="text-[10px]">
-                    Valid
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive" className="text-[10px]">
-                    Invalid
-                  </Badge>
-                )}
+                <Badge variant="success" className="text-[10px]">
+                  Done
+                </Badge>
                 <span className="text-[10px] text-muted-foreground">
                   {entry.timestamp.toLocaleTimeString()}
                 </span>

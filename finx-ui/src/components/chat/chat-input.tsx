@@ -187,10 +187,10 @@ export function ChatInput({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "relative rounded-2xl border bg-muted/40 transition-all duration-200",
+            "relative rounded-2xl border shadow-sm transition-all duration-200",
             focused
-              ? "border-primary/40 bg-background"
-              : "border-input hover:border-input/80",
+              ? "border-primary/40 bg-background shadow-primary/5 ring-1 ring-primary/10"
+              : "border-input bg-muted/30 hover:border-input/80 hover:bg-muted/40",
             dragOver && "border-primary/60 bg-primary/5 ring-2 ring-primary/20"
           )}
         >
@@ -277,8 +277,8 @@ export function ChatInput({
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
                 canSend
-                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:scale-90"
-                  : "bg-muted text-muted-foreground/40"
+                  ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-90"
+                  : "bg-muted text-muted-foreground/30"
               )}
               aria-label={isLoading ? "Sending..." : "Send message"}
             >

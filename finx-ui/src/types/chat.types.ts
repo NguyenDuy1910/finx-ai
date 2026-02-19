@@ -1,34 +1,5 @@
 import type { ChatMode } from "./common.types";
 
-export interface ChatRequest {
-  message: string;
-  database?: string;
-  conversation_history: ConversationMessage[];
-  available_databases: string[];
-}
-
-export interface ConversationMessage {
-  role: string;
-  content: string;
-}
-
-export interface ChatResponse {
-  intent: string;
-  response: string;
-  sql?: string;
-  database?: string;
-  tables_used: string[];
-  context_used: Record<string, unknown>;
-  episode_id?: string;
-  is_valid: boolean;
-  errors: string[];
-  warnings: string[];
-  needs_clarification: boolean;
-  clarification_question?: string;
-  suggestions: string[];
-  session_id?: string;
-}
-
 export interface AgentChatRequest {
   message: string;
   session_id?: string;
@@ -62,6 +33,20 @@ export interface RunMetrics {
   total_tokens?: number;
   time_to_first_token?: number;
   reasoning_tokens?: number;
+}
+
+export interface MemberRunData {
+  id: string;
+  name: string;
+  model?: string;
+  status: "running" | "completed" | "error";
+  content: string;
+  error?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  toolCalls?: ToolCallData[];
+  reasoning?: ReasoningData;
 }
 
 export interface ChatThread {

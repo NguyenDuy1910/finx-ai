@@ -1,27 +1,23 @@
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 
-from agno.agent import Agent
 from agno.os import AgentOS
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.core.model_factory import create_model
-from src.prompts.manager import get_prompt_manager
 from src.storage.postgres import get_postgres_db
 from src.teams.finx_team import build_finx_team
+from src.tools.athena_executor import AthenaExecutorTools
 from src.web.v1.deps import get_app_state
 from src.web.v1.routers import search, graph, health
-from src.workflows.intent_router import IntentRouterWorkflow
-from src.workflows.text2sql import Text2SQLWorkflow
 
 _original_unraisablehook = sys.unraisablehook
 
 
 def _quiet_unraisable(args):
-    """Silently swallow the known httpx __del__ AttributeError."""
     err_msg = getattr(args, "err_msg", None) or ""
     obj = getattr(args, "object", None)
     if "AsyncHttpxClientWrapper.__del__" in err_msg:
@@ -44,76 +40,30 @@ async def lifespan(app: FastAPI):
     await state.shutdown()
 
 
-def _build_agents_and_workflows():
-    """Build Agno agents, workflows & teams for AgentOS registration.
-
-    AgentOS auto-generates these endpoints (zero custom code):
-        POST /agents/<agent-id>/runs      – run / stream an agent
-        POST /workflows/<workflow-id>/runs – run a workflow
-        POST /teams/<team-id>/runs        – run multi-agent team (SSE)
-        GET  /agents                       – list agents
-        GET  /workflows                    – list workflows
-        GET  /teams                        – list teams
-        GET  /sessions                     – list sessions
-        …and more (memories, knowledge, evals, metrics)
-    """
+def _build_team():
     state = get_app_state()
     graph_tools = state.sync_graph_tools
     database = state.default_database
     pg_db = get_postgres_db()
-    pm = get_prompt_manager()
 
-    # ── Knowledge Agent (standalone – backward compat) ────────────────
-    knowledge_instructions = pm.render("knowledge/instructions.jinja2")
-    knowledge_agent = Agent(
-        name="Knowledge Agent",
-        model=create_model(),
-        instructions=[knowledge_instructions],
-        tools=[graph_tools],
-        markdown=True,
-        add_datetime_to_context=True,
-        db=pg_db,
-        enable_session_summaries=True,
-        add_history_to_context=True,
-        num_history_runs=5,
-        debug_mode=True,
-    )
-
-    # ── Intent Router Workflow ────────────────────────────────────────
-    intent_router_workflow = IntentRouterWorkflow(
-        id="intent-router",
-        graph_tools=graph_tools,
+    athena_tools = AthenaExecutorTools(
         database=database,
-        available_databases=[database] if database else [],
-        db=pg_db,
+        output_location=os.getenv("ATHENA_OUTPUT_LOCATION", ""),
+        region_name=os.getenv("AWS_REGION", "ap-southeast-1"),
     )
 
-    # ── Text2SQL Workflow ─────────────────────────────────────────────
-    text2sql_workflow = Text2SQLWorkflow(
-        id="text2sql",
-        database=database,
-        graph_tools=graph_tools,
-        max_retries=2,
-        track_cost=True,
-        db=pg_db,
-    )
-
-    # ── FinX Multi-Agent Team ─────────────────────────────────────────
     finx_team = build_finx_team(
+        graphiti_client=state.client,
         graph_tools=graph_tools,
+        athena_tools=athena_tools,
         database=database,
         db=pg_db,
     )
 
-    agents = [knowledge_agent]
-    workflows = [intent_router_workflow, text2sql_workflow]
-    teams = [finx_team]
-
-    return agents, workflows, teams
+    return finx_team
 
 
 def create_app() -> FastAPI:
-    # 1. Build a lightweight FastAPI app with domain-specific routes only
     base_app = FastAPI(
         title="FinX Agentic API",
         version="1.0.0",
@@ -136,24 +86,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Domain-specific routes that AgentOS doesn't cover
     base_app.include_router(health.router, prefix="/api/v1")
     base_app.include_router(search.router, prefix="/api/v1")
     base_app.include_router(graph.router, prefix="/api/v1")
 
-    # 2. Register agents, workflows & teams with AgentOS
-    #    AgentOS merges its native routes into the base_app:
-    #      POST /agents/{agent_id}/runs     (stream=true for SSE)
-    #      POST /workflows/{workflow_id}/runs
-    #      POST /teams/{team_id}/runs       (multi-agent SSE)
-    #      GET  /agents, /workflows, /teams, /sessions, …
-    agents, workflows, teams = _build_agents_and_workflows()
+    finx_team = _build_team()
 
     agent_os = AgentOS(
-        description="FinX Agentic – multi-agent NL→SQL & knowledge system",
-        agents=agents,
-        workflows=workflows,
-        teams=teams,
+        description="FinX Agentic - multi-agent banking data intelligence system",
+        teams=[finx_team],
         base_app=base_app,
         on_route_conflict="preserve_base_app",
     )

@@ -19,7 +19,6 @@ class PromptManager:
     def __init__(self):
         if hasattr(self, "_initialized"):
             return
-
         self._initialized = True
         self.templates_dir = Path(__file__).parent / "templates"
         self.env = Environment(
@@ -28,17 +27,11 @@ class PromptManager:
             trim_blocks=True,
             lstrip_blocks=True,
         )
-
         self.env.filters["format_list"] = self._format_list_filter
-        logger.info(f"PromptManager initialized with templates from: {self.templates_dir}")
 
     @lru_cache(maxsize=128)
     def get_template(self, template_path: str) -> Template:
-        try:
-            return self.env.get_template(template_path)
-        except Exception as e:
-            logger.error(f"Failed to load template '{template_path}': {e}")
-            raise
+        return self.env.get_template(template_path)
 
     def render(self, template_path: str, **variables) -> str:
         template = self.get_template(template_path)
