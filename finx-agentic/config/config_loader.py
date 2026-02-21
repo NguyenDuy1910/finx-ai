@@ -35,8 +35,8 @@ class MCPConfig:
 @dataclass
 class AIModelConfig:
     """AI Model Configuration"""
-    provider: str = "google"  # google, openai, anthropic
-    model_id: str = "gemini-2.5-flash"
+    provider: str = ""  # google, openai, anthropic
+    model_id: str = ""
     api_key: str = ""
     temperature: float = 0.7
     max_tokens: int = 2000

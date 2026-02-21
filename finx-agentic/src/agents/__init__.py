@@ -1,6 +1,3 @@
-"""Agent implementations for the Text2SQL system."""
-
-from src.agents.sql_generator_agent import SQLGeneratorAgent
-# from src.agents.intent_agent import IntentAgent # Assuming IntentAgent is in intent_agent.py
-
-__all__ = ["SQLGeneratorAgent"]
+from src.agents.knowledge import create_knowledge_agent
+from src.agents.sql_generator import create_sql_generator_agent
+from src.agents.chart_builder import create_chart_builder_agent
