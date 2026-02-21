@@ -231,6 +231,19 @@ body {
   animation: pulse-ring 2s ease-out infinite;
 }
 
+/* ── Streaming-performance optimisations ────────────────────── */
+/* Let the browser skip layout/paint for messages scrolled off-screen */
+.animate-message-in {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+
+/* Reduce layout thrashing while the streaming message grows */
+.streaming-active {
+  will-change: contents;
+  contain: layout style;
+}
+
 /* ── Sidebar overlay ────────────────────────────────────────── */
 .sidebar-overlay {
   animation: fade-in 0.2s ease-out both;

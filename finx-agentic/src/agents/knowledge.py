@@ -38,7 +38,7 @@ def create_knowledge_agent(
         instructions=[instructions],
         knowledge=knowledge,
         add_knowledge_to_context=True,
-        search_knowledge=True,
+        search_knowledge=False,
         markdown=True,
         add_datetime_to_context=True,
         debug_mode=True,

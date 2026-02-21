@@ -6,7 +6,6 @@ from typing import Optional
 
 from src.knowledge.graph.client import GraphitiClient, get_graphiti_client
 from src.knowledge.memory import MemoryManager
-from src.tools.graph_tools import GraphSearchTools
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,6 @@ class AppState:
 
     def __init__(self):
         self._client: Optional[GraphitiClient] = None
-        self._sync_graph_tools: Optional[GraphSearchTools] = None
         self._memory: Optional[MemoryManager] = None
 
     @property
@@ -29,16 +27,6 @@ class AppState:
         if self._client is None:
             self._client = _new_client()
         return self._client
-
-    @property
-    def sync_graph_tools(self) -> GraphSearchTools:
-        if self._sync_graph_tools is None:
-            database = os.getenv("ATHENA_DATABASE", "")
-            self._sync_graph_tools = GraphSearchTools(
-                client=_new_client(),
-                default_database=database,
-            )
-        return self._sync_graph_tools
 
     @property
     def memory(self) -> MemoryManager:

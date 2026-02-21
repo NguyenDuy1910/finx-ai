@@ -1,10 +1,3 @@
-"""Intelligent Reranker — Multi-signal scoring for search results.
-
-Scoring formula:
-  Final = 0.30×TextMatch + 0.25×GraphRelevance + 0.20×DataQuality
-        + 0.15×UsageFrequency + 0.10×BusinessContext
-"""
-
 from __future__ import annotations
 
 import math

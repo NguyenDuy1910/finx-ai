@@ -1,4 +1,3 @@
 from src.agents.knowledge import create_knowledge_agent
 from src.agents.sql_generator import create_sql_generator_agent
-from src.agents.validation import create_validation_agent
-from src.agents.sql_executor import create_sql_executor_agent
+from src.agents.chart_builder import create_chart_builder_agent

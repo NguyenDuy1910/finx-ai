@@ -11,6 +11,7 @@ import { AgentDetailSidePanel } from "./agent-detail-side-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { parseKnowledgeFromToolCalls } from "./knowledge-panel";
+import { parseChartSpecFromToolCalls } from "./chart-block";
 import type { ToolCallData, ReasoningData, MemberRunData, RunMetrics } from "@/types";
 
 interface ChatContainerProps {
@@ -42,29 +43,45 @@ export function ChatContainer({
   const [metricsMap, setMetricsMap] = useState<Record<string, RunMetrics>>({});
   const currentAssistantIdRef = useRef<string | null>(null);
 
+  // Track which data-parts have already been processed to avoid re-processing
+  // the entire message list on every streaming token.
+  const processedPartsRef = useRef(new Set<string>());
+
   // ── Right-side detail panel state ────────────────────────────
   const [selectedMember, setSelectedMember] = useState<MemberRunData | null>(null);
+  const [selectedMemberMessageId, setSelectedMemberMessageId] = useState<string | null>(null);
+  const selectedMemberMessageIdRef = useRef<string | null>(null);
 
-  const handleMemberClick = useCallback((member: MemberRunData) => {
-    setSelectedMember((prev) => (prev?.id === member.id ? null : member));
+  const handleMemberClick = useCallback((member: MemberRunData, messageId: string) => {
+    setSelectedMember((prev) => {
+      const isSame = prev?.id === member.id && selectedMemberMessageIdRef.current === messageId;
+      if (isSame) {
+        selectedMemberMessageIdRef.current = null;
+        setSelectedMemberMessageId(null);
+        return null;
+      }
+      selectedMemberMessageIdRef.current = messageId;
+      setSelectedMemberMessageId(messageId);
+      return member;
+    });
   }, []);
 
   const handleClosePanel = useCallback(() => {
     setSelectedMember(null);
+    setSelectedMemberMessageId(null);
+    selectedMemberMessageIdRef.current = null;
   }, []);
 
   // Keep side-panel member data in sync with streaming updates
   useEffect(() => {
-    if (!selectedMember) return;
-    const selectedId = selectedMember.id;
-    for (const members of Object.values(memberRunMap)) {
-      const updated: MemberRunData | undefined = members.find((m) => m.id === selectedId);
-      if (updated && updated !== selectedMember) {
-        setSelectedMember(updated);
-        return;
-      }
+    if (!selectedMember || !selectedMemberMessageId) return;
+    const membersForMessage = memberRunMap[selectedMemberMessageId];
+    if (!membersForMessage) return;
+    const updated = membersForMessage.find((m) => m.id === selectedMember.id);
+    if (updated && updated !== selectedMember) {
+      setSelectedMember(updated);
     }
-  }, [memberRunMap, selectedMember]);
+  }, [memberRunMap, selectedMember, selectedMemberMessageId]);
 
   const handleSessionId = useCallback(
     (sid: string) => {
@@ -91,7 +108,7 @@ export function ChatContainer({
         session_id: sessionIdRef.current,
       }),
     }),
-    experimental_throttle: 50,
+    experimental_throttle: 100,
     onFinish: ({ message }) => {
       setReasoningMap((prev) => {
         const r = prev[message.id];
@@ -154,11 +171,29 @@ export function ChatContainer({
   }, [agentMessages]);
 
   useEffect(() => {
-    for (const msg of agentMessages) {
+    // Only scan the current assistant message to avoid O(n*m) on every token.
+    // All data-parts for previous messages have already been processed; the
+    // Set-based guard below makes re-processing idempotent either way.
+    const lastAssistantId = currentAssistantIdRef.current;
+    const messagesToScan = lastAssistantId
+      ? agentMessages.filter((m) => m.id === lastAssistantId)
+      : agentMessages.filter((m) => m.role === "assistant");
+
+    const processed = processedPartsRef.current;
+
+    for (const msg of messagesToScan) {
       if (msg.role !== "assistant") continue;
-      for (const part of msg.parts) {
-        if (part.type.startsWith("data-")) {
-          const data = (part as { type: string; data: Record<string, unknown> }).data;
+      for (let i = 0; i < msg.parts.length; i++) {
+        const part = msg.parts[i];
+        if (!part.type.startsWith("data-")) continue;
+
+        // Build a unique key per part. For delta events we include the index
+        // because they appear multiple times with the same type.
+        const partKey = `${msg.id}::${i}::${part.type}`;
+        if (processed.has(partKey)) continue;
+        processed.add(partKey);
+
+        const data = (part as { type: string; data: Record<string, unknown> }).data;
           switch (part.type) {
             case "data-reasoning-started": {
               const rMemberId = (data.memberId as string) || "";
@@ -476,7 +511,7 @@ export function ChatContainer({
           }
         }
       }
-    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentMessages, handleSessionId]);
 
   const isAgentBusy = status === "submitted" || status === "streaming";
@@ -522,25 +557,44 @@ export function ChatContainer({
 
   const renderMessages = useMemo(
     () =>
-      agentMessages.map((m) => ({
-        id: m.id,
-        role: m.role as "user" | "assistant",
-        content: m.parts
-          .filter((p) => p.type === "text")
-          .map((p) => (p as { text: string }).text)
-          .join(""),
-        streaming:
-          isStreaming &&
-          m.role === "assistant" &&
-          m === agentMessages[agentMessages.length - 1],
-        reasoning: reasoningMap[m.id],
-        toolCalls: toolCallMap[m.id],
-        memberRuns: memberRunMap[m.id],
-        runMetrics: metricsMap[m.id],
-        knowledgeData: toolCallMap[m.id]
-          ? parseKnowledgeFromToolCalls(toolCallMap[m.id])
-          : null,
-      })),
+      agentMessages.map((m) => {
+        const members = memberRunMap[m.id];
+        const tcs = toolCallMap[m.id];
+
+        // Extract chart spec from Chart Builder Agent member tool calls
+        let chartSpec = null;
+        if (members) {
+          for (const member of members) {
+            if (member.name === "Chart Builder Agent" && member.toolCalls) {
+              chartSpec = parseChartSpecFromToolCalls(member.toolCalls);
+              if (chartSpec) break;
+            }
+          }
+        }
+        // Fallback: check top-level tool calls
+        if (!chartSpec && tcs) {
+          chartSpec = parseChartSpecFromToolCalls(tcs);
+        }
+
+        return {
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          content: m.parts
+            .filter((p) => p.type === "text")
+            .map((p) => (p as { text: string }).text)
+            .join(""),
+          streaming:
+            isStreaming &&
+            m.role === "assistant" &&
+            m === agentMessages[agentMessages.length - 1],
+          reasoning: reasoningMap[m.id],
+          toolCalls: tcs,
+          memberRuns: members,
+          runMetrics: metricsMap[m.id],
+          knowledgeData: tcs ? parseKnowledgeFromToolCalls(tcs) : null,
+          chartData: chartSpec,
+        };
+      }),
     [agentMessages, isStreaming, reasoningMap, toolCallMap, memberRunMap, metricsMap]
   );
 
@@ -576,6 +630,7 @@ export function ChatContainer({
             {renderMessages.map((message, index) => (
               <MemoizedMessage
                 key={message.id}
+                messageId={message.id}
                 index={index}
                 role={message.role}
                 content={message.content}
@@ -585,6 +640,7 @@ export function ChatContainer({
                 memberRuns={message.memberRuns}
                 runMetrics={message.runMetrics}
                 knowledgeData={message.knowledgeData}
+                chartData={message.chartData}
                 onSuggestionClick={handleSend}
                 onMemberClick={handleMemberClick}
               />
@@ -695,6 +751,7 @@ export function ChatContainer({
 
 // ── Memoized message wrapper (avoids re-rendering unchanged messages) ──
 interface MemoizedMessageProps {
+  messageId: string;
   index: number;
   role: "user" | "assistant";
   content: string;
@@ -704,11 +761,13 @@ interface MemoizedMessageProps {
   memberRuns?: MemberRunData[];
   runMetrics?: RunMetrics;
   knowledgeData?: import("./knowledge-panel").KnowledgeData | null;
+  chartData?: import("./chart-block").ChartSpec | null;
   onSuggestionClick: (text: string) => void;
-  onMemberClick?: (member: MemberRunData) => void;
+  onMemberClick?: (member: MemberRunData, messageId: string) => void;
 }
 
 const MemoizedMessage = memo(function MemoizedMessage({
+  messageId,
   index,
   role,
   content,
@@ -718,15 +777,17 @@ const MemoizedMessage = memo(function MemoizedMessage({
   memberRuns,
   runMetrics,
   knowledgeData,
+  chartData,
   onSuggestionClick,
   onMemberClick,
 }: MemoizedMessageProps) {
   return (
     <div
-      className="animate-message-in"
+      className={`animate-message-in${streaming ? " streaming-active" : ""}`}
       style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
     >
       <ChatMessage
+        messageId={messageId}
         role={role}
         content={content}
         streaming={streaming}
@@ -735,6 +796,7 @@ const MemoizedMessage = memo(function MemoizedMessage({
         memberRuns={memberRuns}
         runMetrics={runMetrics}
         knowledgeData={knowledgeData}
+        chartData={chartData}
         onSuggestionClick={onSuggestionClick}
         onMemberClick={onMemberClick}
       />

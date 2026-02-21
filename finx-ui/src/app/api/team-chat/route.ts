@@ -110,7 +110,8 @@ export async function POST(req: NextRequest) {
           /delegate_task_to_members?\s*\(.*?\)\s*/gi,
           /transfer_task_to_members?\s*\(.*?\)\s*completed\s+in\s+[\d.]+s\.\s*/gi,
           /transfer_task_to_members?\s*\(.*?\)\s*/gi,
-          /\w+\(.*?\)\s*completed\s+in\s+[\d.]+s\.\s*/gi,
+          // Only match known Agno internal function call logs — avoid stripping user content
+          /(?:run_team|execute_workflow|process_request|get_response)\s*\(.*?\)\s*completed\s+in\s+[\d.]+s\.\s*/gi,
         ];
 
         function isFrameworkNoise(text: string): boolean {
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
           if (!trimmed) return true;
           // Check if entire string is just a framework call log
           if (/^[\w_]+\(.*\)\s*completed\s+in\s+[\d.]+s\.?\s*$/i.test(trimmed)) return true;
-          if (/^[\w_]+\(.*\)\s*$/i.test(trimmed) && trimmed.includes("delegate_task")) return true;
+          if (/^[\w_]+\(.*\)\s*$/i.test(trimmed) && /delegate_task|transfer_task/i.test(trimmed)) return true;
           return false;
         }
 
@@ -130,6 +131,45 @@ export async function POST(req: NextRequest) {
             cleaned = cleaned.replace(pattern, "");
           }
           return cleaned;
+        }
+
+        /**
+         * Clean up the final coordinator summary so it renders nicely
+         * in markdown. Agno sometimes sends content with:
+         *  - stacked blank lines (3+)
+         *  - trailing whitespace
+         *  - leading/trailing newlines
+         */
+        function cleanFinalContent(raw: string): string {
+          return raw
+            .replace(/\n{3,}/g, "\n\n")   // collapse 3+ newlines → 2
+            .replace(/[ \t]+$/gm, "")       // strip trailing whitespace per line
+            .trim();
+        }
+
+        /**
+         * Emit final content in small chunks so the UI shows a smooth
+         * streaming animation rather than a single wall-of-text flash.
+         * Chunks on paragraph boundaries when possible.
+         */
+        function emitFinalContent(
+          w: typeof writer,
+          partId: string,
+          content: string,
+        ) {
+          const clean = cleanFinalContent(stripFrameworkNoise(content));
+          if (!clean || isFrameworkNoise(clean)) return false;
+
+          w.write({ type: "text-start", id: partId });
+
+          // Split into paragraph-level chunks for progressive rendering
+          const chunks = clean.split(/(\n\n)/);
+          for (const chunk of chunks) {
+            if (chunk) {
+              w.write({ type: "text-delta", id: partId, delta: chunk });
+            }
+          }
+          return true;
         }
 
         function isInternalToolCall(name: string): boolean {
@@ -211,16 +251,11 @@ export async function POST(req: NextRequest) {
                 }
 
                 case "TeamRunCompleted": {
-                  // Emit final content if not yet started (strip noise)
+                  // Emit final content only if no content was streamed yet.
+                  // The Agno framework may send the full coordinator summary
+                  // only in TeamRunCompleted when members did all the work.
                   if (!textStarted && parsed.content) {
-                    const cleanFinal = stripFrameworkNoise(parsed.content as string);
-                    if (cleanFinal && !isFrameworkNoise(cleanFinal)) {
-                      writer.write({ type: "text-start", id: textPartId });
-                      writer.write({
-                        type: "text-delta",
-                        id: textPartId,
-                        delta: cleanFinal,
-                      });
+                    if (emitFinalContent(writer, textPartId, parsed.content as string)) {
                       textStarted = true;
                     }
                   }
@@ -530,14 +565,7 @@ export async function POST(req: NextRequest) {
                   } else {
                     // Coordinator / single-agent completed — emit as main text
                     if (!textStarted && parsed.content) {
-                      const cleanFinal = stripFrameworkNoise(parsed.content as string);
-                      if (cleanFinal && !isFrameworkNoise(cleanFinal)) {
-                        writer.write({ type: "text-start", id: textPartId });
-                        writer.write({
-                          type: "text-delta",
-                          id: textPartId,
-                          delta: cleanFinal,
-                        });
+                      if (emitFinalContent(writer, textPartId, parsed.content as string)) {
                         textStarted = true;
                       }
                     }

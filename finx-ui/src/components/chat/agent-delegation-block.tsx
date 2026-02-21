@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   Users,
   Check,
@@ -86,7 +86,7 @@ interface MemberCardProps {
   onMemberClick?: (member: MemberRunData) => void;
 }
 
-function MemberCard({ member, isLast, onMemberClick }: MemberCardProps) {
+const MemberCard = memo(function MemberCard({ member, isLast, onMemberClick }: MemberCardProps) {
   const style = getAgentStyle(member.name);
   const isRunning = member.status === "running";
   const hasError = member.status === "error";
@@ -253,7 +253,7 @@ function MemberCard({ member, isLast, onMemberClick }: MemberCardProps) {
       </div>
     </div>
   );
-}
+});
 
 // ── Main delegation block (timeline) ─────────────────────────
 interface AgentDelegationBlockProps {
@@ -261,7 +261,7 @@ interface AgentDelegationBlockProps {
   onMemberClick?: (member: MemberRunData) => void;
 }
 
-export function AgentDelegationBlock({ members, onMemberClick }: AgentDelegationBlockProps) {
+export const AgentDelegationBlock = memo(function AgentDelegationBlock({ members, onMemberClick }: AgentDelegationBlockProps) {
   const handleClick = useCallback(
     (member: MemberRunData) => {
       if (onMemberClick) onMemberClick(member);
@@ -341,4 +341,4 @@ export function AgentDelegationBlock({ members, onMemberClick }: AgentDelegation
       </div>
     </div>
   );
-}
+});

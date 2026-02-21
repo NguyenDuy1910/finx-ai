@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, memo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Bot, User, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Bot, User, Copy, Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { SQLBlock } from "./sql-block";
 import { MarkdownContent } from "./markdown-content";
 import { AgentDelegationBlock } from "./agent-delegation-block";
 import { RunMetricsBlock } from "./run-metrics-block";
 import { KnowledgePanel, type KnowledgeData } from "./knowledge-panel";
+import { ChartBlock, parseChartSpecFromToolCalls, type ChartSpec } from "./chart-block";
 import { Badge } from "@/components/ui/badge";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { INTENT_LABELS, ToolCallData, ReasoningData, MemberRunData, RunMetrics } from "@/types";
@@ -24,6 +25,7 @@ interface MessageMetadata {
 }
 
 interface ChatMessageProps {
+  messageId?: string;
   role: "user" | "assistant";
   content: string;
   metadata?: MessageMetadata;
@@ -33,8 +35,9 @@ interface ChatMessageProps {
   memberRuns?: MemberRunData[];
   runMetrics?: RunMetrics;
   knowledgeData?: KnowledgeData | null;
+  chartData?: ChartSpec | null;
   onSuggestionClick?: (suggestion: string) => void;
-  onMemberClick?: (member: MemberRunData) => void;
+  onMemberClick?: (member: MemberRunData, messageId: string) => void;
 }
 
 function IntentBadge({ intent }: { intent: string }) {
@@ -53,7 +56,8 @@ function IntentBadge({ intent }: { intent: string }) {
   );
 }
 
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
+  messageId,
   role,
   content,
   metadata,
@@ -63,21 +67,75 @@ export function ChatMessage({
   memberRuns,
   runMetrics,
   knowledgeData,
+  chartData,
   onSuggestionClick,
   onMemberClick,
 }: ChatMessageProps) {
   const isUser = role === "user";
   const { copied, copy } = useClipboard();
 
-  // Truncate long assistant content (> 600 chars) unless user expands
-  const CONTENT_TRUNCATE_THRESHOLD = 600;
-  const isLongContent = !isUser && content.length > CONTENT_TRUNCATE_THRESHOLD;
-  const [contentExpanded, setContentExpanded] = useState(false);
+  // Wrap onMemberClick to inject the messageId so the parent can
+  // disambiguate members with the same id across different messages.
+  const handleMemberClick = useCallback(
+    (member: MemberRunData) => {
+      if (onMemberClick && messageId) onMemberClick(member, messageId);
+    },
+    [onMemberClick, messageId]
+  );
 
-  const displayContent =
-    !isUser && isLongContent && !contentExpanded && !streaming
-      ? content.slice(0, CONTENT_TRUNCATE_THRESHOLD).trimEnd() + "…"
-      : content;
+  // Extract chart spec from Chart Builder Agent tool calls in member runs
+  const resolvedChart = useMemo<ChartSpec | null>(() => {
+    if (chartData) return chartData;
+    if (!memberRuns) return null;
+    for (const member of memberRuns) {
+      if (member.name === "Chart Builder Agent" && member.toolCalls) {
+        const spec = parseChartSpecFromToolCalls(member.toolCalls);
+        if (spec) return spec;
+      }
+    }
+    // Also check top-level tool calls
+    return parseChartSpecFromToolCalls(toolCalls) ?? null;
+  }, [chartData, memberRuns, toolCalls]);
+
+  // Truncate long assistant content unless user expands.
+  // Use a higher threshold when member runs exist (team responses are naturally longer).
+  const hasMemberRuns = !isUser && memberRuns && memberRuns.length > 0;
+  const CONTENT_TRUNCATE_THRESHOLD = hasMemberRuns ? 2000 : 600;
+  const isLongContent = !isUser && content.length > CONTENT_TRUNCATE_THRESHOLD;
+  // Auto-expand while streaming OR when just finished streaming (avoid jarring snap)
+  const [contentExpanded, setContentExpanded] = useState(false);
+  const wasStreamingRef = useRef(false);
+  if (streaming) wasStreamingRef.current = true;
+  // Keep expanded until user explicitly collapses — never auto-truncate after streaming
+  const effectiveExpanded = contentExpanded || streaming || wasStreamingRef.current;
+
+  // Truncate at a clean boundary (paragraph / sentence / word) instead of mid-text
+  const displayContent = useMemo(() => {
+    if (isUser || !isLongContent || effectiveExpanded) return content;
+    const rough = content.slice(0, CONTENT_TRUNCATE_THRESHOLD);
+    // Try paragraph break first
+    const paraBreak = rough.lastIndexOf("\n\n");
+    if (paraBreak > CONTENT_TRUNCATE_THRESHOLD * 0.5) return rough.slice(0, paraBreak).trimEnd() + "\n\n…";
+    // Then sentence break
+    const sentenceBreak = Math.max(rough.lastIndexOf(". "), rough.lastIndexOf(".\n"));
+    if (sentenceBreak > CONTENT_TRUNCATE_THRESHOLD * 0.4) return rough.slice(0, sentenceBreak + 1).trimEnd() + " …";
+    // Fallback: word boundary
+    const wordBreak = rough.lastIndexOf(" ");
+    if (wordBreak > CONTENT_TRUNCATE_THRESHOLD * 0.3) return rough.slice(0, wordBreak).trimEnd() + " …";
+    return rough.trimEnd() + "…";
+  }, [content, isUser, isLongContent, effectiveExpanded, CONTENT_TRUNCATE_THRESHOLD]);
+
+  // When the user clicks "Show less"/"Show more"
+  const handleToggleExpand = useCallback(() => {
+    if (effectiveExpanded) {
+      // Currently expanded → collapse: clear both flags so truncation kicks in
+      wasStreamingRef.current = false;
+      setContentExpanded(false);
+    } else {
+      // Currently collapsed → expand
+      setContentExpanded(true);
+    }
+  }, [effectiveExpanded]);
 
   return (
     <div
@@ -128,7 +186,7 @@ export function ChatMessage({
 
           {/* Agent delegation (team member runs) */}
           {!isUser && memberRuns && memberRuns.length > 0 && (
-            <AgentDelegationBlock members={memberRuns} onMemberClick={onMemberClick} />
+            <AgentDelegationBlock members={memberRuns} onMemberClick={handleMemberClick} />
           )}
 
           {/* Message content */}
@@ -138,37 +196,82 @@ export function ChatMessage({
                 {content}
               </p>
             </div>
-          ) : (
-            <div className="min-w-0 max-w-full overflow-hidden text-sm leading-relaxed">
-              <MarkdownContent content={displayContent} />
-              {streaming && (
-                <span
-                  className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-primary align-text-bottom rounded-sm"
-                  aria-label="Typing indicator"
-                />
-              )}
-              {/* Show more / less toggle for long content */}
-              {isLongContent && !streaming && (
-                <button
-                  type="button"
-                  onClick={() => setContentExpanded((v) => !v)}
-                  className="mt-1.5 flex items-center gap-1 rounded-full border border-border/40 px-2.5 py-1 text-[11px] font-medium text-primary/70 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
-                >
-                  {contentExpanded ? (
-                    <>
-                      <ChevronUp className="h-3 w-3" />
-                      Show less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-3 w-3" />
-                      Show full response ({content.length.toLocaleString()} chars)
-                    </>
+          ) : content ? (
+            hasMemberRuns ? (
+              /* ── Team Final Response — visually distinct card ── */
+              <div className="mt-1 rounded-xl border border-primary/10 bg-gradient-to-b from-primary/[0.03] to-transparent shadow-sm">
+                {/* Header */}
+                <div className="flex items-center gap-2 border-b border-primary/8 px-3.5 py-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/15 to-blue-500/15">
+                    <Sparkles className="h-3 w-3 text-primary/70" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-foreground/70 tracking-wide">
+                    Summary
+                  </span>
+                </div>
+                {/* Body */}
+                <div className="min-w-0 max-w-full overflow-hidden px-3.5 py-3 text-sm leading-relaxed">
+                  <MarkdownContent content={displayContent} />
+                  {streaming && (
+                    <span
+                      className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-primary align-text-bottom"
+                      aria-label="Typing indicator"
+                    />
                   )}
-                </button>
-              )}
-            </div>
-          )}
+                  {/* Show more / less toggle */}
+                  {isLongContent && !streaming && (
+                    <button
+                      type="button"
+                      onClick={handleToggleExpand}
+                      className="mt-2 flex items-center gap-1 rounded-full border border-border/40 px-2.5 py-1 text-[11px] font-medium text-primary/70 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    >
+                      {effectiveExpanded ? (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          Show less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          Show full response
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* ── Standard assistant response (no member delegation) ── */
+              <div className="min-w-0 max-w-full overflow-hidden text-sm leading-relaxed">
+                <MarkdownContent content={displayContent} />
+                {streaming && (
+                  <span
+                    className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-primary align-text-bottom"
+                    aria-label="Typing indicator"
+                  />
+                )}
+                {isLongContent && !streaming && (
+                  <button
+                    type="button"
+                    onClick={handleToggleExpand}
+                    className="mt-1.5 flex items-center gap-1 rounded-full border border-border/40 px-2.5 py-1 text-[11px] font-medium text-primary/70 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                  >
+                    {effectiveExpanded ? (
+                      <>
+                        <ChevronUp className="h-3 w-3" />
+                        Show less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3" />
+                        Show full response ({content.length.toLocaleString()} chars)
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )
+          ) : null}
 
           {/* SQL block */}
           {metadata?.sql && (
@@ -179,6 +282,11 @@ export function ChatMessage({
               errors={metadata.errors ?? []}
               warnings={metadata.warnings ?? []}
             />
+          )}
+
+          {/* Chart visualization */}
+          {!isUser && resolvedChart && (
+            <ChartBlock spec={resolvedChart} />
           )}
 
           {/* Knowledge panel */}
@@ -234,4 +342,4 @@ export function ChatMessage({
       </div>
     </div>
   );
-}
+});

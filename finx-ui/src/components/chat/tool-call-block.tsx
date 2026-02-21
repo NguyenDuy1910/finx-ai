@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   Wrench,
   ChevronDown,
@@ -17,7 +17,7 @@ interface ToolCallBlockProps {
   toolCall: ToolCallData;
 }
 
-export function ToolCallBlock({ toolCall }: ToolCallBlockProps) {
+export const ToolCallBlock = memo(function ToolCallBlock({ toolCall }: ToolCallBlockProps) {
   const [expanded, setExpanded] = useState(false);
 
   const isRunning = toolCall.status === "running";
@@ -126,7 +126,7 @@ export function ToolCallBlock({ toolCall }: ToolCallBlockProps) {
       )}
     </div>
   );
-}
+});
 
 /** Renders a list of tool calls compactly — collapsed behind a summary when > 2 */
 export function ToolCallList({ toolCalls }: { toolCalls: ToolCallData[] }) {

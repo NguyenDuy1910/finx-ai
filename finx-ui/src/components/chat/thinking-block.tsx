@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Brain, ChevronDown, Sparkles, Eye } from "lucide-react";
 
 interface ThinkingBlockProps {
@@ -8,7 +8,7 @@ interface ThinkingBlockProps {
   isActive: boolean;
 }
 
-export function ThinkingBlock({ content, isActive }: ThinkingBlockProps) {
+export const ThinkingBlock = memo(function ThinkingBlock({ content, isActive }: ThinkingBlockProps) {
   const [expanded, setExpanded] = useState(false);
 
   // While actively thinking, show animated indicator
@@ -79,4 +79,4 @@ export function ThinkingBlock({ content, isActive }: ThinkingBlockProps) {
       )}
     </div>
   );
-}
+});

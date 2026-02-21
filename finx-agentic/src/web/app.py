@@ -10,7 +10,6 @@ from fastapi.responses import JSONResponse
 
 from src.storage.postgres import get_postgres_db
 from src.teams.finx_team import build_finx_team
-from src.tools.athena_executor import AthenaExecutorTools
 from src.web.v1.deps import get_app_state
 from src.web.v1.routers import search, graph, health
 
@@ -42,21 +41,14 @@ async def lifespan(app: FastAPI):
 
 def _build_team():
     state = get_app_state()
-    graph_tools = state.sync_graph_tools
     database = state.default_database
     pg_db = get_postgres_db()
 
-    athena_tools = AthenaExecutorTools(
+    finx_team = build_finx_team(
+        graphiti_client=state.client,
         database=database,
         output_location=os.getenv("ATHENA_OUTPUT_LOCATION", ""),
         region_name=os.getenv("AWS_REGION", "ap-southeast-1"),
-    )
-
-    finx_team = build_finx_team(
-        graphiti_client=state.client,
-        graph_tools=graph_tools,
-        athena_tools=athena_tools,
-        database=database,
         db=pg_db,
     )
 

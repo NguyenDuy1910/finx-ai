@@ -14,6 +14,10 @@ export function useAutoScroll(deps: unknown[]): {
   const [autoScroll, setAutoScroll] = useState(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
+  // RAF guard — only one scroll per animation frame even when deps change many
+  // times between paints (fast streaming tokens).
+  const rafRef = useRef<number | null>(null);
+
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     setAutoScroll(true);
@@ -29,10 +33,22 @@ export function useAutoScroll(deps: unknown[]): {
   }, []);
 
   useEffect(() => {
-    if (autoScroll) {
-      // Use instant scroll for auto-scroll during streaming to avoid jank
+    if (!autoScroll) return;
+
+    // Coalesce multiple dependency changes into a single rAF scroll
+    if (rafRef.current != null) return;
+
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
       bottomRef.current?.scrollIntoView({ behavior: "instant" });
-    }
+    });
+
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 

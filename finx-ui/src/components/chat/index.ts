@@ -11,3 +11,5 @@ export { AgentDetailSidePanel } from "./agent-detail-side-panel";
 export { RunMetricsBlock } from "./run-metrics-block";
 export { KnowledgePanel, parseKnowledgeFromToolCalls } from "./knowledge-panel";
 export type { KnowledgeData, KnowledgeTable, KnowledgeColumn, KnowledgePattern, KnowledgeQuery, KnowledgeRelation } from "./knowledge-panel";
+export { ChartBlock, parseChartSpecFromToolCalls } from "./chart-block";
+export type { ChartSpec, ChartAxisConfig, ChartSeries, ChartMetricItem, ChartOptions } from "./chart-block";
