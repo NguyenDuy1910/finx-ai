@@ -15,6 +15,8 @@ import {
   updateThread,
   titleFromMessage,
 } from "@/lib/chat-store";
+import { useNavPage } from "@/hooks/use-nav-page";
+import type { AdminTab } from "@/types/common.types";
 
 // ── Lazy-loaded non-chat pages (code-split) ──────────────────
 const ExploreContainer = lazy(() =>
@@ -47,7 +49,7 @@ function PageLoader() {
 
 export default function Home() {
   const [database, setDatabase] = useState(AVAILABLE_DATABASES[0]);
-  const [activePage, setActivePage] = useState<NavPage>("chat");
+  const { activePage, setPage, adminTab, setAdminTab } = useNavPage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── Thread management ──────────────────────────────────────
@@ -94,8 +96,8 @@ export default function Home() {
   }, []);
 
   const handlePageChange = useCallback((page: NavPage) => {
-    setActivePage(page);
-  }, []);
+    setPage(page);
+  }, [setPage]);
 
   const handleToggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
@@ -159,13 +161,16 @@ export default function Home() {
       case "admin":
         return (
           <Suspense fallback={<PageLoader />}>
-            <AdminContainer />
+            <AdminContainer
+              activeTab={adminTab}
+              onTabChange={setAdminTab}
+            />
           </Suspense>
         );
       default:
         return null;
     }
-  }, [activePage, activeThread, database, handleSessionEstablished, handleFirstMessage]);
+  }, [activePage, activeThread, database, handleSessionEstablished, handleFirstMessage, adminTab, setAdminTab]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">

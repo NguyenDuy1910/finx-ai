@@ -5,14 +5,22 @@ import {
   BarChart3,
   FolderSync,
   MessageSquareWarning,
+  Network,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SearchDetailPanel } from "./search-detail-panel";
 import { GraphStatsPanel } from "./graph-stats-panel";
 import { IndexingPanel } from "./indexing-panel";
 import { FeedbackPanel } from "./feedback-panel";
+import { GraphExplorerContainer } from "./graph-explorer";
+import type { AdminTab } from "@/types/common.types";
 
-export function AdminContainer() {
+interface AdminContainerProps {
+  activeTab: AdminTab;
+  onTabChange: (tab: AdminTab) => void;
+}
+
+export function AdminContainer({ activeTab, onTabChange }: AdminContainerProps) {
   return (
     <div className="mx-auto h-full max-w-6xl overflow-auto p-6">
       <div className="mb-6">
@@ -22,7 +30,11 @@ export function AdminContainer() {
         </p>
       </div>
 
-      <Tabs defaultValue="search" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => onTabChange(v as AdminTab)}
+        className="space-y-6"
+      >
         <TabsList>
           <TabsTrigger value="search">
             <Search className="mr-1.5 h-3.5 w-3.5" />
@@ -40,6 +52,10 @@ export function AdminContainer() {
             <MessageSquareWarning className="mr-1.5 h-3.5 w-3.5" />
             Feedback
           </TabsTrigger>
+          <TabsTrigger value="graph-explorer">
+            <Network className="mr-1.5 h-3.5 w-3.5" />
+            Graph Explorer
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search">
@@ -53,6 +69,9 @@ export function AdminContainer() {
         </TabsContent>
         <TabsContent value="feedback">
           <FeedbackPanel />
+        </TabsContent>
+        <TabsContent value="graph-explorer" className="h-full">
+          <GraphExplorerContainer />
         </TabsContent>
       </Tabs>
     </div>
