@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from src.storage.postgres import get_postgres_db
 from src.teams.finx_team import build_finx_team
 from src.web.v1.deps import get_app_state
-from src.web.v1.routers import search, graph, health
+from src.web.v1.routers import search, graph, graph_explorer, health
 
 _original_unraisablehook = sys.unraisablehook
 
@@ -81,6 +81,7 @@ def create_app() -> FastAPI:
     base_app.include_router(health.router, prefix="/api/v1")
     base_app.include_router(search.router, prefix="/api/v1")
     base_app.include_router(graph.router, prefix="/api/v1")
+    base_app.include_router(graph_explorer.router, prefix="/api/v1")
 
     finx_team = _build_team()
 

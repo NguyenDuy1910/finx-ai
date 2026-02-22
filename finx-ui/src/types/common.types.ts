@@ -1,5 +1,15 @@
 export type NavPage = "chat" | "explore" | "playground" | "admin";
 
+export type AdminTab = "search" | "stats" | "index" | "feedback" | "graph-explorer";
+
+export const ADMIN_TABS: AdminTab[] = [
+  "search",
+  "stats",
+  "index",
+  "feedback",
+  "graph-explorer",
+];
+
 export type ChatMode = "agent";
 
 export const CHAT_MODE_LABELS: Record<ChatMode, string> = {
