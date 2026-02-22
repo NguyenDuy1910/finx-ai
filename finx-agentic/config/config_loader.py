@@ -48,6 +48,26 @@ class AIModelConfig:
 
 
 @dataclass
+class AgentModelConfig:
+    """Per-agent model configuration from team_workflow"""
+    provider: str = ""
+    model_id: str = ""
+    temperature: float = 0.7
+    max_tokens: int = 2000
+    description: str = ""
+
+    def to_ai_model_config(self, api_key: str = "") -> AIModelConfig:
+        """Convert to AIModelConfig, inheriting the API key from global config"""
+        return AIModelConfig(
+            provider=self.provider,
+            model_id=self.model_id,
+            api_key=api_key,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+        )
+
+
+@dataclass
 class Neo4jConfig:
     """Neo4j Graph Database Configuration"""
     uri: str = "bolt://localhost:7687"
@@ -85,8 +105,20 @@ class AppConfig:
     ai_model: AIModelConfig = field(default_factory=AIModelConfig)
     neo4j: Neo4jConfig = field(default_factory=Neo4jConfig)
     falkordb: FalkorDBConfig = field(default_factory=FalkorDBConfig)
+    team_workflow: Dict[str, AgentModelConfig] = field(default_factory=dict)
     debug: bool = False
     log_level: str = "INFO"
+
+    def get_agent_model_config(self, agent_name: str) -> Optional[AIModelConfig]:
+        """
+        Get model config for a specific agent.
+        Falls back to global ai_model config if agent not found in team_workflow.
+        """
+        if agent_name in self.team_workflow:
+            return self.team_workflow[agent_name].to_ai_model_config(
+                api_key=self.ai_model.api_key
+            )
+        return None
 
 
 class ConfigLoader:
@@ -160,6 +192,17 @@ class ConfigLoader:
                 agents_data = data['agents']
                 config.mcp.timeout = agents_data.get('default_timeout', config.mcp.timeout)
                 config.mcp.max_retries = agents_data.get('max_retries', config.mcp.max_retries)
+
+            # Team Workflow — per-agent model configuration
+            if 'team_workflow' in data:
+                for agent_name, agent_data in data['team_workflow'].items():
+                    config.team_workflow[agent_name] = AgentModelConfig(
+                        provider=agent_data.get('provider', ''),
+                        model_id=agent_data.get('model_id', ''),
+                        temperature=agent_data.get('temperature', 0.7),
+                        max_tokens=agent_data.get('max_tokens', 2000),
+                        description=agent_data.get('description', ''),
+                    )
             
         except Exception as e:
             print(f"Error loading config.json: {e}")

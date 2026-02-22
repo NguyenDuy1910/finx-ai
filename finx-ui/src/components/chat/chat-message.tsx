@@ -198,20 +198,37 @@ export const ChatMessage = memo(function ChatMessage({
             </div>
           ) : content ? (
             hasMemberRuns ? (
-              /* ── Team Final Response — visually distinct card ── */
-              <div className="mt-1 rounded-xl border border-primary/10 bg-gradient-to-b from-primary/[0.03] to-transparent shadow-sm">
-                {/* Header */}
-                <div className="flex items-center gap-2 border-b border-primary/8 px-3.5 py-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/15 to-blue-500/15">
-                    <Sparkles className="h-3 w-3 text-primary/70" />
+              /* ── Team Final Response — polished summary card ── */
+              <div className="team-summary-card mt-2 overflow-hidden rounded-2xl border border-primary/12 bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent shadow-md ring-1 ring-primary/5 transition-all">
+                {/* Header bar */}
+                <div className="flex items-center gap-2.5 border-b border-primary/10 bg-gradient-to-r from-primary/[0.06] to-transparent px-4 py-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 ring-1 ring-violet-500/10">
+                    <Sparkles className="h-3.5 w-3.5 text-primary/80" />
                   </div>
-                  <span className="text-[11px] font-semibold text-foreground/70 tracking-wide">
-                    Summary
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-foreground/80 tracking-wide">
+                      FinX Analysis
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/50">
+                      Synthesized from {memberRuns!.length} agent{memberRuns!.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {!streaming && (
+                    <div className="ml-auto flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60" />
+                      <span className="text-[10px] font-medium text-emerald-600/60">Complete</span>
+                    </div>
+                  )}
+                  {streaming && (
+                    <div className="ml-auto flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60" />
+                      <span className="text-[10px] font-medium text-primary/60">Streaming</span>
+                    </div>
+                  )}
                 </div>
                 {/* Body */}
-                <div className="min-w-0 max-w-full overflow-hidden px-3.5 py-3 text-sm leading-relaxed">
-                  <MarkdownContent content={displayContent} />
+                <div className="team-summary-body min-w-0 max-w-full overflow-hidden px-4 py-4 text-sm leading-relaxed">
+                  <MarkdownContent content={displayContent} className="team-summary-content" />
                   {streaming && (
                     <span
                       className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-primary align-text-bottom"
@@ -223,7 +240,7 @@ export const ChatMessage = memo(function ChatMessage({
                     <button
                       type="button"
                       onClick={handleToggleExpand}
-                      className="mt-2 flex items-center gap-1 rounded-full border border-border/40 px-2.5 py-1 text-[11px] font-medium text-primary/70 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                      className="mt-3 flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.04] px-3 py-1.5 text-[11px] font-medium text-primary/70 shadow-sm transition-all hover:border-primary/25 hover:bg-primary/8 hover:text-primary hover:shadow-md"
                     >
                       {effectiveExpanded ? (
                         <>
@@ -233,7 +250,7 @@ export const ChatMessage = memo(function ChatMessage({
                       ) : (
                         <>
                           <ChevronDown className="h-3 w-3" />
-                          Show full response
+                          Show full analysis
                         </>
                       )}
                     </button>

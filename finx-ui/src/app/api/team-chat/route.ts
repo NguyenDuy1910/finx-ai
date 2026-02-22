@@ -139,12 +139,34 @@ export async function POST(req: NextRequest) {
          *  - stacked blank lines (3+)
          *  - trailing whitespace
          *  - leading/trailing newlines
+         *  - duplicated section headers
+         *  - raw agent output noise mixed in
          */
         function cleanFinalContent(raw: string): string {
-          return raw
+          let cleaned = raw
             .replace(/\n{3,}/g, "\n\n")   // collapse 3+ newlines → 2
             .replace(/[ \t]+$/gm, "")       // strip trailing whitespace per line
             .trim();
+
+          // Remove duplicated consecutive lines (Agno sometimes duplicates headers)
+          const lines = cleaned.split("\n");
+          const deduped: string[] = [];
+          for (let i = 0; i < lines.length; i++) {
+            const trimmedLine = lines[i].trim();
+            if (i > 0 && trimmedLine && trimmedLine === lines[i - 1]?.trim()) {
+              continue; // skip duplicate
+            }
+            deduped.push(lines[i]);
+          }
+          cleaned = deduped.join("\n");
+
+          // Ensure section headers have proper spacing
+          cleaned = cleaned
+            .replace(/(#{1,3}\s)/g, "\n$1")   // ensure newline before headers
+            .replace(/\n{3,}/g, "\n\n")        // re-collapse after header fix
+            .trim();
+
+          return cleaned;
         }
 
         /**

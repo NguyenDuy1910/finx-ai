@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from agno.agent import Agent
 from agno.db.base import BaseDb
 
-from src.core.model_factory import create_model
+from src.core.model_factory import create_model_for_agent
 from src.prompts.manager import get_prompt_manager
 from src.agents.hooks.sql_auto_execute import (
     AthenaDirectExecutor,
@@ -31,7 +31,7 @@ def create_sql_generator_agent(
     return Agent(
         name="SQL Generator Agent",
         id="sql-generator-agent",
-        model=create_model(),
+        model=create_model_for_agent("sql_generator_agent"),
         description=(
             "Converts natural language data questions into SQL queries for "
             "AWS Athena. Generates SQL, the system auto-validates and executes "

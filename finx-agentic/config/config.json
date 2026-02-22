@@ -62,5 +62,35 @@
     "max_retries": 3,
     "enable_memory": true,
     "enable_async": true
+  },
+  "team_workflow": {
+    "team_leader": {
+      "provider": "openai",
+      "model_id": "gpt-5.1",
+      "temperature": 1,
+      "max_tokens": 30000,
+      "description": "Orchestrates agents, writes final user-facing response with insights"
+    },
+    "knowledge_agent": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "temperature": 1,
+      "max_tokens": 2000,
+      "description": "Schema retrieval and graph knowledge search — lightweight task"
+    },
+    "sql_generator_agent": {
+      "provider": "openai",
+      "model_id": "o4-mini",
+      "temperature": 0.0,
+      "max_tokens": 10000,
+      "description": "SQL generation requires precision — good coding model"
+    },
+    "chart_builder_agent": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-nano",
+      "temperature": 0.3,
+      "max_tokens": 2000,
+      "description": "Structured JSON chart specs — simple structured output task"
+    }
   }
 }

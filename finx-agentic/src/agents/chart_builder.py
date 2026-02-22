@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from agno.agent import Agent
 from agno.db.base import BaseDb
 
-from src.core.model_factory import create_model
+from src.core.model_factory import create_model_for_agent
 from src.prompts.manager import get_prompt_manager
 from src.tools.chart_builder import ChartBuilderTools
 
@@ -21,7 +21,7 @@ def create_chart_builder_agent(
     return Agent(
         name="Chart Builder Agent",
         id="chart-builder-agent",
-        model=create_model(),
+        model=create_model_for_agent("chart_builder_agent"),
         description=(
             "Analyzes SQL query results and produces chart/dashboard specifications. "
             "Use this agent AFTER the SQL Generator Agent has successfully executed "
