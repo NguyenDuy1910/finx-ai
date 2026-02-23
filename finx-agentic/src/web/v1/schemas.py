@@ -29,7 +29,6 @@ class AskResponse(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
-    database: Optional[str] = None
     domain: Optional[str] = None
     entities: Optional[List[str]] = None
     top_k: int = 5

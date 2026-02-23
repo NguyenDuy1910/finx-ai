@@ -37,6 +37,8 @@ from src.knowledge.retrieval import (
     SearchReranker,
     ScoredItem,
     RerankerWeights,
+    INTENT_WEIGHT_PROFILES,
+    weights_for_intent,
 )
 
 # ── utils ────────────────────────────────────────────────────────────
@@ -113,6 +115,8 @@ __all__ = [
     "SearchReranker",
     "ScoredItem",
     "RerankerWeights",
+    "INTENT_WEIGHT_PROFILES",
+    "weights_for_intent",
     # utils
     "SessionFileLogger",
     "track_class",

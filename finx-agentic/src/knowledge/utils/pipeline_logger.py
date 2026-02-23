@@ -289,7 +289,7 @@ def _detailed_result(result: Any, method_name: str) -> List[str]:
                     graph_sc = getattr(item, "graph_relevance_score", None)
                     data_q = getattr(item, "data_quality_score", None)
                     biz_ctx = getattr(item, "business_context_score", None)
-                    level = getattr(item, "source_level", "")
+                    level = getattr(item, "source_layer", "") or getattr(item, "source_level", "")
                     match_type = getattr(item, "match_type", "")
                     hop = getattr(item, "hop_distance", "")
                     parts = []

@@ -24,7 +24,6 @@ async def search_schemas(
 ) -> SearchResponse:
     result = await svc.search_schema(
         query=body.query,
-        database=body.database,
         domain=body.domain,
         entities=body.entities,
         top_k=body.top_k,

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from agno.agent import Agent
 from agno.db.base import BaseDb
@@ -10,6 +11,11 @@ from agno.team import Team
 from src.agents.knowledge import create_knowledge_agent
 from src.agents.sql_generator import create_sql_generator_agent
 from src.agents.chart_builder import create_chart_builder_agent
+from src.core.intent_analyzer import (
+    IntentAnalysisResult,
+    analyze_intent,
+    merge_weight_hints,
+)
 from src.core.model_factory import create_model_for_agent
 from src.knowledge.graph.client import GraphitiClient
 
@@ -82,6 +88,62 @@ TEAM_INSTRUCTIONS = [
     "",
 
     # ═══════════════════════════════════════════════════════════════════════
+    # INTENT-AWARE RETRIEVAL HINTS (PRE-KNOWLEDGE-AGENT STEP)
+    # ═══════════════════════════════════════════════════════════════════════
+    "## Intent-Aware Retrieval Optimization",
+    "",
+    "BEFORE delegating to the Knowledge Agent, you MUST produce a structured",
+    "**intent analysis** block. This block is used to dynamically tune the",
+    "Knowledge Agent's retrieval scoring so the most relevant tables/columns",
+    "are ranked higher. This is a CRITICAL accuracy optimization.",
+    "",
+    "Include the following JSON block in your delegation message to the",
+    "Knowledge Agent — wrap it in <intent_analysis> tags:",
+    "",
+    "```",
+    "<intent_analysis>",
+    "{",
+    '  "intent": "<text_to_sql|relationship_discovery|aggregation_query|knowledge_lookup|schema_query>",',
+    '  "weight_hints": {',
+    '    "text_match": <0.0-1.0 or null>,',
+    '    "graph_relevance": <0.0-1.0 or null>,',
+    '    "data_quality": <0.0-1.0 or null>,',
+    '    "usage_frequency": <0.0-1.0 or null>,',
+    '    "business_context": <0.0-1.0 or null>',
+    "  },",
+    '  "domain": "<account|transaction|user|branch|card|loan|kyc|campaign|bill_payment|authentication|null>",',
+    '  "entities": ["<extracted entity names>"],',
+    '  "business_terms": ["<banking terms from the query>"],',
+    '  "column_hints": ["<specific column names/patterns if mentioned>"],',
+    '  "english_query": "<precise English translation of the query>"',
+    "}",
+    "</intent_analysis>",
+    "```",
+    "",
+    "### Weight Hints Guide",
+    "",
+    "The retrieval system scores candidates across 5 dimensions. Adjust weights",
+    "based on query characteristics:",
+    "",
+    "- **text_match** ↑ when query uses exact table/column names; ↓ when vague/conceptual",
+    "- **graph_relevance** ↑ when discovering relationships/JOINs; ↓ for simple lookups",
+    "- **data_quality** ↑ when needing reliable, documented tables (reports, finance); ↓ for exploratory",
+    "- **usage_frequency** ↑ for common patterns (monthly reports); ↓ for ad-hoc/novel queries",
+    "- **business_context** ↑ for domain-specific queries needing business rules; ↓ for generic schema",
+    "",
+    "Set a weight to null to use the default for that intent. Only override when",
+    "you have a clear reason — the defaults are already good.",
+    "",
+    "### Intent → Weight Examples",
+    "",
+    "| Query Pattern                               | Intent              | Key Weight Adjustments |",
+    "|---------------------------------------------|---------------------|----------------------|",
+    "| 'Tổng giao dịch tháng này theo chi nhánh'   | aggregation_query   | data_quality↑ usage_frequency↑ |",
+    "| 'Bảng nào liên quan đến KYC?'               | schema_query        | text_match↑ graph_relevance↑ |",
+    "| 'Join user_pool với transaction'             | relationship_discovery | graph_relevance=0.50 |",
+    "| 'Số dư tài khoản tiết kiệm khách hàng VIP' | text_to_sql         | business_context↑ data_quality↑ |",
+    "| 'Giải thích bảng branch nghĩa là gì'        | knowledge_lookup    | text_match↑ business_context↑ |",
+    "",
     # LANGUAGE & TRANSLATION RULES
     # ═══════════════════════════════════════════════════════════════════════
     "## Language Handling (CRITICAL)",
@@ -280,6 +342,57 @@ TEAM_INSTRUCTIONS = [
 ]
 
 
+async def _intent_analysis_pre_hook(
+    run_input: Any,
+    agent: Agent,
+    session: Any,
+    **kwargs,
+) -> None:
+    """Pre-hook applied to the Knowledge Agent that runs LLM intent analysis.
+
+    Extracts the user query from the run input, runs it through the intent
+    analyzer, and stores the result in the agent's session_state.  This allows
+    the knowledge_retriever callback to pick up the intent analysis and pass it
+    through to the reranker for dynamic weight tuning.
+    """
+    # Extract the user's message text
+    user_query = ""
+    if hasattr(run_input, "messages") and run_input.messages:
+        for msg in reversed(run_input.messages):
+            if hasattr(msg, "role") and msg.role == "user" and hasattr(msg, "content"):
+                user_query = msg.content or ""
+                break
+    elif hasattr(run_input, "input") and isinstance(run_input.input, str):
+        user_query = run_input.input
+
+    if not user_query or not user_query.strip():
+        return
+
+    # Skip intent analysis for greetings / very short queries
+    if len(user_query.strip()) < 8:
+        return
+
+    try:
+        # Use the Knowledge Agent's own model for the intent analysis call
+        model = agent.model
+        result = await analyze_intent(user_query, model)
+
+        # Store in the agent's session_state for the knowledge_retriever
+        if agent.session_state is None:
+            agent.session_state = {}
+        agent.session_state["intent_analysis"] = result.to_dict()
+
+        logger.info(
+            "Knowledge Agent pre-hook intent analysis: intent=%s domain=%s confidence=%.2f weights=%s",
+            result.intent,
+            result.domain,
+            result.confidence,
+            {k: v for k, v in result.weight_hints.to_dict().items() if v is not None},
+        )
+    except Exception as e:
+        logger.warning("Intent analysis pre-hook failed (non-fatal): %s", e)
+
+
 def build_finx_team(
     graphiti_client: GraphitiClient,
     database: str = "",
@@ -289,8 +402,8 @@ def build_finx_team(
 ) -> Team:
     knowledge_agent = create_knowledge_agent(
         graphiti_client=graphiti_client,
-        default_database=database,
         db=db,
+        pre_hooks=[_intent_analysis_pre_hook],
     )
 
     sql_generator_agent = create_sql_generator_agent(

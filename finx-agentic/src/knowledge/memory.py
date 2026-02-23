@@ -198,11 +198,10 @@ class MemoryManager:
     async def get_context(
         self,
         query: str,
-        database: Optional[str] = None,
         top_k: int = 5,
     ) -> Dict[str, Any]:
         result = await self.search.schema_retrieval(
-            query, database=database, top_k=top_k,
+            query, top_k=top_k,
         )
         schema_ctx = result.to_dict()
         similar_queries = await self.episode_queries.search_similar_queries(
@@ -221,7 +220,6 @@ class MemoryManager:
         self,
         query: str,
         top_k: int = 5,
-        database: Optional[str] = None,
         entities: Optional[List[str]] = None,
         intent: Optional[str] = None,
         domain: Optional[str] = None,
@@ -231,7 +229,7 @@ class MemoryManager:
         include_context: bool = True,
     ) -> SchemaSearchResult:
         return await self.search.schema_retrieval(
-            query, top_k=top_k, database=database,
+            query, top_k=top_k,
             entities=entities, intent=intent,
             domain=domain, business_terms=business_terms, column_hints=column_hints,
             include_patterns=include_patterns, include_context=include_context,

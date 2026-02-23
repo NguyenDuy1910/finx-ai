@@ -72,7 +72,13 @@ class SchemaSearchResult:
 
 from src.knowledge.retrieval.entity_queries import EntityQueries  # noqa: E402
 from src.knowledge.retrieval.episode_queries import EpisodeQueries  # noqa: E402
-from src.knowledge.retrieval.reranker import SearchReranker, ScoredItem, RerankerWeights  # noqa: E402
+from src.knowledge.retrieval.reranker import (  # noqa: E402
+    SearchReranker,
+    ScoredItem,
+    RerankerWeights,
+    INTENT_WEIGHT_PROFILES,
+    weights_for_intent,
+)
 from src.knowledge.retrieval.schema_retrieval import SchemaRetrievalService  # noqa: E402
 
 __all__ = [
@@ -85,6 +91,8 @@ __all__ = [
     "SearchReranker",
     "ScoredItem",
     "RerankerWeights",
+    "INTENT_WEIGHT_PROFILES",
+    "weights_for_intent",
     # models
     "SearchResult",
     "TableContext",

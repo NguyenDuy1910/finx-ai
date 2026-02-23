@@ -53,15 +53,25 @@ class GraphSearchTools(Toolkit):
         domain: Optional[str] = None,
         business_terms: Optional[List[str]] = None,
         column_hints: Optional[List[str]] = None,
+        weight_overrides: Optional[Dict[str, float]] = None,
         top_k: int = 3,
         include_patterns: bool = True,
         include_context: bool = True,
     ) -> str:
-        """Search the knowledge graph for tables, columns, entities and patterns."""
+        """Search the knowledge graph for tables, columns, entities and patterns.
+
+        Parameters
+        ----------
+        weight_overrides:
+            Optional LLM-provided weight overrides for the reranker, e.g.
+            {"text_match": 0.35, "graph_relevance": 0.30}. Values that are
+            None or missing fall back to the default for the given intent.
+        """
         db = database or self.default_database
         result = await self.search_service.schema_retrieval(
             query, database=db, entities=entities, intent=intent,
             domain=domain, business_terms=business_terms, column_hints=column_hints,
+            weight_overrides=weight_overrides,
             top_k=top_k, include_patterns=include_patterns,
             include_context=include_context,
         )
@@ -135,7 +145,7 @@ class GraphSearchTools(Toolkit):
 
     async def discover_domains(self) -> str:
         """List all available business domains with their tables and entities."""
-        domains = await self.search_service._fallback_domain_discovery()
+        domains = await self.search_service.discover_domains()
         return json.dumps({"domains": domains}, default=str, ensure_ascii=False)
 
     async def store_query_episode(

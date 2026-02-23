@@ -20,14 +20,12 @@ class SearchService:
     async def search_schema(
         self,
         query: str,
-        database: Optional[str] = None,
         domain: Optional[str] = None,
         entities: Optional[List[str]] = None,
         top_k: int = 5,
     ) -> Dict[str, Any]:
         result = await self._memory.schema_retrieval(
             query=query,
-            database=database,
             domain=domain,
             entities=entities,
             top_k=top_k,
@@ -79,7 +77,7 @@ class SearchService:
         return results
 
     async def discover_domains(self) -> Dict[str, Any]:
-        domains = await self._search._fallback_domain_discovery()
+        domains = await self._search.discover_domains()
         return {"domains": domains}
 
     async def get_similar_queries(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
