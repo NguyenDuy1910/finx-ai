@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: falkordb
+  namespace: finx
+spec:
+  serviceName: falkordb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: falkordb
+  template:
+    metadata:
+      labels:
+        app: falkordb
+    spec:
+      containers:
+      - name: falkordb
+        image: falkordb/falkordb:latest
+        ports:
+        - containerPort: 6379
+        env:
+        - name: FALKORDB_ARGS
+          value: "MAX_QUEUED_QUERIES 25 TIMEOUT 10000 RESULTSET_SIZE 100000"
+        volumeMounts:
+        - name: falkordb-data
+          mountPath: /var/lib/falkordb/data
+        readinessProbe:
+          exec:
+            command: [ "redis-cli", "-p", "6379", "ping" ]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: [ "redis-cli", "-p", "6379", "ping" ]
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 2Gi
+  volumeClaimTemplates:
+  - metadata:
+      name: falkordb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: falkordb
+  namespace: finx
+spec:
+  selector:
+    app: falkordb
+  ports:
+  - port: 6379
+    targetPort: 6379
+  clusterIP: None

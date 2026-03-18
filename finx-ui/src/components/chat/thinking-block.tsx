@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, memo } from "react";
-import { Brain, ChevronDown, Sparkles, Eye } from "lucide-react";
+import { Brain, ChevronDown, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ThinkingBlockProps {
   content: string;
@@ -15,7 +16,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ content, isActive }: 
   if (isActive && !content) {
     return (
       <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/8 to-amber-500/3 px-3 py-2.5 shadow-sm shadow-amber-500/5 animate-fade-in">
-        <Brain className="h-4 w-4 animate-pulse text-amber-500" />
+        <Brain className="h-4 w-4 text-amber-500 animate-pulse" />
         <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
           Thinking…
         </span>
@@ -61,16 +62,17 @@ export const ThinkingBlock = memo(function ThinkingBlock({ content, isActive }: 
             </span>
           )}
         </span>
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-amber-500/60 transition-transform" />
-        ) : (
-          <Eye className="h-3 w-3 shrink-0 text-amber-500/40" />
-        )}
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-amber-500/60 transition-transform duration-200",
+            expanded && "rotate-180"
+          )}
+        />
       </button>
 
       {expanded && content && (
-        <div className="animate-fade-in border-t border-amber-500/10 px-3 py-2">
-          <div className="max-h-[200px] overflow-y-auto">
+        <div className="animate-fade-in border-t border-amber-500/10 px-3 py-2.5">
+          <div className="max-h-[240px] overflow-y-auto pr-1">
             <p className="whitespace-pre-wrap text-xs leading-relaxed text-amber-800/70 dark:text-amber-200/60">
               {content}
             </p>

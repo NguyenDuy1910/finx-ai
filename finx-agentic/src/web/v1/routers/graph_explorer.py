@@ -1,8 +1,10 @@
+"""Graph explorer API router — visual graph exploration and CRUD endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 
 from src.web.v1.deps import AppState, get_app_state
-from src.web.v1.schemas_graph_explorer import (
+from src.web.v1.schemas.graph_explorer import (
     GraphNodeResponse,
     GraphNodeListResponse,
     CreateNodeRequest,

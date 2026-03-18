@@ -1,18 +1,35 @@
-from src.core.model_factory import create_model
-from src.core.types import (
-    QueryIntent,
-    ParsedQuery,
-    SchemaMatch,
-    SchemaContext,
-    GeneratedSQL,
-    ValidationResult,
-)
 from src.core.exceptions import (
-    Text2SQLError,
+    AthenaExecutionError,
+    KnowledgeGraphError,
     SchemaNotFoundError,
     SQLGenerationError,
+    Text2SQLError,
     ValidationError,
-    KnowledgeGraphError,
-    AthenaExecutionError,
+)
+from src.core.llm import (
+    LLMAdapter,
+    create_agno_model,
+    create_agno_model_for_agent,
+    create_llm_adapter,
 )
 
+try:
+    from src.core.graph import GraphitiClient, get_graphiti_client
+except ModuleNotFoundError:  # pragma: no cover - optional graph dependency
+    GraphitiClient = None  # type: ignore[assignment,misc]
+    get_graphiti_client = None  # type: ignore[assignment]
+
+__all__ = [
+    "GraphitiClient",
+    "get_graphiti_client",
+    "LLMAdapter",
+    "create_llm_adapter",
+    "create_agno_model",
+    "create_agno_model_for_agent",
+    "Text2SQLError",
+    "SchemaNotFoundError",
+    "SQLGenerationError",
+    "ValidationError",
+    "KnowledgeGraphError",
+    "AthenaExecutionError",
+]

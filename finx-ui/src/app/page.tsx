@@ -9,6 +9,7 @@ import {
   AVAILABLE_DATABASES,
   type ChatThread,
   type NavPage,
+  type ChatMode,
 } from "@/types";
 import {
   createThread,
@@ -24,14 +25,19 @@ const ExploreContainer = lazy(() =>
     default: m.ExploreContainer,
   }))
 );
-const PlaygroundContainer = lazy(() =>
-  import("@/components/playground/playground-container").then((m) => ({
-    default: m.PlaygroundContainer,
+const SchemaPipelinePage = lazy(() =>
+  import("@/components/admin/schema-pipeline/schema-pipeline-panel").then((m) => ({
+    default: m.SchemaPipelinePanel,
   }))
 );
-const AdminContainer = lazy(() =>
-  import("@/components/admin/admin-container").then((m) => ({
-    default: m.AdminContainer,
+const GraphExplorerPage = lazy(() =>
+  import("@/components/admin/graph-explorer/graph-explorer-container").then((m) => ({
+    default: m.GraphExplorerContainer,
+  }))
+);
+const KnowledgePage = lazy(() =>
+  import("@/components/admin/knowledge/knowledge-panel").then((m) => ({
+    default: m.KnowledgePanel,
   }))
 );
 
@@ -84,11 +90,12 @@ export default function Home() {
   }, [sidebarOpen]);
 
   const handleNewChat = useCallback(() => {
-    const t = createThread("agent");
+    const currentMode = activeThread?.mode ?? "team";
+    const t = createThread(currentMode);
     setActiveThread(t);
     setSidebarRefreshKey((k) => k + 1);
     setSidebarOpen(false);
-  }, []);
+  }, [activeThread?.mode]);
 
   const handleSelectThread = useCallback((thread: ChatThread) => {
     setActiveThread(thread);
@@ -130,6 +137,18 @@ export default function Home() {
     [activeThread]
   );
 
+  const handleModeChange = useCallback(
+    (newMode: ChatMode) => {
+      if (!activeThread) return;
+      updateThread(activeThread.id, { mode: newMode });
+      setActiveThread((prev) =>
+        prev ? { ...prev, mode: newMode } : prev
+      );
+      setSidebarRefreshKey((k) => k + 1);
+    },
+    [activeThread]
+  );
+
   // ── Memoised page content to avoid re-renders ──────────────
   const isChatPage = activePage === "chat";
 
@@ -141,9 +160,11 @@ export default function Home() {
             key={activeThread.id}
             threadId={activeThread.id}
             initialSessionId={activeThread.sessionId}
+            initialMode={activeThread.mode}
             database={database}
             onSessionEstablished={handleSessionEstablished}
             onFirstMessage={handleFirstMessage}
+            onModeChange={handleModeChange}
           />
         ) : null;
       case "explore":
@@ -152,25 +173,38 @@ export default function Home() {
             <ExploreContainer database={database} />
           </Suspense>
         );
-      case "playground":
+      case "schema-pipeline":
         return (
           <Suspense fallback={<PageLoader />}>
-            <PlaygroundContainer database={database} />
+            <div className="h-full overflow-auto">
+              <div className="mx-auto max-w-6xl p-6">
+                <SchemaPipelinePage />
+              </div>
+            </div>
           </Suspense>
         );
-      case "admin":
+      case "graph-explorer":
         return (
           <Suspense fallback={<PageLoader />}>
-            <AdminContainer
-              activeTab={adminTab}
-              onTabChange={setAdminTab}
-            />
+            <div className="h-full overflow-auto p-6">
+              <GraphExplorerPage />
+            </div>
+          </Suspense>
+        );
+      case "knowledge":
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <div className="h-full overflow-auto">
+              <div className="mx-auto max-w-6xl p-6">
+                <KnowledgePage />
+              </div>
+            </div>
           </Suspense>
         );
       default:
         return null;
     }
-  }, [activePage, activeThread, database, handleSessionEstablished, handleFirstMessage, adminTab, setAdminTab]);
+  }, [activePage, activeThread, database, handleSessionEstablished, handleFirstMessage, handleModeChange]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">

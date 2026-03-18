@@ -1,0 +1,50 @@
+{
+  "explorer.openEditors.visible": 0,
+  "files.exclude": {
+    // Python
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/*.pyo": true,
+    "**/*.pyd": true,
+    "**/.Python": true,
+    "**/*.egg-info": true,
+    "**/.eggs": true,
+    "**/*.egg": true,
+    "**/dist": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.env": false,
+
+    // Node.js
+    "**/node_modules": true,
+    "**/.npm": true,
+    "**/package-lock.json": false,
+
+    // Build outputs
+    "**/.next": true,
+    "**/.nuxt": true,
+    "**/build": true,
+    "**/.build": true,
+    "**/.output": true,
+    "**/.turbo": true,
+
+    // Test & coverage
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/coverage": true,
+    "**/.coverage": true,
+    "**/htmlcov": true,
+    "**/.tox": true,
+    // Logs
+    "**/*.log": true,
+    "**/logs": true,
+    "**/log_process": true,
+
+    // Misc
+    "**/.git": false,
+    "**/tmp": true,
+    "**/.cache": true
+  },
+}
+

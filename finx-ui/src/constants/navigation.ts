@@ -3,6 +3,7 @@ import type { NavPage } from "@/types";
 export const NAV_LABELS: Record<NavPage, string> = {
   chat: "Chat",
   explore: "Schema Explorer",
-  playground: "AI Playground",
-  admin: "Admin",
+  "schema-pipeline": "Schema Pipeline",
+  "graph-explorer": "Graph Explorer",
+  knowledge: "Knowledge",
 };

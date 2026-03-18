@@ -6,6 +6,10 @@ import {
   FolderSync,
   MessageSquareWarning,
   Network,
+  DatabaseZap,
+  Database,
+  BookOpen,
+  Workflow,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SearchDetailPanel } from "./search-detail-panel";
@@ -13,6 +17,10 @@ import { GraphStatsPanel } from "./graph-stats-panel";
 import { IndexingPanel } from "./indexing-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { GraphExplorerContainer } from "./graph-explorer";
+import { TableIndexingPanel } from "./table-indexing";
+import { DataLoadingPanel } from "./data-loading";
+import { KnowledgePanel } from "./knowledge";
+import { SchemaPipelinePanel } from "./schema-pipeline";
 import type { AdminTab } from "@/types/common.types";
 
 interface AdminContainerProps {
@@ -56,6 +64,22 @@ export function AdminContainer({ activeTab, onTabChange }: AdminContainerProps) 
             <Network className="mr-1.5 h-3.5 w-3.5" />
             Graph Explorer
           </TabsTrigger>
+          <TabsTrigger value="table-indexing">
+            <DatabaseZap className="mr-1.5 h-3.5 w-3.5" />
+            Table Indexing
+          </TabsTrigger>
+          <TabsTrigger value="data-loading">
+            <Database className="mr-1.5 h-3.5 w-3.5" />
+            Data Loading
+          </TabsTrigger>
+          <TabsTrigger value="knowledge">
+            <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+            Knowledge
+          </TabsTrigger>
+          <TabsTrigger value="schema-pipeline">
+            <Workflow className="mr-1.5 h-3.5 w-3.5" />
+            Schema Pipeline
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search">
@@ -72,6 +96,18 @@ export function AdminContainer({ activeTab, onTabChange }: AdminContainerProps) 
         </TabsContent>
         <TabsContent value="graph-explorer" className="h-full">
           <GraphExplorerContainer />
+        </TabsContent>
+        <TabsContent value="table-indexing">
+          <TableIndexingPanel />
+        </TabsContent>
+        <TabsContent value="data-loading">
+          <DataLoadingPanel />
+        </TabsContent>
+        <TabsContent value="knowledge">
+          <KnowledgePanel />
+        </TabsContent>
+        <TabsContent value="schema-pipeline">
+          <SchemaPipelinePanel />
         </TabsContent>
       </Tabs>
     </div>

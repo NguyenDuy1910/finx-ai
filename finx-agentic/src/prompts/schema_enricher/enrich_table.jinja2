@@ -1,0 +1,90 @@
+Analyze the table schema below together with every knowledge source provided.
+Generate a complete knowledge graph design for this table.
+
+━━━ TABLE SCHEMA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Table   : {{ table_name }}
+Database: {{ database }}
+{% if description %}Description: {{ description }}{% endif %}
+{% if location %}Location   : {{ location }}{% endif %}
+
+Columns:
+{% for col in columns %}
+  {{ loop.index }}. {{ col.name }} ({{ col.data_type }}){% if col.is_partition %} [PARTITION]{% endif %}{% if col.is_primary_key %} [PK]{% endif %}{% if col.description %}
+     → {{ col.description }}{% endif %}
+
+{% endfor %}
+{% if context_tables %}
+━━━ SIBLING TABLES (same database — use only for relationship inference) ━━━━━
+{{ context_tables | join(', ') }}
+{% endif %}
+{% if context_documents %}
+━━━ KNOWLEDGE SOURCES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The data team has attached the following documents. They may be PDF exports,
+Confluence pages, data dictionary entries, plain-text notes, or URL fetches.
+Extract every business rule, code-value mapping, domain term, and ownership
+detail from them. These take priority over LLM inference.
+
+{% for doc in context_documents %}
+┌─ Source {{ loop.index }} ─────────────────────────────────────────────────┐
+{{ doc }}
+└──────────────────────────────────────────────────────────────────────────┘
+{% endfor %}
+{% endif %}
+
+━━━ REQUIRED OUTPUT FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return a single JSON object with these exact keys:
+
+{
+  "table_description": "One-sentence business description of what this table stores (for humans)",
+  "ai_description": "Rich semantic description for embedding search — include domain, entity, key column concepts, business purpose, and any synonyms",
+  "entity_name": "PascalCase business entity name (e.g. CustomerAccount, Transaction, LoanApplication)",
+  "domain": "banking domain slug — one of: account, transaction, user, branch, card, loan, kyc, campaign, bill_payment, authentication, general_ledger, notification, other",
+  "synonyms": ["alt name 1", "alt name 2"],
+  "tags": ["tag1", "tag2"],
+  "columns": [
+    {
+      "name": "exact_column_name",
+      "description": "Business meaning — include code-value mappings if found in sources (e.g. 'Status: A=Active, C=Closed, S=Suspended')",
+      "business_terms": ["banking term 1", "banking term 2"],
+      "is_primary_key": false,
+      "column_type": "metric | dimension | attribute | partition_key"
+    }
+  ],
+  "relationships": [
+    {
+      "target_table": "other_table_name",
+      "relationship_type": "join | derived_from | lookup",
+      "source_column": "column_in_this_table",
+      "target_column": "column_in_target_table",
+      "description": "Why these tables relate and how to join them"
+    }
+  ],
+  "knowledge_graph": {
+    "nodes": [
+      {
+        "id": "unique-node-id",
+        "label": "Human-readable label",
+        "type": "table | column | domain | entity | concept | rule",
+        "description": "Short description"
+      }
+    ],
+    "edges": [
+      {
+        "source": "source-node-id",
+        "target": "target-node-id",
+        "label": "HAS_COLUMN | BELONGS_TO_DOMAIN | MAPS_TO_ENTITY | FOREIGN_KEY | DERIVED_FROM | HAS_RULE",
+        "type": "structural | semantic | business"
+      }
+    ]
+  }
+}
+
+Rules:
+- Every column in the schema MUST appear in the "columns" array.
+- If a knowledge source defines code-value mappings for a column (e.g. status codes),
+  embed them in that column's "description" field.
+- If a knowledge source defines a business rule that spans multiple columns,
+  add a "rule" node in knowledge_graph.nodes and connect it with HAS_RULE edges.
+- Use sibling table names only for relationship inference; never invent columns.
+- Partition columns → column_type = "partition_key".
+- ai_description must be ≥ 2 sentences and optimised for semantic similarity search.

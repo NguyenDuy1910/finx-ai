@@ -1,3 +1,5 @@
+"""Search API router — schema retrieval and context endpoints."""
+
 from fastapi import APIRouter, Depends, Query
 
 from src.web.v1.deps import AppState, get_app_state
@@ -14,7 +16,7 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 
 def _get_service(state: AppState = Depends(get_app_state)) -> SearchService:
-    return SearchService(memory=state.memory)
+    return SearchService(client=state.client)
 
 
 @router.post("/schemas")

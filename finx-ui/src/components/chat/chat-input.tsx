@@ -173,7 +173,6 @@ export function ChatInput({
 
   const canSend = (value.trim().length > 0 || currentAttachments.length > 0) && !isLoading;
   const charCount = value.length;
-  const nearLimit = charCount > MAX_LENGTH * 0.9;
   const canAttach = currentAttachments.length < MAX_ATTACHMENTS && !isLoading;
 
   return (
@@ -331,18 +330,18 @@ export function ChatInput({
           <p className="text-[10px] text-muted-foreground/40">
             FinX AI can make mistakes. Verify important information.
           </p>
-          {nearLimit && (
-            <span
-              className={cn(
-                "text-[10px] tabular-nums transition-colors",
-                charCount >= MAX_LENGTH
-                  ? "text-destructive"
-                  : "text-muted-foreground/50"
-              )}
-            >
-              {charCount}/{MAX_LENGTH}
-            </span>
-          )}
+          <span
+            className={cn(
+              "text-[10px] tabular-nums transition-colors",
+              charCount >= MAX_LENGTH
+                ? "text-destructive font-medium"
+                : charCount > MAX_LENGTH * 0.9
+                  ? "text-amber-500"
+                  : "text-muted-foreground/30"
+            )}
+          >
+            {charCount}/{MAX_LENGTH}
+          </span>
         </div>
       </form>
     </div>

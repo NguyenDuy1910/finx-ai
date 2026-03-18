@@ -1,3 +1,7 @@
+"""Chart builder toolkit — generates chart specifications from query results."""
+
+from __future__ import annotations
+
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -47,20 +51,29 @@ class ChartBuilderTools(Toolkit):
             JSON string of the chart specification.
         """
         valid_types = {
-            "bar", "horizontal_bar", "line", "area", "pie", "donut",
-            "stacked_bar", "grouped_bar", "scatter", "table",
-            "metric", "multi_metric",
+            "bar",
+            "horizontal_bar",
+            "line",
+            "area",
+            "pie",
+            "donut",
+            "stacked_bar",
+            "grouped_bar",
+            "scatter",
+            "table",
+            "metric",
+            "multi_metric",
         }
 
         if chart_type not in valid_types:
-            return json.dumps({
-                "error": f"Invalid chart_type '{chart_type}'. Must be one of: {', '.join(sorted(valid_types))}"
-            })
+            return json.dumps(
+                {
+                    "error": f"Invalid chart_type '{chart_type}'. Must be one of: {', '.join(sorted(valid_types))}"
+                }
+            )
 
         if not data:
-            return json.dumps({
-                "error": "No data provided for chart. Cannot build visualization."
-            })
+            return json.dumps({"error": "No data provided for chart. Cannot build visualization."})
 
         # Limit data rows to prevent oversized payloads
         max_rows = 500
@@ -98,7 +111,16 @@ class ChartBuilderTools(Toolkit):
         else:
             spec["options"] = {
                 "show_legend": len(series or []) > 1,
-                "show_grid": chart_type in {"bar", "horizontal_bar", "line", "area", "scatter", "grouped_bar", "stacked_bar"},
+                "show_grid": chart_type
+                in {
+                    "bar",
+                    "horizontal_bar",
+                    "line",
+                    "area",
+                    "scatter",
+                    "grouped_bar",
+                    "stacked_bar",
+                },
                 "show_values": len(data) <= 20,
                 "color_palette": "banking",
             }
@@ -108,7 +130,9 @@ class ChartBuilderTools(Toolkit):
 
         logger.info(
             "Chart spec built: type=%s, title=%s, rows=%d",
-            chart_type, title, len(data),
+            chart_type,
+            title,
+            len(data),
         )
 
         return json.dumps(spec, default=str, ensure_ascii=False)

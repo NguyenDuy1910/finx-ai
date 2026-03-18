@@ -1,9 +1,13 @@
+"""Factory for the SQL Generator Agent — generates, validates and executes SQL on Athena."""
+
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
 
 from agno.agent import Agent
 from agno.db.base import BaseDb
 
-from src.core.model_factory import create_model_for_agent
+from src.core.llm import create_agno_model_for_agent
 from src.prompts.manager import get_prompt_manager
 from src.agents.hooks.sql_auto_execute import (
     AthenaDirectExecutor,
@@ -19,6 +23,7 @@ def create_sql_generator_agent(
     session_state: Optional[Dict[str, Any]] = None,
     db: Optional[BaseDb] = None,
 ) -> Agent:
+    """Create a SQL Generator Agent with Athena auto-execute post-hook."""
     pm = get_prompt_manager()
     instructions = pm.render("sql_generator/instructions.jinja2")
 
@@ -31,7 +36,7 @@ def create_sql_generator_agent(
     return Agent(
         name="SQL Generator Agent",
         id="sql-generator-agent",
-        model=create_model_for_agent("sql_generator_agent"),
+        model=create_agno_model_for_agent("sql_generator_agent"),
         description=(
             "Converts natural language data questions into SQL queries for "
             "AWS Athena. Generates SQL, the system auto-validates and executes "

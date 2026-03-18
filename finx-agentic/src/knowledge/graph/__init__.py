@@ -1,63 +1,60 @@
-from src.knowledge.graph.client import GraphitiClient, get_graphiti_client
-from src.knowledge.graph.cost_tracker import GraphCostTracker, EmbeddingCall
+"""FalkorDB-backed knowledge graph — storage, models, schema, extraction, merge."""
 
-# Schemas re-exports (canonical location: graph.schemas)
-from src.knowledge.graph.schemas import BaseNode, BaseEdge
-from src.knowledge.graph.schemas.enums import NodeLabel
-from src.knowledge.graph.schemas.nodes import (
-    TableNode, ColumnNode, BusinessEntityNode,
-    QueryPatternNode, DomainNode, BusinessRuleNode, CodeSetNode,
-)
-from src.knowledge.graph.schemas.edges import (
+from .client import FalkorDBClient
+from .exceptions import GraphConnectionError, GraphError, NodeNotFoundError, EdgeNotFoundError
+from .extractor import Extractor
+from .merger import Merger
+from .models import (
+    Chunk,
+    EdgeData,
     EdgeType,
-    HasColumnEdge, JoinEdge, EntityMappingEdge, QueryPatternEdge,
-    ForeignKeyEdge, SynonymEdge, BelongsToDomainEdge, ContainsEntityEdge,
-    HasRuleEdge, AppliesToEdge, ColumnMappingEdge, HasCodeSetEdge, DerivedFromEdge,
+    ExtractionResult,
+    GRAPH_FIELD_SEP,
+    NodeData,
+    NodeLabel,
+    RawEdge,
+    RawNode,
 )
-from src.knowledge.graph.schemas.episodes import (
-    EpisodeCategory, SchemaEpisode, QueryEpisode, FeedbackEpisode, PatternEpisode,
+from .prompts import (
+    COMPLETION_DELIMITER,
+    DESCRIPTION_SUMMARY,
+    ENTITY_EXTRACTION_SYSTEM,
+    ENTITY_EXTRACTION_USER,
+    ENTITY_CONTINUE_EXTRACTION,
+    TUPLE_DELIMITER,
 )
-
-# Backward-compat alias: GraphLoader → SchemaIndexer
-from src.knowledge.indexing.schema_indexer import SchemaIndexer
-GraphLoader = SchemaIndexer  # deprecated alias
+from .schema import setup_schema
+from .store import GraphStore
 
 __all__ = [
-    "GraphitiClient",
-    "get_graphiti_client",
-    "GraphLoader",
-    "GraphCostTracker",
-    "EmbeddingCall",
-    # schemas
-    "BaseNode",
-    "BaseEdge",
+    # client
+    "FalkorDBClient",
+    # store
+    "GraphStore",
+    "setup_schema",
+    # extraction & merge
+    "Extractor",
+    "Merger",
+    # models
     "NodeLabel",
-    "TableNode",
-    "ColumnNode",
-    "BusinessEntityNode",
-    "QueryPatternNode",
-    "DomainNode",
-    "BusinessRuleNode",
-    "CodeSetNode",
     "EdgeType",
-    "HasColumnEdge",
-    "JoinEdge",
-    "EntityMappingEdge",
-    "QueryPatternEdge",
-    "ForeignKeyEdge",
-    "SynonymEdge",
-    "BelongsToDomainEdge",
-    "ContainsEntityEdge",
-    "HasRuleEdge",
-    "AppliesToEdge",
-    "ColumnMappingEdge",
-    "HasCodeSetEdge",
-    "DerivedFromEdge",
-    "EpisodeCategory",
-    "SchemaEpisode",
-    "QueryEpisode",
-    "FeedbackEpisode",
-    "PatternEpisode",
-    # indexing alias
-    "SchemaIndexer",
+    "NodeData",
+    "EdgeData",
+    "Chunk",
+    "RawNode",
+    "RawEdge",
+    "ExtractionResult",
+    "GRAPH_FIELD_SEP",
+    # prompts
+    "TUPLE_DELIMITER",
+    "COMPLETION_DELIMITER",
+    "ENTITY_EXTRACTION_SYSTEM",
+    "ENTITY_EXTRACTION_USER",
+    "ENTITY_CONTINUE_EXTRACTION",
+    "DESCRIPTION_SUMMARY",
+    # exceptions
+    "GraphError",
+    "GraphConnectionError",
+    "NodeNotFoundError",
+    "EdgeNotFoundError",
 ]

@@ -7,6 +7,14 @@
     "endpoint": "http://localhost:8080",
     "protocol_version": "1.0"
   },
+  "atlassian": {
+    "mcp_url": "https://mcp.atlassian.com/v1/mcp",
+    "cloud_id": "",
+    "default_space_id": "",
+    "default_project_key": "",
+    "timeout": 30,
+    "enabled": true
+  },
   "knowledge_base": {
     "vector_db": "qdrant",
     "embedding_model": "sentence-transformers",
@@ -40,6 +48,11 @@
       "confluence_knowledge": {
         "name": "confluence_knowledge",
         "vector_size": 384,
+        "distance": "Cosine"
+      },
+      "finx_knowledge": {
+        "name": "finx_knowledge",
+        "vector_size": 1536,
         "distance": "Cosine"
       }
     }
@@ -91,6 +104,41 @@
       "temperature": 0.3,
       "max_tokens": 2000,
       "description": "Structured JSON chart specs — simple structured output task"
+    },
+    "schema_enricher": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "temperature": 0.2,
+      "max_tokens": 16000,
+      "description": "Schema enrichment with AI-generated descriptions and knowledge graph"
+    },
+    "confluence_researcher": {
+      "provider": "openai",
+      "model_id": "o4-mini",
+      "temperature": 0.3,
+      "max_tokens": 16000,
+      "description": "Confluence deep-dive research — search, read, synthesize knowledge from Atlassian"
+    },
+    "kg_extractor": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "temperature": 0.0,
+      "max_tokens": 8000,
+      "description": "Knowledge graph entity/relationship extraction from banking documents"
+    },
+    "kg_summarizer": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-nano",
+      "temperature": 0.0,
+      "max_tokens": 2000,
+      "description": "Summarize accumulated node/edge descriptions in knowledge graph"
+    },
+    "company_knowledge_agent": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "temperature": 0.2,
+      "max_tokens": 4000,
+      "description": "Company knowledge assistant — answers from Qdrant Confluence knowledge base with grounded citations"
     }
   }
 }

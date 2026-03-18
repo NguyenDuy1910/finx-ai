@@ -6,6 +6,7 @@ import { Bot, User, Copy, Check, ChevronDown, ChevronUp, Sparkles } from "lucide
 import { SQLBlock } from "./sql-block";
 import { MarkdownContent } from "./markdown-content";
 import { AgentDelegationBlock } from "./agent-delegation-block";
+import { ToolCallList } from "./tool-call-block";
 import { RunMetricsBlock } from "./run-metrics-block";
 import { KnowledgePanel, type KnowledgeData } from "./knowledge-panel";
 import { ChartBlock, parseChartSpecFromToolCalls, type ChartSpec } from "./chart-block";
@@ -187,6 +188,11 @@ export const ChatMessage = memo(function ChatMessage({
           {/* Agent delegation (team member runs) */}
           {!isUser && memberRuns && memberRuns.length > 0 && (
             <AgentDelegationBlock members={memberRuns} onMemberClick={handleMemberClick} />
+          )}
+
+          {/* Tool calls (agent mode — no member delegation) */}
+          {!isUser && toolCalls && toolCalls.length > 0 && (!memberRuns || memberRuns.length === 0) && (
+            <ToolCallList toolCalls={toolCalls} />
           )}
 
           {/* Message content */}

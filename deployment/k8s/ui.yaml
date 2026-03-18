@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finx-ui
+  namespace: finx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: finx-ui
+  template:
+    metadata:
+      labels:
+        app: finx-ui
+    spec:
+      containers:
+      - name: finx-ui
+        image: <REGISTRY>/finx-ui:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://finx-agentic:8080"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: finx-ui
+  namespace: finx
+spec:
+  selector:
+    app: finx-ui
+  ports:
+  - port: 3000
+    targetPort: 3000

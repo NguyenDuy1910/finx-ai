@@ -2,37 +2,43 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from src.knowledge.graph.client import GraphitiClient, get_graphiti_client
-from src.knowledge.memory import MemoryManager
+from src.core.graph.client import GraphitiClient
+
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
 
 logger = logging.getLogger(__name__)
 
 
-def _new_client() -> GraphitiClient:
-    host = os.getenv("FALKORDB_HOST", "localhost")
-    port = int(os.getenv("FALKORDB_PORT", "6379"))
-    return GraphitiClient(host=host, port=port)
-
-
 class AppState:
+    """Application-wide singleton state holding shared service clients."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._client: Optional[GraphitiClient] = None
-        self._memory: Optional[MemoryManager] = None
+        self._qdrant: Optional["AsyncQdrantClient"] = None
 
     @property
     def client(self) -> GraphitiClient:
         if self._client is None:
-            self._client = _new_client()
+            self._client = GraphitiClient(
+                host=os.getenv("FALKORDB_HOST", "localhost"),
+                port=int(os.getenv("FALKORDB_PORT", "6379")),
+            )
         return self._client
 
     @property
-    def memory(self) -> MemoryManager:
-        if self._memory is None:
-            self._memory = MemoryManager(self.client)
-        return self._memory
+    def qdrant(self) -> "AsyncQdrantClient":
+        """Shared async Qdrant client for knowledge retrieval."""
+        if self._qdrant is None:
+            from qdrant_client import AsyncQdrantClient
+
+            self._qdrant = AsyncQdrantClient(
+                url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+                api_key=os.getenv("QDRANT_API_KEY") or None,
+            )
+        return self._qdrant
 
     @property
     def default_database(self) -> str:
@@ -49,6 +55,11 @@ class AppState:
         if self._client is not None:
             try:
                 await self._client.close()
+            except Exception:
+                pass
+        if self._qdrant is not None:
+            try:
+                await self._qdrant.close()
             except Exception:
                 pass
 

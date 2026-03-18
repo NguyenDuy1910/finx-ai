@@ -1,0 +1,43 @@
+Enrich the NEW columns listed below for an existing table.
+Use the knowledge sources (if any) to extract code-value mappings, business rules, and domain terms.
+
+━━━ TABLE CONTEXT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Table   : {{ table_name }}
+Database: {{ database }}
+
+All existing columns (reference only — do NOT re-enrich):
+{% for col in all_columns %}
+  {{ loop.index }}. {{ col.name }} ({{ col.data_type }})
+{% endfor %}
+
+━━━ NEW COLUMNS TO ENRICH ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{% for col in new_columns %}
+  {{ loop.index }}. {{ col.name }} ({{ col.data_type }}){% if col.description %} — {{ col.description }}{% endif %}
+
+{% endfor %}
+{% if context_documents %}
+━━━ KNOWLEDGE SOURCES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The following documents may describe these columns.
+Extract code-value mappings, enum definitions, and business rules that apply.
+
+{% for doc in context_documents %}
+┌─ Source {{ loop.index }} ─────────────────────────────────────────────────┐
+{{ doc }}
+└──────────────────────────────────────────────────────────────────────────┘
+{% endfor %}
+{% endif %}
+
+━━━ REQUIRED OUTPUT FORMAT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return a single JSON object. Only include the NEW columns — do not repeat existing ones.
+
+{
+  "columns": [
+    {
+      "name": "exact_column_name",
+      "description": "Business meaning — embed code-value mappings if found (e.g. 'Status: A=Active, C=Closed')",
+      "business_terms": ["banking term 1", "banking term 2"],
+      "is_primary_key": false,
+      "column_type": "metric | dimension | attribute | partition_key"
+    }
+  ]
+}

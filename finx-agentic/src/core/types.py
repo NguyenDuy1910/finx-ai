@@ -1,8 +1,13 @@
+"""Core domain types shared across the codebase."""
 from __future__ import annotations
+
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
+
+# ── Query analysis ────────────────────────────────────────────────────────────
 
 class QueryIntent(str, Enum):
     DATA_QUERY = "data_query"
@@ -75,3 +80,71 @@ class ValidationResult(BaseModel):
     suggestions: List[str] = Field(default_factory=list)
     corrected_sql: Optional[str] = None
 
+
+# ── Schema enrichment types ───────────────────────────────────────────────────
+
+class ColumnSchema(BaseModel):
+    """Raw column metadata as read from the data catalog."""
+    name: str
+    data_type: str = ""
+    description: str = ""
+    is_partition: bool = False
+    is_primary_key: bool = False
+    sample_values: List[str] = Field(default_factory=list)
+
+
+class TableSchema(BaseModel):
+    """Raw table metadata as read from the data catalog."""
+    name: str
+    database: str = ""
+    description: str = ""
+    location: str = ""
+    storage_format: str = ""
+    partition_keys: List[str] = Field(default_factory=list)
+    row_count: Optional[int] = None
+    columns: List[ColumnSchema] = Field(default_factory=list)
+
+
+class EnrichedColumn(BaseModel):
+    """Column metadata enriched by LLM analysis."""
+    name: str
+    data_type: str = ""
+    description: str = ""
+    is_partition: bool = False
+    is_primary_key: bool = False
+    sample_values: List[str] = Field(default_factory=list)
+    ai_description: str = ""
+    business_terms: List[str] = Field(default_factory=list)
+    column_type: str = ""
+
+
+class Relationship(BaseModel):
+    """A directed relationship between two tables, inferred by LLM."""
+    source_table: str = ""
+    target_table: str = ""
+    relationship_type: str = "join"
+    source_column: str = ""
+    target_column: str = ""
+    description: str = ""
+
+
+class EnrichedSchema(BaseModel):
+    """Table metadata enriched by LLM — ready for graph indexing."""
+    name: str
+    database: str = ""
+    description: str = ""
+    location: str = ""
+    storage_format: str = ""
+    partition_keys: List[str] = Field(default_factory=list)
+    row_count: Optional[int] = None
+    columns: List[ColumnSchema] = Field(default_factory=list)
+    # LLM-derived fields
+    entity_name: str = ""
+    domain: str = ""
+    synonyms: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    ai_description: str = ""
+    enriched_columns: List[EnrichedColumn] = Field(default_factory=list)
+    relationships: List[Relationship] = Field(default_factory=list)
+    kg_nodes: List[Dict[str, Any]] = Field(default_factory=list)
+    kg_edges: List[Dict[str, Any]] = Field(default_factory=list)

@@ -1,0 +1,460 @@
+"""HTML / Markdown content extractor.
+
+Handles Confluence HTML, plain markdown, and text content by parsing
+structural elements into typed content blocks.
+"""
+
+from __future__ import annotations
+
+import html as html_mod
+import re
+import time
+from typing import Any
+
+from pipeline.adapters.base import RawDocument
+from pipeline.schemas.blocks import (
+    CodeBlock,
+    ContentBlock,
+    HeadingBlock,
+    ImageBlock,
+    LinkRef,
+    ListBlock,
+    SectionNode,
+    TableBlock,
+    TextBlock,
+)
+from pipeline.schemas.canonical import CanonicalDocument
+from pipeline.schemas.provenance import ProcessingStage, ProcessingStep, QualitySignal
+from .base import BaseExtractor
+
+
+class HTMLExtractor(BaseExtractor):
+    """Extract structure from HTML content (e.g. Confluence pages)."""
+
+    name = "html_extractor"
+
+    def can_handle(self, raw: RawDocument) -> bool:
+        return bool(raw.raw_html) or "<" in raw.raw_content[:500]
+
+    def extract(self, raw: RawDocument) -> CanonicalDocument:
+        t0 = time.monotonic()
+        html = raw.raw_html or raw.raw_content
+        blocks, links = self._parse_html(html)
+        sections = self._build_sections(blocks)
+        quality = self._assess_quality(blocks)
+
+        doc = CanonicalDocument(
+            source_system=raw.source_system,
+            source_uri=raw.source_uri,
+            source_document_id=raw.source_id,
+            title=raw.title,
+            content_type="document",
+            content_blocks=blocks,
+            section_hierarchy=sections,
+            links=links,
+            metadata=raw.metadata,
+        )
+        doc.provenance.add_step(
+            ProcessingStep(
+                stage=ProcessingStage.EXTRACTION,
+                processor=self.name,
+                duration_ms=(time.monotonic() - t0) * 1000,
+                input_hash=raw.content_hash,
+            )
+        )
+        doc.provenance.quality = quality
+        return doc
+
+    def _parse_html(
+        self, html: str
+    ) -> tuple[list[ContentBlock], list[LinkRef]]:
+        """Parse HTML into blocks and links using regex-based extraction.
+
+        For production scale this can be replaced with an HTML parser like
+        BeautifulSoup, but regex keeps the dependency footprint minimal.
+        """
+        blocks: list[ContentBlock] = []
+        links: list[LinkRef] = []
+
+        # Extract tables
+        for m in re.finditer(
+            r"<table[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE
+        ):
+            table_html = m.group(1)
+            headers, rows = self._parse_html_table(table_html)
+            md = self._table_to_markdown(headers, rows)
+            blocks.append(TableBlock(headers=headers, rows=rows, markdown=md))
+
+        # Extract headings
+        for m in re.finditer(
+            r"<h(\d)[^>]*>(.*?)</h\d>", html, re.DOTALL | re.IGNORECASE
+        ):
+            level = int(m.group(1))
+            text = html_mod.unescape(re.sub(r"<[^>]+>", "", m.group(2)).strip())
+            if text:
+                blocks.append(HeadingBlock(content=text, level=level))
+
+        # Extract code blocks
+        for m in re.finditer(
+            r"<code[^>]*>(.*?)</code>", html, re.DOTALL | re.IGNORECASE
+        ):
+            code = html_mod.unescape(re.sub(r"<[^>]+>", "", m.group(1)).strip())
+            if code:
+                blocks.append(CodeBlock(content=code))
+
+        # Extract images
+        for m in re.finditer(r'<img[^>]+src="([^"]*)"[^>]*/?>',html, re.IGNORECASE):
+            src = m.group(1)
+            alt_m = re.search(r'alt="([^"]*)"', m.group(0), re.IGNORECASE)
+            alt = alt_m.group(1) if alt_m else ""
+            blocks.append(ImageBlock(src=src, alt_text=alt))
+
+        # Extract links
+        for m in re.finditer(
+            r'<a[^>]+href="([^"]*)"[^>]*>(.*?)</a>', html, re.DOTALL | re.IGNORECASE
+        ):
+            url = m.group(1)
+            text = re.sub(r"<[^>]+>", "", m.group(2)).strip()
+            links.append(LinkRef(url=url, text=text))
+
+        # Extract remaining text (strip all tags, decode entities)
+        clean = re.sub(r"<(table|code|pre)[^>]*>.*?</\1>", "", html, flags=re.DOTALL | re.IGNORECASE)
+        clean = re.sub(r"<[^>]+>", " ", clean)
+        clean = html_mod.unescape(re.sub(r"\s+", " ", clean).strip())
+        if clean:
+            blocks.append(TextBlock(content=clean))
+
+        return blocks, links
+
+    def _parse_html_table(
+        self, table_html: str
+    ) -> tuple[list[str], list[list[str]]]:
+        headers: list[str] = []
+        rows: list[list[str]] = []
+
+        # Headers from <th>
+        for m in re.finditer(r"<th[^>]*>(.*?)</th>", table_html, re.DOTALL | re.IGNORECASE):
+            headers.append(html_mod.unescape(re.sub(r"<[^>]+>", "", m.group(1)).strip()))
+
+        # Rows from <tr>
+        for tr_m in re.finditer(r"<tr[^>]*>(.*?)</tr>", table_html, re.DOTALL | re.IGNORECASE):
+            cells = [
+                html_mod.unescape(re.sub(r"<[^>]+>", "", m.group(1)).strip())
+                for m in re.finditer(r"<td[^>]*>(.*?)</td>", tr_m.group(1), re.DOTALL | re.IGNORECASE)
+            ]
+            if cells:
+                rows.append(cells)
+
+        return headers, rows
+
+    def _table_to_markdown(
+        self, headers: list[str], rows: list[list[str]]
+    ) -> str:
+        if not headers and not rows:
+            return ""
+        if not headers and rows:
+            headers = [f"col_{i}" for i in range(len(rows[0]))]
+
+        lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
+        for row in rows:
+            padded = row + [""] * (len(headers) - len(row))
+            lines.append(" | ".join(padded[: len(headers)]))
+        return "\n".join(lines)
+
+    def _build_sections(self, blocks: list[ContentBlock]) -> list[SectionNode]:
+        """Build a flat section list from heading blocks."""
+        sections: list[SectionNode] = []
+        current_path: list[str] = []
+
+        for i, block in enumerate(blocks):
+            if isinstance(block, HeadingBlock):
+                while current_path and len(current_path) >= block.level:
+                    current_path.pop()
+                current_path.append(block.content)
+
+                sections.append(
+                    SectionNode(
+                        title=block.content,
+                        level=block.level,
+                        path=list(current_path),
+                        block_indices=[i],
+                    )
+                )
+            elif sections:
+                sections[-1].block_indices.append(i)
+
+        return sections
+
+    def _assess_quality(self, blocks: list[ContentBlock]) -> QualitySignal:
+        word_count = sum(
+            len(getattr(b, "content", "").split())
+            for b in blocks
+            if hasattr(b, "content")
+        )
+        return QualitySignal(
+            word_count=word_count,
+            has_tables=any(isinstance(b, TableBlock) for b in blocks),
+            has_images=any(isinstance(b, ImageBlock) for b in blocks),
+            has_code=any(isinstance(b, CodeBlock) for b in blocks),
+        )
+
+
+class MarkdownExtractor(BaseExtractor):
+    """Extract structure from markdown content."""
+
+    name = "markdown_extractor"
+
+    def can_handle(self, raw: RawDocument) -> bool:
+        return raw.mime_type in ("text/markdown", "text/plain") or not (
+            raw.raw_html or "<" in raw.raw_content[:200]
+        )
+
+    def extract(self, raw: RawDocument) -> CanonicalDocument:
+        t0 = time.monotonic()
+        # Decode HTML entities before markdown parsing (Confluence content may contain them)
+        text = html_mod.unescape(raw.raw_content)
+        blocks, links = self._parse_markdown(text)
+        sections = self._build_sections(blocks)
+
+        word_count = sum(
+            len(getattr(b, "content", "").split()) for b in blocks if hasattr(b, "content")
+        )
+
+        doc = CanonicalDocument(
+            source_system=raw.source_system,
+            source_uri=raw.source_uri,
+            source_document_id=raw.source_id,
+            title=raw.title,
+            content_type="document",
+            content_blocks=blocks,
+            section_hierarchy=sections,
+            links=links,
+            metadata=raw.metadata,
+        )
+        doc.provenance.add_step(
+            ProcessingStep(
+                stage=ProcessingStage.EXTRACTION,
+                processor=self.name,
+                duration_ms=(time.monotonic() - t0) * 1000,
+                input_hash=raw.content_hash,
+            )
+        )
+        doc.provenance.quality = QualitySignal(word_count=word_count)
+        return doc
+
+    def _parse_markdown(
+        self, text: str
+    ) -> tuple[list[ContentBlock], list[LinkRef]]:
+        blocks: list[ContentBlock] = []
+        links: list[LinkRef] = []
+        current_text: list[str] = []
+
+        def flush_text() -> None:
+            if current_text:
+                content = "\n".join(current_text).strip()
+                if content:
+                    blocks.append(TextBlock(content=content))
+                current_text.clear()
+
+        in_code_block = False
+        code_lang: str | None = None
+        code_lines: list[str] = []
+
+        for line in text.split("\n"):
+            # Fenced code block
+            if line.strip().startswith("```"):
+                if in_code_block:
+                    flush_text()
+                    blocks.append(
+                        CodeBlock(content="\n".join(code_lines), language=code_lang)
+                    )
+                    code_lines.clear()
+                    in_code_block = False
+                    code_lang = None
+                else:
+                    flush_text()
+                    lang = line.strip().removeprefix("```").strip()
+                    code_lang = lang if lang else None
+                    in_code_block = True
+                continue
+
+            if in_code_block:
+                code_lines.append(line)
+                continue
+
+            # Headings
+            heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
+            if heading_match:
+                flush_text()
+                level = len(heading_match.group(1))
+                blocks.append(
+                    HeadingBlock(content=heading_match.group(2).strip(), level=level)
+                )
+                continue
+
+            # Markdown table
+            if "|" in line and re.match(r"^\s*\|", line):
+                flush_text()
+                table_block = self._try_parse_table(line, text)
+                if table_block:
+                    blocks.append(table_block)
+                    continue
+
+            # Links
+            for m in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", line):
+                links.append(LinkRef(url=m.group(2), text=m.group(1)))
+
+            # Image references
+            for m in re.finditer(r"!\[([^\]]*)\]\(([^)]+)\)", line):
+                flush_text()
+                blocks.append(ImageBlock(src=m.group(2), alt_text=m.group(1)))
+
+            current_text.append(line)
+
+        flush_text()
+        return blocks, links
+
+    def _try_parse_table(self, first_line: str, full_text: str) -> TableBlock | None:
+        """Try to parse a markdown table starting at this line."""
+        lines = full_text.split("\n")
+        table_lines: list[str] = []
+        found = False
+        for line in lines:
+            if line.strip() == first_line.strip():
+                found = True
+            if found:
+                if "|" in line:
+                    table_lines.append(line)
+                elif table_lines:
+                    break
+
+        if len(table_lines) < 2:
+            return None
+
+        def parse_row(line: str) -> list[str]:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            return cells
+
+        headers = parse_row(table_lines[0])
+        # Skip separator line
+        rows = [parse_row(l) for l in table_lines[2:] if l.strip()]
+        md = "\n".join(table_lines)
+
+        return TableBlock(headers=headers, rows=rows, markdown=md)
+
+    def _build_sections(self, blocks: list[ContentBlock]) -> list[SectionNode]:
+        sections: list[SectionNode] = []
+        current_path: list[str] = []
+
+        for i, block in enumerate(blocks):
+            if isinstance(block, HeadingBlock):
+                while current_path and len(current_path) >= block.level:
+                    current_path.pop()
+                current_path.append(block.content)
+                sections.append(
+                    SectionNode(
+                        title=block.content,
+                        level=block.level,
+                        path=list(current_path),
+                        block_indices=[i],
+                    )
+                )
+            elif sections:
+                sections[-1].block_indices.append(i)
+
+        return sections
+
+
+class SchemaExtractor(BaseExtractor):
+    """Extract structure from Athena/Glue schema metadata.
+
+    Transforms schema metadata dicts into CanonicalDocuments with
+    table blocks for column definitions and text blocks for descriptions.
+    """
+
+    name = "schema_extractor"
+
+    def can_handle(self, raw: RawDocument) -> bool:
+        return raw.mime_type == "application/x-schema" or raw.source_system == "athena"
+
+    def extract(self, raw: RawDocument) -> CanonicalDocument:
+        t0 = time.monotonic()
+        blocks: list[ContentBlock] = []
+        meta = raw.metadata
+
+        # Title heading
+        table_name = meta.get("table_name", raw.title)
+        database = meta.get("database", "")
+        blocks.append(HeadingBlock(content=f"{database}.{table_name}", level=1))
+
+        # Description
+        comment = meta.get("table_comment", "")
+        if comment:
+            blocks.append(TextBlock(content=comment))
+
+        # Schema info text
+        info_parts = []
+        if meta.get("storage_format"):
+            info_parts.append(f"Storage: {meta['storage_format']}")
+        if meta.get("owner"):
+            info_parts.append(f"Owner: {meta['owner']}")
+        if meta.get("row_count") is not None:
+            info_parts.append(f"Row count: {meta['row_count']}")
+        if meta.get("table_type"):
+            info_parts.append(f"Type: {meta['table_type']}")
+        if info_parts:
+            blocks.append(TextBlock(content="\n".join(info_parts)))
+
+        # Column table
+        columns = meta.get("columns", [])
+        if columns:
+            headers = ["Column", "Type", "Description", "Partition"]
+            rows = [
+                [
+                    col.get("name", ""),
+                    col.get("data_type", ""),
+                    col.get("description", ""),
+                    "Yes" if col.get("is_partition_key") else "",
+                ]
+                for col in columns
+            ]
+            md_lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
+            for row in rows:
+                md_lines.append(" | ".join(row))
+
+            blocks.append(
+                TableBlock(
+                    headers=headers,
+                    rows=rows,
+                    markdown="\n".join(md_lines),
+                    caption=f"Columns for {table_name}",
+                )
+            )
+
+        # Raw content as text
+        if raw.raw_content:
+            blocks.append(TextBlock(content=raw.raw_content))
+
+        doc = CanonicalDocument(
+            source_system=raw.source_system,
+            source_uri=raw.source_uri,
+            source_document_id=raw.source_id,
+            title=table_name,
+            content_type="schema",
+            content_blocks=blocks,
+            metadata=meta,
+            tags=meta.get("partition_keys", []),
+        )
+        doc.provenance.add_step(
+            ProcessingStep(
+                stage=ProcessingStage.EXTRACTION,
+                processor=self.name,
+                duration_ms=(time.monotonic() - t0) * 1000,
+                input_hash=raw.content_hash,
+            )
+        )
+        doc.provenance.quality = QualitySignal(
+            word_count=len(raw.raw_content.split()),
+            has_tables=bool(columns),
+        )
+        return doc

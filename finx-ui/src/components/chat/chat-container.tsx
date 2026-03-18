@@ -7,29 +7,46 @@ import { Loader2, ArrowDown, Square, RefreshCw } from "lucide-react";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatWelcome } from "./chat-welcome";
+import { ChatModeSwitcher } from "./chat-mode-switcher";
 import { AgentDetailSidePanel } from "./agent-detail-side-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { parseKnowledgeFromToolCalls } from "./knowledge-panel";
 import { parseChartSpecFromToolCalls } from "./chart-block";
-import type { ToolCallData, ReasoningData, MemberRunData, RunMetrics } from "@/types";
+import type { ToolCallData, ReasoningData, MemberRunData, RunMetrics, ChatMode } from "@/types";
 
 interface ChatContainerProps {
   database: string;
   threadId: string;
   initialSessionId?: string | null;
+  initialMode?: ChatMode;
   onSessionEstablished?: (sessionId: string) => void;
   onFirstMessage?: (message: string) => void;
+  onModeChange?: (mode: ChatMode) => void;
 }
+
+const API_ROUTES: Record<ChatMode, string> = {
+  agent: "/api/agent-chat",
+  team: "/api/team-chat",
+  knowledge: "/api/agent-chat",
+};
+
+const AGENT_IDS: Partial<Record<ChatMode, string>> = {
+  agent: "confluence-researcher",
+  knowledge: "company-knowledge",
+};
 
 export function ChatContainer({
   database,
   threadId,
   initialSessionId,
+  initialMode = "agent",
   onSessionEstablished,
   onFirstMessage,
+  onModeChange,
 }: ChatContainerProps) {
   const [input, setInput] = useState("");
+  const [chatMode, setChatMode] = useState<ChatMode>(initialMode);
   const [sessionId, setSessionId] = useState<string | undefined>(
     initialSessionId ?? undefined
   );
@@ -95,6 +112,29 @@ export function ChatContainer({
     [onSessionEstablished]
   );
 
+  const chatModeRef = useRef<ChatMode>(initialMode);
+
+  const handleModeSwitch = useCallback(
+    (newMode: ChatMode) => {
+      setChatMode(newMode);
+      chatModeRef.current = newMode;
+      onModeChange?.(newMode);
+    },
+    [onModeChange]
+  );
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: API_ROUTES[chatMode],
+        body: () => ({
+          session_id: sessionIdRef.current,
+          ...(AGENT_IDS[chatModeRef.current] ? { agent_id: AGENT_IDS[chatModeRef.current] } : {}),
+        }),
+      }),
+    [chatMode]
+  );
+
   const {
     messages: agentMessages,
     sendMessage,
@@ -102,12 +142,8 @@ export function ChatContainer({
     error: agentError,
     stop,
   } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/team-chat",
-      body: () => ({
-        session_id: sessionIdRef.current,
-      }),
-    }),
+    id: `${threadId}-${chatMode}`,
+    transport,
     experimental_throttle: 100,
     onFinish: ({ message }) => {
       setReasoningMap((prev) => {
@@ -611,7 +647,7 @@ export function ChatContainer({
           className="flex-1"
         >
         {!hasMessages && (
-          <ChatWelcome onSuggestionClick={handleSend} />
+          <ChatWelcome mode={chatMode} onSuggestionClick={handleSend} />
         )}
 
         {/* Accessible live region for new messages */}
@@ -710,13 +746,28 @@ export function ChatContainer({
 
         {/* Chat input — inside scroll area, unified block */}
         <div className="sticky bottom-0 z-10 border-t border-border/10 bg-background/90 px-3 py-2.5 backdrop-blur-md sm:px-4 sm:py-3">
-          <ChatInput
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSubmit}
-            isLoading={isAgentBusy}
-            placeholder="Ask the FinX team anything..."
-          />
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-2 flex items-center justify-between">
+              <ChatModeSwitcher
+                mode={chatMode}
+                onModeChange={handleModeSwitch}
+                isDisabled={isAgentBusy}
+              />
+            </div>
+            <ChatInput
+              value={input}
+              onChange={setInput}
+              onSubmit={handleSubmit}
+              isLoading={isAgentBusy}
+              placeholder={
+                chatMode === "team"
+                  ? "Ask the FinX team anything..."
+                  : chatMode === "knowledge"
+                    ? "Ask about company policies, procedures, or documentation..."
+                    : "Ask the agent anything..."
+              }
+            />
+          </div>
         </div>
       </ScrollArea>
 

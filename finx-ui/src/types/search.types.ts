@@ -70,24 +70,6 @@ export interface TableResponse {
   location: string;
 }
 
-export interface Text2SQLRequest {
-  query: string;
-  database?: string;
-  conversation_history: { role: string; content: string }[];
-}
-
-export interface Text2SQLResponse {
-  query: string;
-  sql: string;
-  database: string;
-  tables_used: string[];
-  reasoning: string;
-  is_valid: boolean;
-  errors: string[];
-  warnings: string[];
-  episode_id?: string;
-}
-
 export interface HealthResponse {
   status: string;
   graph_connected: boolean;

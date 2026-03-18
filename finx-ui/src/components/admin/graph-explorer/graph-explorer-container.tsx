@@ -301,13 +301,35 @@ export function GraphExplorerContainer() {
   );
 
   return (
-    <div
-      className={`flex flex-col rounded-lg border border-border overflow-hidden transition-all duration-300 ${
-        isFullscreen
-          ? "fixed inset-0 z-50 h-screen w-screen rounded-none"
-          : "h-[calc(100vh-12rem)]"
-      }`}
-    >
+    <div className="flex flex-col gap-4">
+      {/* Page identity header */}
+      <div className="flex items-start gap-4 rounded-xl border border-border/60 bg-gradient-to-r from-background to-muted/20 p-5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/15 to-purple-500/10 ring-1 ring-violet-500/20">
+          <svg className="h-5 w-5 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="5" r="3" />
+            <circle cx="5" cy="19" r="3" />
+            <circle cx="19" cy="19" r="3" />
+            <line x1="12" y1="8" x2="5" y2="16" />
+            <line x1="12" y1="8" x2="19" y2="16" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold tracking-tight">Knowledge Graph Explorer</h1>
+          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+            Visualize and navigate the knowledge graph — explore entities, relationships,
+            and lineage across your database schema in an interactive canvas.
+          </p>
+        </div>
+      </div>
+
+      {/* Graph canvas */}
+      <div
+        className={`flex flex-col rounded-lg border border-border overflow-hidden transition-all duration-300 ${
+          isFullscreen
+            ? "fixed inset-0 z-50 h-screen w-screen rounded-none"
+            : "h-[calc(100vh-16rem)]"
+        }`}
+      >
       <GraphToolbar
         onSearch={handleSearch}
         onSemanticSearch={handleSemanticSearch}
@@ -378,6 +400,7 @@ export function GraphExplorerContainer() {
         onCreate={handleCreateEdge}
         loading={crud.loading}
       />
+      </div>
     </div>
   );
 }

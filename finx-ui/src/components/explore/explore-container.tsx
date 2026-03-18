@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Search, Database, ArrowRightLeft } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { SearchForm } from "./search-form";
@@ -105,57 +105,75 @@ export function ExploreContainer({ database }: ExploreContainerProps) {
     detailView?.type === "table" ? detailView.name : null;
 
   return (
-    <div className="flex h-full">
-      <div className="flex w-full flex-col border-r border-border lg:w-[440px]">
-        <SearchForm
-          query={query}
-          onQueryChange={setQuery}
-          onSearch={handleSearch}
-          searching={searching}
-          joinSource={joinSource}
-          onJoinSourceChange={setJoinSource}
-          joinTarget={joinTarget}
-          onJoinTargetChange={setJoinTarget}
-          onFindJoinPath={findJoin}
-        />
-
-        <div className="flex-1 overflow-auto p-4">
-          <SearchResults
-            searching={searching}
-            results={searchResults}
-            error={error}
-            activeTableName={activeTableName}
-            onOpenTable={openTableDetail}
-          />
+    <div className="flex h-full flex-col">
+      {/* Page identity header */}
+      <div className="shrink-0 border-b border-border/60 bg-gradient-to-r from-background to-muted/30 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/15 to-cyan-500/10 ring-1 ring-blue-500/20">
+            <Search className="h-4.5 w-4.5 text-blue-500" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Schema Explorer</h1>
+            <p className="text-xs text-muted-foreground">
+              Deep-dive into database schemas, discover table structures, columns, and join paths
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="hidden flex-1 overflow-auto lg:block">
-        {!detailView && (
-          <EmptyState
-            icon={<ExternalLink className="h-8 w-8 text-muted-foreground" />}
-            title="Select a table"
-            description="Click on a table from the search results to view its columns, relationships, and join paths."
+      {/* Content area */}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex w-full flex-col border-r border-border lg:w-[440px]">
+          <SearchForm
+            query={query}
+            onQueryChange={setQuery}
+            onSearch={handleSearch}
+            searching={searching}
+            joinSource={joinSource}
+            onJoinSourceChange={setJoinSource}
+            joinTarget={joinTarget}
+            onJoinTargetChange={setJoinTarget}
+            onFindJoinPath={findJoin}
           />
-        )}
 
-        {detailLoading && (
-          <div className="space-y-4 p-6">
-            <LoadingSkeleton count={4} className="h-32" />
+          <div className="flex-1 overflow-auto p-4">
+            <SearchResults
+              searching={searching}
+              results={searchResults}
+              error={error}
+              activeTableName={activeTableName}
+              onOpenTable={openTableDetail}
+            />
           </div>
-        )}
+        </div>
 
-        {!detailLoading && detailView?.type === "table" && tableDetail && (
-          <TableDetailPanel
-            detail={tableDetail}
-            related={relatedTables}
-            onNavigate={openTableDetail}
-          />
-        )}
+        <div className="hidden flex-1 overflow-auto lg:block">
+          {!detailView && (
+            <EmptyState
+              icon={<Database className="h-10 w-10 text-muted-foreground/30" />}
+              title="Select a table to explore"
+              description="Search for tables in the left panel and click on a result to see detailed column information, relationships, and join paths."
+            />
+          )}
 
-        {!detailLoading && detailView?.type === "join" && joinPath && (
-          <JoinPathPanel joinPath={joinPath} onNavigate={openTableDetail} />
-        )}
+          {detailLoading && (
+            <div className="space-y-4 p-6">
+              <LoadingSkeleton count={4} className="h-32" />
+            </div>
+          )}
+
+          {!detailLoading && detailView?.type === "table" && tableDetail && (
+            <TableDetailPanel
+              detail={tableDetail}
+              related={relatedTables}
+              onNavigate={openTableDetail}
+            />
+          )}
+
+          {!detailLoading && detailView?.type === "join" && joinPath && (
+            <JoinPathPanel joinPath={joinPath} onNavigate={openTableDetail} />
+          )}
+        </div>
       </div>
     </div>
   );

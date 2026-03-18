@@ -1,0 +1,41 @@
+"""schemas — re-export all request/response models for convenience."""
+
+from src.web.v1.schemas.common import (  # noqa: F401
+    AskRequest,
+    AskResponse,
+    SearchRequest,
+    SearchResponse,
+    TableDetailResponse,
+    RelatedTablesResponse,
+    JoinPathResponse,
+    IndexSchemaRequest,
+    IndexSchemaResponse,
+    GraphStatsResponse,
+    FeedbackRequest,
+    FeedbackResponse,
+    Text2SQLRequest,
+    Text2SQLResponse,
+    ExecuteSQLRequest,
+    ExecuteSQLResponse,
+    HealthResponse,
+)
+
+__all__ = [
+    "AskRequest",
+    "AskResponse",
+    "SearchRequest",
+    "SearchResponse",
+    "TableDetailResponse",
+    "RelatedTablesResponse",
+    "JoinPathResponse",
+    "IndexSchemaRequest",
+    "IndexSchemaResponse",
+    "GraphStatsResponse",
+    "FeedbackRequest",
+    "FeedbackResponse",
+    "Text2SQLRequest",
+    "Text2SQLResponse",
+    "ExecuteSQLRequest",
+    "ExecuteSQLResponse",
+    "HealthResponse",
+]

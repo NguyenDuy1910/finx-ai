@@ -1,3 +1,5 @@
+"""Graph API router — indexing and memory management endpoints."""
+
 from fastapi import APIRouter, Depends
 
 from src.web.v1.deps import AppState, get_app_state
@@ -16,7 +18,6 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 def _get_service(state: AppState = Depends(get_app_state)) -> IndexingService:
     return IndexingService(
         client=state.client,
-        memory=state.memory,
     )
 
 

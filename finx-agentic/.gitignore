@@ -14,6 +14,7 @@ build/
 .idea/
 .vscode/
 *.log
+*.db
 
 # UV
 .python-version
@@ -22,3 +23,9 @@ uv.lock
 # Graph schemas
 scripts/graph_schemas/
 
+# Runtime artifacts
+tmp/
+scripts/log_process/*.log
+agentops.log
+docker-build/
+.pytest_cache/

@@ -41,7 +41,7 @@ export function createThread(mode: ChatMode): ChatThread {
 /** Update a thread (e.g. set title or sessionId after first response). */
 export function updateThread(
   threadId: string,
-  patch: Partial<Pick<ChatThread, "sessionId" | "title" | "updatedAt">>
+  patch: Partial<Pick<ChatThread, "sessionId" | "title" | "updatedAt" | "mode">>
 ) {
   const threads = loadThreads();
   const idx = threads.findIndex((t) => t.id === threadId);

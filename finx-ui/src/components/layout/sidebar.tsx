@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageSquarePlus, Trash2, MessageCircle } from "lucide-react";
+import { MessageSquarePlus, Trash2, MessageCircle, Bot, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   loadThreads,
@@ -96,9 +96,9 @@ export function Sidebar({
                     type="button"
                     onClick={() => onSelectThread(thread)}
                     className={cn(
-                      "group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-all duration-150",
+                      "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-all duration-150",
                       thread.id === activeThreadId
-                        ? "bg-primary/8 text-foreground font-medium"
+                        ? "bg-primary/8 text-foreground font-medium ring-1 ring-primary/10 before:absolute before:left-0 before:top-1/2 before:h-4 before:-translate-y-1/2 before:w-0.5 before:rounded-full before:bg-primary/60"
                         : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                     )}
                     aria-current={thread.id === activeThreadId ? "true" : undefined}
@@ -110,6 +110,11 @@ export function Sidebar({
                         : "opacity-40"
                     )} />
                     <span className="flex-1 truncate">{thread.title}</span>
+                    {thread.mode === "agent" ? (
+                      <Bot className="h-3 w-3 shrink-0 text-blue-500/50" />
+                    ) : (
+                      <Users className="h-3 w-3 shrink-0 text-violet-500/50" />
+                    )}
                     <span
                       role="button"
                       tabIndex={0}

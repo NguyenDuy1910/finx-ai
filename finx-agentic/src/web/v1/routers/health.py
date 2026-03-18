@@ -1,3 +1,5 @@
+"""Health check API router."""
+
 from fastapi import APIRouter
 
 from src.web.v1.schemas import HealthResponse

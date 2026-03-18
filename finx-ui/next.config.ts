@@ -1,18 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
   reactCompiler: true,
 
   // SPA-style client routing: all nav pages serve the root page component.
-  // The useNavPage hook reads the pathname to determine the active page & admin tab.
+  // The useNavPage hook reads the pathname to determine the active page.
   async rewrites() {
     return [
       { source: "/chat", destination: "/" },
       { source: "/explore", destination: "/" },
-      { source: "/playground", destination: "/" },
-      { source: "/admin", destination: "/" },
-      { source: "/admin/:tab", destination: "/" },
+      { source: "/schema-pipeline", destination: "/" },
+      { source: "/graph-explorer", destination: "/" },
     ];
   },
 };

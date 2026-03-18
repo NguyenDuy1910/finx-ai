@@ -21,11 +21,16 @@ export async function fetchFromBackend(
   const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
+    const isFormData = fetchOptions?.body instanceof FormData;
+    const defaultHeaders: Record<string, string> = isFormData
+      ? {}
+      : { "Content-Type": "application/json" };
+
     const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
       headers: {
-        "Content-Type": "application/json",
+        ...defaultHeaders,
         ...fetchOptions?.headers,
       },
     });

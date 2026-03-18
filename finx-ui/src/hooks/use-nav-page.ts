@@ -11,35 +11,27 @@ const PATH_TO_PAGE: Record<string, NavPage> = {
   "/": "chat",
   "/chat": "chat",
   "/explore": "explore",
-  "/playground": "playground",
-  "/admin": "admin",
+  "/schema-pipeline": "schema-pipeline",
+  "/graph-explorer": "graph-explorer",
+  "/knowledge": "knowledge",
 };
 
 /** Map NavPage → canonical URL pathname */
 const PAGE_TO_PATH: Record<NavPage, string> = {
   chat: "/",
   explore: "/explore",
-  playground: "/playground",
-  admin: "/admin",
+  "schema-pipeline": "/schema-pipeline",
+  "graph-explorer": "/graph-explorer",
+  knowledge: "/knowledge",
 };
 
 /** Default admin sub-tab when none is specified */
 const DEFAULT_ADMIN_TAB: AdminTab = "search";
 
-/** Derive NavPage + AdminTab from the current pathname */
+/** Derive NavPage from the current pathname */
 function parsePathname(pathname: string): { page: NavPage; adminTab: AdminTab } {
   // Normalise: remove trailing slash (except for "/")
   const normalised = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
-
-  // Check for /admin/<sub-tab>
-  const adminMatch = normalised.match(/^\/admin\/(.+)$/);
-  if (adminMatch) {
-    const sub = adminMatch[1] as AdminTab;
-    return {
-      page: "admin",
-      adminTab: ADMIN_TABS.includes(sub) ? sub : DEFAULT_ADMIN_TAB,
-    };
-  }
 
   return {
     page: PATH_TO_PAGE[normalised] ?? "chat",
@@ -56,28 +48,16 @@ function parsePathname(pathname: string): { page: NavPage; adminTab: AdminTab } 
  * - Handles browser back/forward via the `popstate` event.
  */
 export function useNavPage() {
-  const [activePage, setActivePage] = useState<NavPage>(() => {
-    if (typeof window === "undefined") return "chat";
-    return parsePathname(window.location.pathname).page;
-  });
-
-  const [adminTab, setAdminTabState] = useState<AdminTab>(() => {
-    if (typeof window === "undefined") return DEFAULT_ADMIN_TAB;
-    return parsePathname(window.location.pathname).adminTab;
-  });
+  // Always initialise with defaults so the server and first client render agree.
+  // The mount useEffect below will immediately sync with the real URL.
+  const [activePage, setActivePage] = useState<NavPage>("chat");
+  const [adminTab, setAdminTabState] = useState<AdminTab>(DEFAULT_ADMIN_TAB);
 
   // On mount: read the real pathname (handles SSR hydration mismatch)
-  // Also redirect bare /admin → /admin/search
   useEffect(() => {
     const { page, adminTab: tab } = parsePathname(window.location.pathname);
     setActivePage(page);
     setAdminTabState(tab);
-
-    // If user lands on bare /admin, replace URL with /admin/<default>
-    const normalised = window.location.pathname.replace(/\/$/, "");
-    if (normalised === "/admin") {
-      window.history.replaceState(null, "", `/admin/${DEFAULT_ADMIN_TAB}`);
-    }
   }, []);
 
   // Listen for back/forward navigation
@@ -94,29 +74,15 @@ export function useNavPage() {
   /** Navigate to a top-level page – updates URL + state */
   const setPage = useCallback((page: NavPage) => {
     const targetPath = PAGE_TO_PATH[page];
-    if (page === "admin") {
-      // When navigating to admin, preserve the current admin tab
-      const fullPath = `/admin/${DEFAULT_ADMIN_TAB}`;
-      if (window.location.pathname !== fullPath) {
-        window.history.pushState(null, "", fullPath);
-      }
-      setAdminTabState(DEFAULT_ADMIN_TAB);
-    } else {
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState(null, "", targetPath);
-      }
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, "", targetPath);
     }
     setActivePage(page);
   }, []);
 
-  /** Navigate to an admin sub-tab – updates URL + state */
+  /** Navigate to an admin sub-tab – updates URL + state (legacy compat) */
   const setAdminTab = useCallback((tab: AdminTab) => {
-    const targetPath = `/admin/${tab}`;
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(null, "", targetPath);
-    }
     setAdminTabState(tab);
-    setActivePage("admin");
   }, []);
 
   return { activePage, setPage, adminTab, setAdminTab } as const;
