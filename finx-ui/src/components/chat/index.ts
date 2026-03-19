@@ -4,6 +4,7 @@ export { ChatMessage } from "./chat-message";
 export { ChatWelcome } from "./chat-welcome";
 export { ChatModeSwitcher } from "./chat-mode-switcher";
 export { MarkdownContent } from "./markdown-content";
+export { CitationMarker } from "./citation-marker";
 export { SQLBlock } from "./sql-block";
 export { ThinkingBlock } from "./thinking-block";
 export { ToolCallBlock, ToolCallList } from "./tool-call-block";

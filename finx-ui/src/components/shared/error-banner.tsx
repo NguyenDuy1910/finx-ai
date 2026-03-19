@@ -1,19 +1,32 @@
-import { XCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 
 interface ErrorBannerProps {
   message: string;
+  onRetry?: () => void;
   children?: React.ReactNode;
 }
 
-export function ErrorBanner({ message, children }: ErrorBannerProps) {
+export function ErrorBanner({ message, onRetry, children }: ErrorBannerProps) {
   return (
-    <Card className="border-destructive/30 bg-destructive/5 p-4">
+    <div className="rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 p-4 animate-fade-in">
       <div className="flex items-start gap-3">
-        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-        <p className="flex-1 text-sm text-destructive">{message}</p>
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.875rem] font-medium text-red-800 dark:text-red-200">
+            {message}
+          </p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-2 text-[0.8125rem] font-medium text-red-700 dark:text-red-300 underline decoration-red-300 dark:decoration-red-500/30 underline-offset-2 hover:text-red-900 dark:hover:text-red-100"
+            >
+              Try again
+            </button>
+          )}
+        </div>
         {children}
       </div>
-    </Card>
+    </div>
   );
 }

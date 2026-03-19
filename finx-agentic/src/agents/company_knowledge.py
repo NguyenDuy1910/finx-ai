@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
@@ -16,9 +17,14 @@ from src.tools.mcp_atlassian_tools import create_confluence_mcp_tools
 
 logger = logging.getLogger(__name__)
 
+# Key used to store retrieved citation docs in session_state
+_CITATIONS_STATE_KEY = "_citations"
+
 
 def _build_knowledge_retriever(knowledge: QdrantKnowledge) -> Callable:
-    """Build a custom retriever that passes optional filters from session_state."""
+    """Build a custom retriever that passes optional filters from session_state
+    and stores retrieved documents as citations in session_state for post-hook use.
+    """
 
     async def _retriever(
         agent: Agent,
@@ -44,9 +50,68 @@ def _build_knowledge_retriever(knowledge: QdrantKnowledge) -> Callable:
         docs: List[Document] = await knowledge.aretrieve(query, **retrieval_kwargs)
         if not docs:
             return None
+
+        # Store citation metadata in session_state for the post-hook
+        citations = []
+        existing_count = len((agent.session_state or {}).get(_CITATIONS_STATE_KEY) or [])
+        for i, doc in enumerate(docs):
+            meta = doc.meta_data or {}
+            citation = {
+                "id": doc.id or doc.content_id or "",
+                "title": doc.name or meta.get("title", ""),
+                "source_type": meta.get("source", meta.get("source_type", "qdrant")),
+                "snippet": doc.content[:300] if doc.content else "",
+                "content": doc.content or "",
+                "page": meta.get("page_number", meta.get("page", None)),
+                "url": meta.get("url", meta.get("source_url", None)),
+                "score": doc.reranking_score,
+                "index": existing_count + i + 1,  # 1-based, continues from prior retrievals
+            }
+            citations.append(citation)
+
+        # Accumulate citations across multiple retrieval calls in one run
+        if agent.session_state is not None:
+            existing = agent.session_state.get(_CITATIONS_STATE_KEY) or []
+            # Deduplicate by id
+            seen_ids = {c["id"] for c in existing if c["id"]}
+            new_citations = [c for c in citations if not c["id"] or c["id"] not in seen_ids]
+            agent.session_state[_CITATIONS_STATE_KEY] = existing + new_citations
+        else:
+            agent.session_state = {_CITATIONS_STATE_KEY: citations}
+
         return [doc.to_dict() for doc in docs]
 
     return _retriever
+
+
+def _emit_citations_hook(run_output: Any, agent: Agent) -> None:
+    """Post-hook: append a <citations> JSON block to the run output content.
+
+    The Next.js route will parse this block, emit structured citation events
+    to the frontend, and strip the block from displayed text.
+    """
+    content = run_output.content
+    if not isinstance(content, str):
+        return
+
+    citations: List[Dict[str, Any]] = []
+    if agent.session_state:
+        citations = agent.session_state.get(_CITATIONS_STATE_KEY) or []
+
+    if not citations:
+        return
+
+    # Filter out empty entries
+    valid_citations = [c for c in citations if c.get("title") or c.get("snippet")]
+    if not valid_citations:
+        return
+
+    citations_json = json.dumps(valid_citations, ensure_ascii=False)
+    run_output.content = content + f"\n\n<citations>{citations_json}</citations>"
+    logger.debug("_emit_citations_hook: appended %d citations", len(valid_citations))
+
+    # Clear citations from session_state so they don't accumulate across turns
+    agent.session_state[_CITATIONS_STATE_KEY] = []
 
 
 def create_company_knowledge_agent(
@@ -117,4 +182,5 @@ def create_company_knowledge_agent(
         session_id=session_id,
         session_state=session_state or {},
         db=db,
+        post_hooks=[_emit_citations_hook],
     )

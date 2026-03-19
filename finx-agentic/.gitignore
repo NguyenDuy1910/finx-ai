@@ -15,6 +15,7 @@ build/
 .vscode/
 *.log
 *.db
+skills-lock.json
 
 # UV
 .python-version

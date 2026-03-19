@@ -11,7 +11,10 @@ _NO_TEMPERATURE_PREFIXES = ("o1", "o3", "o4")
 
 
 def _supports_temperature(model_id: str) -> bool:
-    return not model_id.startswith(_NO_TEMPERATURE_PREFIXES)
+    """Check if model supports temperature. Handles prefixed IDs like 'cx/o4-mini'."""
+    # Strip any provider prefix (e.g. "cx/o4-mini" → "o4-mini")
+    bare = model_id.rsplit("/", 1)[-1] if "/" in model_id else model_id
+    return not bare.startswith(_NO_TEMPERATURE_PREFIXES)
 
 
 def create_llm_adapter(
@@ -55,6 +58,7 @@ def create_llm_adapter_from_config(
         provider=config.provider,
         api_key=config.api_key,
         model=config.model_id,
+        base_url=config.base_url,
     )
 
 
@@ -96,6 +100,19 @@ def create_agno_model(config: Optional[AIModelConfig] = None):
         if _supports_temperature(config.model_id):
             kwargs["temperature"] = config.temperature
         return OpenAIChat(**kwargs)
+
+    if provider == "9router":
+        from agno.models.openai.like import OpenAILike
+
+        kwargs: dict = {
+            "id": config.model_id,
+            "api_key": config.api_key,
+            "base_url": config.base_url,
+            "max_completion_tokens": config.max_tokens,
+        }
+        if _supports_temperature(config.model_id):
+            kwargs["temperature"] = config.temperature
+        return OpenAILike(**kwargs)
 
     if provider == "anthropic":
         from agno.models.anthropic import Claude

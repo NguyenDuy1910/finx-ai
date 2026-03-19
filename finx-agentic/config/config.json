@@ -78,64 +78,64 @@
   },
   "team_workflow": {
     "team_leader": {
-      "provider": "openai",
-      "model_id": "gpt-5.1",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 1,
       "max_tokens": 30000,
       "description": "Orchestrates agents, writes final user-facing response with insights"
     },
     "knowledge_agent": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 1,
       "max_tokens": 2000,
       "description": "Schema retrieval and graph knowledge search — lightweight task"
     },
     "sql_generator_agent": {
-      "provider": "openai",
-      "model_id": "o4-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.0,
       "max_tokens": 10000,
       "description": "SQL generation requires precision — good coding model"
     },
     "chart_builder_agent": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-nano",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.3,
       "max_tokens": 2000,
       "description": "Structured JSON chart specs — simple structured output task"
     },
     "schema_enricher": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.2,
       "max_tokens": 16000,
       "description": "Schema enrichment with AI-generated descriptions and knowledge graph"
     },
     "confluence_researcher": {
-      "provider": "openai",
-      "model_id": "o4-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.3,
       "max_tokens": 16000,
       "description": "Confluence deep-dive research — search, read, synthesize knowledge from Atlassian"
     },
     "kg_extractor": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.0,
       "max_tokens": 8000,
       "description": "Knowledge graph entity/relationship extraction from banking documents"
     },
     "kg_summarizer": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-nano",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.0,
       "max_tokens": 2000,
       "description": "Summarize accumulated node/edge descriptions in knowledge graph"
     },
     "company_knowledge_agent": {
-      "provider": "openai",
-      "model_id": "gpt-4.1-mini",
+      "provider": "9router",
+      "model_id": "cx/gpt-5.4",
       "temperature": 0.2,
       "max_tokens": 4000,
       "description": "Company knowledge assistant — answers from Qdrant Confluence knowledge base with grounded citations"

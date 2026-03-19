@@ -13,11 +13,11 @@ function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-        variant === "default" && "bg-primary/10 text-primary",
-        variant === "success" && "bg-green-500/10 text-green-600 dark:text-green-400",
-        variant === "warning" && "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-        variant === "destructive" && "bg-red-500/10 text-red-600 dark:text-red-400",
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium transition-colors",
+        variant === "default" && "border-primary/20 bg-primary/8 text-primary",
+        variant === "success" && "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+        variant === "warning" && "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        variant === "destructive" && "border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300",
         className
       )}
       {...props}

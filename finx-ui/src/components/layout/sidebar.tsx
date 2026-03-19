@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageSquarePlus, Trash2, MessageCircle, Bot, Users } from "lucide-react";
+import { MessageSquarePlus, Trash2, MessageCircle, Bot, Users, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   loadThreads,
@@ -14,9 +14,20 @@ interface SidebarProps {
   activeThreadId: string | null;
   onSelectThread: (thread: ChatThread) => void;
   onNewChat: () => void;
-  /** Incremented externally whenever threads are mutated (e.g. title update) */
   refreshKey?: number;
 }
+
+const MODE_ICONS: Record<string, typeof Bot> = {
+  agent: Bot,
+  team: Users,
+  knowledge: BookOpen,
+};
+
+const MODE_COLORS: Record<string, string> = {
+  agent: "text-blue-500",
+  team: "text-violet-500",
+  knowledge: "text-emerald-500",
+};
 
 export function Sidebar({
   activeThreadId,
@@ -26,7 +37,6 @@ export function Sidebar({
 }: SidebarProps) {
   const [threads, setThreads] = useState<ChatThread[]>([]);
 
-  // Reload from localStorage whenever refreshKey changes
   useEffect(() => {
     setThreads(loadThreads());
   }, [refreshKey]);
@@ -36,7 +46,6 @@ export function Sidebar({
       e.stopPropagation();
       deleteThread(threadId);
       setThreads(loadThreads());
-      // If the deleted thread was active, create a new one
       if (threadId === activeThreadId) {
         onNewChat();
       }
@@ -50,86 +59,91 @@ export function Sidebar({
     onNewChat();
   }, [onNewChat]);
 
-  // All threads (agent-only now)
-  const filtered = threads;
-
-  // Group threads: Today / Yesterday / Previous 7 Days / Older
-  const groups = groupByDate(filtered);
+  const groups = groupByDate(threads);
 
   return (
-    <aside className="flex h-full w-[var(--sidebar-width,280px)] flex-col border-r border-border/60 bg-background lg:bg-muted/20">
+    <aside className="flex h-full w-[var(--sidebar-width,256px)] flex-col bg-sidebar-bg border-r border-sidebar-border">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <span className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
-          History
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-sidebar-border">
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground/60">
+          Conversations
         </span>
         <button
           type="button"
           onClick={onNewChat}
-          className="rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-90"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-sidebar-hover-bg hover:text-foreground active:scale-90"
           title="New Chat"
           aria-label="New Chat"
         >
-          <MessageSquarePlus className="h-4 w-4" />
+          <MessageSquarePlus className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {/* Thread list */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2" aria-label="Chat threads">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-2 py-12 text-center">
-            <MessageCircle className="h-8 w-8 text-muted-foreground/20" />
-            <p className="text-xs text-muted-foreground/50">
-              No conversations yet
-            </p>
+      <nav className="flex-1 overflow-y-auto px-2 py-2.5" aria-label="Chat threads">
+        {threads.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60">
+              <MessageCircle className="h-5 w-5 text-muted-foreground/30" />
+            </div>
+            <div>
+              <p className="text-[0.8125rem] font-medium text-muted-foreground/50">
+                No conversations yet
+              </p>
+              <p className="mt-0.5 text-[0.75rem] text-muted-foreground/35">
+                Start a new chat to begin
+              </p>
+            </div>
           </div>
         ) : (
           groups.map(([label, items]) => (
-            <div key={label} className="mb-3">
-              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            <div key={label} className="mb-4">
+              <p className="mb-1 px-2 text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40">
                 {label}
               </p>
               <div className="space-y-0.5">
-                {items.map((thread) => (
-                  <button
-                    key={thread.id}
-                    type="button"
-                    onClick={() => onSelectThread(thread)}
-                    className={cn(
-                      "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-all duration-150",
-                      thread.id === activeThreadId
-                        ? "bg-primary/8 text-foreground font-medium ring-1 ring-primary/10 before:absolute before:left-0 before:top-1/2 before:h-4 before:-translate-y-1/2 before:w-0.5 before:rounded-full before:bg-primary/60"
-                        : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                    )}
-                    aria-current={thread.id === activeThreadId ? "true" : undefined}
-                  >
-                    <MessageCircle className={cn(
-                      "h-3.5 w-3.5 shrink-0 transition-colors",
-                      thread.id === activeThreadId
-                        ? "text-primary/60"
-                        : "opacity-40"
-                    )} />
-                    <span className="flex-1 truncate">{thread.title}</span>
-                    {thread.mode === "agent" ? (
-                      <Bot className="h-3 w-3 shrink-0 text-blue-500/50" />
-                    ) : (
-                      <Users className="h-3 w-3 shrink-0 text-violet-500/50" />
-                    )}
-                    <span
+                {items.map((thread) => {
+                  const isActive = thread.id === activeThreadId;
+                  const ModeIcon = MODE_ICONS[thread.mode ?? "agent"] ?? Bot;
+                  const modeColor = MODE_COLORS[thread.mode ?? "agent"] ?? "text-muted-foreground/40";
+
+                  return (
+                    <div
+                      key={thread.id}
                       role="button"
                       tabIndex={0}
-                      onClick={(e) => handleDelete(e, thread.id)}
+                      onClick={() => onSelectThread(thread)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleDelete(e as unknown as React.MouseEvent, thread.id);
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelectThread(thread);
+                        }
                       }}
-                      className="hidden shrink-0 rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive group-hover:block"
-                      title="Delete"
-                      aria-label={`Delete ${thread.title}`}
+                      className={cn(
+                        "group relative flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[0.8125rem] transition-all duration-100 select-none",
+                        isActive
+                          ? "bg-sidebar-active-bg text-sidebar-active-text font-medium"
+                          : "text-muted-foreground hover:bg-sidebar-hover-bg hover:text-foreground"
+                      )}
+                      aria-current={isActive ? "true" : undefined}
                     >
-                      <Trash2 className="h-3 w-3" />
-                    </span>
-                  </button>
-                ))}
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                      )}
+                      <ModeIcon className={cn("h-3.5 w-3.5 shrink-0 opacity-60", isActive ? "text-primary" : modeColor)} />
+                      <span className="flex-1 truncate">{thread.title}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(e, thread.id)}
+                        className="hidden shrink-0 rounded-md p-0.5 text-muted-foreground/30 transition-colors hover:bg-destructive/10 hover:text-destructive group-hover:block"
+                        title="Delete"
+                        aria-label={`Delete ${thread.title}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))
@@ -137,12 +151,12 @@ export function Sidebar({
       </nav>
 
       {/* Footer */}
-      {filtered.length > 0 && (
-        <div className="border-t border-border/40 px-3 py-2.5">
+      {threads.length > 0 && (
+        <div className="border-t border-sidebar-border px-3 py-2.5">
           <button
             type="button"
             onClick={handleClearAll}
-            className="w-full rounded-lg px-2 py-1.5 text-xs text-muted-foreground/60 transition-all hover:bg-destructive/8 hover:text-destructive"
+            className="w-full rounded-lg px-2 py-1.5 text-[0.75rem] text-muted-foreground/50 transition-all hover:bg-destructive/8 hover:text-destructive"
           >
             Clear all conversations
           </button>
@@ -151,8 +165,6 @@ export function Sidebar({
     </aside>
   );
 }
-
-// ── Helpers ──────────────────────────────────────────────────────
 
 function groupByDate(threads: ChatThread[]): [string, ChatThread[]][] {
   const now = new Date();

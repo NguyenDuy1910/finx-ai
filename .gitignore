@@ -1,0 +1,10 @@
+# Agent / AI tooling
+.agents/
+.claude/
+skills-lock.json
+
+# UI design tokens
+finx-ui/.impeccable.md
+
+# OS
+.DS_Store

@@ -82,7 +82,7 @@ export function ChatInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
     }
   }, [value]);
 
@@ -179,33 +179,33 @@ export function ChatInput({
     <div className="safe-area-bottom">
       <form
         onSubmit={handleFormSubmit}
-        className="mx-auto max-w-3xl"
+        className="mx-auto max-w-[var(--chat-max-width,760px)]"
       >
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "relative rounded-2xl border shadow-sm transition-all duration-200",
+            "relative rounded-xl border transition-all duration-150",
             focused
-              ? "border-primary/40 bg-background shadow-primary/5 ring-1 ring-primary/10"
-              : "border-input bg-muted/30 hover:border-input/80 hover:bg-muted/40",
-            dragOver && "border-primary/60 bg-primary/5 ring-2 ring-primary/20"
+              ? "border-border-strong bg-surface shadow-md ring-2 ring-ring/15"
+              : "border-border bg-surface hover:border-border-strong",
+            dragOver && "border-primary/50 bg-primary-subtle ring-2 ring-ring/20"
           )}
         >
           {/* Drag overlay */}
           {dragOver && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-primary/5 backdrop-blur-[2px]">
-              <div className="flex flex-col items-center gap-1.5 text-primary">
-                <Paperclip className="h-6 w-6" />
-                <span className="text-xs font-medium">Drop files here</span>
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-primary/[0.04] backdrop-blur-[2px]">
+              <div className="flex flex-col items-center gap-2 text-primary">
+                <Paperclip className="h-5 w-5" />
+                <span className="text-sm font-medium">Drop files here</span>
               </div>
             </div>
           )}
 
           {/* Attachment previews */}
           {currentAttachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-3 pt-3">
+            <div className="flex flex-wrap gap-2 px-4 pt-3.5">
               {currentAttachments.map((att) => (
                 <AttachmentPreview
                   key={att.id}
@@ -216,7 +216,9 @@ export function ChatInput({
             </div>
           )}
 
-          {/* Textarea */}
+          {/* Textarea
+              15px (text-[0.9375rem]) is the comfortable minimum for active
+              editing — 14px creates unnecessary eye strain over long sessions. */}
           <textarea
             ref={textareaRef}
             value={value}
@@ -231,60 +233,73 @@ export function ChatInput({
             placeholder={placeholder || "Ask about your data..."}
             rows={1}
             maxLength={MAX_LENGTH}
-            className="w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none sm:pr-14"
+            className="w-full resize-none bg-transparent px-4 py-3.5 text-[0.9375rem] leading-[1.65] placeholder:text-muted-foreground/45 focus:outline-none disabled:opacity-50"
             disabled={isLoading}
             aria-label="Chat message input"
           />
 
-          {/* ── Bottom toolbar row ──────────────────────────────── */}
-          <div className="flex items-center justify-between px-2 pb-2">
+          {/* ── Bottom toolbar ── */}
+          <div className="flex items-center gap-1.5 px-3 pb-3">
             {/* Left: attachment buttons */}
             <div className="flex items-center gap-0.5">
-              {/* Generic attach */}
               <ToolbarButton
                 icon={<Paperclip className="h-4 w-4" />}
                 label="Attach file"
                 disabled={!canAttach}
                 onClick={() => fileInputRef.current?.click()}
               />
-              {/* Image */}
               <ToolbarButton
                 icon={<ImageIcon className="h-4 w-4" />}
                 label="Attach image"
                 disabled={!canAttach}
                 onClick={() => imageInputRef.current?.click()}
               />
-              {/* Document */}
               <ToolbarButton
                 icon={<FileText className="h-4 w-4" />}
                 label="Attach document"
                 disabled={!canAttach}
                 onClick={() => docInputRef.current?.click()}
               />
-
               {currentAttachments.length > 0 && (
-                <span className="ml-1 text-[10px] tabular-nums text-muted-foreground/60">
+                <span className="ml-1 text-[0.6875rem] font-medium tabular-nums text-muted-foreground/50">
                   {currentAttachments.length}/{MAX_ATTACHMENTS}
                 </span>
               )}
             </div>
 
-            {/* Right: send button */}
+            {/* Char counter — right-aligned, appears when approaching limit */}
+            <span
+              className={cn(
+                "ml-auto text-[0.6875rem] tabular-nums transition-all duration-200",
+                charCount >= MAX_LENGTH
+                  ? "font-semibold text-destructive"
+                  : charCount > MAX_LENGTH * 0.85
+                    ? "text-amber-500/90"
+                    : charCount > MAX_LENGTH * 0.6
+                      ? "text-muted-foreground/40"
+                      : "opacity-0 select-none"
+              )}
+              aria-live="polite"
+            >
+              {charCount.toLocaleString()}/{MAX_LENGTH.toLocaleString()}
+            </span>
+
+            {/* Send button — larger than toolbar icons to establish clear hierarchy */}
             <button
               type="submit"
               disabled={!canSend}
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-150",
                 canSend
-                  ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-90"
-                  : "bg-muted text-muted-foreground/30"
+                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover active:scale-90"
+                  : "bg-muted text-muted-foreground/25 cursor-not-allowed"
               )}
               aria-label={isLoading ? "Sending..." : "Send message"}
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-[1.0625rem] w-[1.0625rem]" />
               )}
             </button>
           </div>
@@ -325,23 +340,18 @@ export function ChatInput({
           />
         </div>
 
-        {/* Footer row */}
-        <div className="mt-1.5 flex items-center justify-between px-1">
-          <p className="text-[10px] text-muted-foreground/40">
-            FinX AI can make mistakes. Verify important information.
+        {/* Footer — disclaimer on left, keyboard hint on right */}
+        <div className="mt-2 flex items-center justify-between px-1">
+          <p className="text-[0.6875rem] leading-snug text-muted-foreground/40">
+            FinX AI can make mistakes — verify important results.
           </p>
-          <span
-            className={cn(
-              "text-[10px] tabular-nums transition-colors",
-              charCount >= MAX_LENGTH
-                ? "text-destructive font-medium"
-                : charCount > MAX_LENGTH * 0.9
-                  ? "text-amber-500"
-                  : "text-muted-foreground/30"
-            )}
-          >
-            {charCount}/{MAX_LENGTH}
-          </span>
+          <p className="hidden items-center gap-1 text-[0.6875rem] text-muted-foreground/35 sm:flex">
+            <kbd className="rounded border border-border/50 bg-muted/50 px-1.5 py-0.5 font-mono text-[0.625rem] leading-none">↵</kbd>
+            <span>send</span>
+            <span className="text-muted-foreground/25">·</span>
+            <kbd className="rounded border border-border/50 bg-muted/50 px-1.5 py-0.5 font-mono text-[0.625rem] leading-none">⇧↵</kbd>
+            <span>newline</span>
+          </p>
         </div>
       </form>
     </div>
@@ -366,9 +376,9 @@ function ToolbarButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground/70 transition-all",
+        "flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground/60 transition-all",
         disabled
-          ? "cursor-not-allowed opacity-40"
+          ? "cursor-not-allowed opacity-35"
           : "hover:bg-accent hover:text-foreground active:scale-90"
       )}
       title={label}
@@ -393,7 +403,7 @@ function AttachmentPreview({
     <div
       className={cn(
         "group/att relative flex items-center gap-2 rounded-xl border border-border/60 bg-muted/60 transition-all hover:border-border",
-        isImage ? "h-16 w-16 overflow-hidden p-0" : "px-3 py-1.5"
+        isImage ? "h-16 w-16 overflow-hidden p-0" : "px-3 py-2"
       )}
     >
       {isImage ? (
@@ -407,10 +417,10 @@ function AttachmentPreview({
         <>
           <FileTypeIcon type={attachment.type} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-foreground/80 max-w-[120px]">
+            <p className="truncate text-[0.75rem] font-medium leading-tight text-foreground/80 max-w-[120px]">
               {attachment.file.name}
             </p>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-[0.6875rem] text-muted-foreground/55 mt-0.5 tabular-nums">
               {formatFileSize(attachment.file.size)}
             </p>
           </div>

@@ -240,9 +240,9 @@ export default function Home() {
         {isChatPage && (
           <aside
             className={`
-              fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width,280px)] transform transition-transform duration-250 ease-out will-change-transform
+              fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width,256px)] transform transition-transform duration-200 ease-out will-change-transform
               lg:relative lg:z-auto lg:translate-x-0 lg:transition-none
-              ${sidebarOpen ? "translate-x-0 shadow-2xl lg:shadow-none" : "-translate-x-full"}
+              ${sidebarOpen ? "translate-x-0 shadow-xl lg:shadow-none" : "-translate-x-full"}
             `}
             style={{ top: "var(--header-height, 56px)" }}
             aria-label="Chat sidebar"

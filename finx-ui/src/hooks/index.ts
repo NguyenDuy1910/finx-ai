@@ -3,3 +3,4 @@ export { useAutoScroll } from "./use-auto-scroll";
 export { useHealthCheck, type HealthStatus } from "./use-health-check";
 export { useNavPage } from "./use-nav-page";
 export { useGraphSession } from "./use-graph-session";
+export { useChatDataParts, type ChatDataMaps } from "./use-chat-data-parts";

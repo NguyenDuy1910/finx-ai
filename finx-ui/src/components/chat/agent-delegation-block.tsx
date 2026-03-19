@@ -149,7 +149,7 @@ const MemberCard = memo(function MemberCard({ member, isLast, stepNumber, onMemb
         <div className="relative z-10 mt-0.5 flex shrink-0">
           <div
             className={cn(
-              "flex h-[26px] w-[26px] items-center justify-center rounded-full transition-all duration-300 text-[10px] font-bold",
+              "flex h-[26px] w-[26px] items-center justify-center rounded-full transition-all duration-300 text-[11px] font-bold",
               isRunning && "bg-primary/10 ring-2 ring-primary/30 text-primary animate-pulse-ring",
               isDone && "bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600",
               hasError && "bg-red-500/10 ring-1 ring-red-500/20 text-red-500"
@@ -178,7 +178,7 @@ const MemberCard = memo(function MemberCard({ member, isLast, stepNumber, onMemb
             )}
           >
             {/* Step number badge */}
-            <span className="flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold text-muted-foreground/40 bg-muted/30">
+            <span className="flex h-4 w-4 items-center justify-center rounded text-[11px] font-bold text-muted-foreground/40 bg-muted/30">
               {stepNumber}
             </span>
             {/* Agent icon */}
@@ -196,25 +196,25 @@ const MemberCard = memo(function MemberCard({ member, isLast, stepNumber, onMemb
                 {formatAgentName(member.name)}
               </span>
               {isRunning && !hasContent && (
-                <span className="block text-[10px] text-muted-foreground/50 mt-0.5">
+                <span className="block text-[11px] text-muted-foreground/50 mt-0.5">
                   {style.description}
                 </span>
               )}
             </div>
             {/* Status badges */}
             {member.model && isDone && (
-              <span className="hidden sm:inline-block rounded-full bg-muted/40 px-1.5 py-0.5 text-[9px] text-muted-foreground/40 font-medium">
+              <span className="hidden sm:inline-block rounded-full bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground/40 font-medium">
                 {member.model}
               </span>
             )}
             {isDone && member.total_tokens ? (
-              <span className="shrink-0 rounded-full bg-emerald-500/8 px-2 py-0.5 text-[10px] tabular-nums text-emerald-600/60 font-medium">
+              <span className="shrink-0 rounded-full bg-emerald-500/8 px-2 py-0.5 text-[11px] tabular-nums text-emerald-600/60 font-medium">
                 {formatTokens(member.total_tokens)} tok
               </span>
             ) : null}
             {isRunning && (
               <span className="ml-auto flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] font-medium text-primary/60">working</span>
+                <span className="text-[11px] font-medium text-primary/60">working</span>
                 <span className="flex items-center gap-0.5">
                   <span className="h-1 w-1 animate-bounce rounded-full bg-primary/50 [animation-delay:-0.3s]" />
                   <span className="h-1 w-1 animate-bounce rounded-full bg-primary/50 [animation-delay:-0.15s]" />
@@ -288,7 +288,7 @@ const MemberCard = memo(function MemberCard({ member, isLast, stepNumber, onMemb
                   <button
                     type="button"
                     onClick={() => onMemberClick(member)}
-                    className="flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/[0.03] px-3 py-1.5 text-[10px] font-medium text-primary/60 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    className="flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/[0.03] px-3 py-1.5 text-[11px] font-medium text-primary/60 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
                   >
                     <Eye className="h-2.5 w-2.5" />
                     View full output
@@ -367,7 +367,7 @@ export const AgentDelegationBlock = memo(function AgentDelegationBlock({ members
                 <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
               )}
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
               <span>{members.length} agent{members.length > 1 ? "s" : ""}</span>
               {completedCount > 0 && (
                 <>
@@ -398,7 +398,7 @@ export const AgentDelegationBlock = memo(function AgentDelegationBlock({ members
 
           {/* Token badge */}
           {totalTokens > 0 && (
-            <span className="hidden shrink-0 items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground/50 sm:inline-flex">
+            <span className="hidden shrink-0 items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[11px] tabular-nums text-muted-foreground/50 sm:inline-flex">
               <Clock className="h-2.5 w-2.5" />
               {formatTokens(totalTokens)} tokens
             </span>

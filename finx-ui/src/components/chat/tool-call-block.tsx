@@ -25,16 +25,16 @@ export const ToolCallBlock = memo(function ToolCallBlock({ toolCall }: ToolCallB
   const isDone = toolCall.status === "completed";
 
   const statusColor = hasError
-    ? "border-red-500/20 bg-red-500/5"
+    ? "border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5"
     : isRunning
-      ? "border-blue-500/20 bg-blue-500/5"
-      : "border-emerald-500/20 bg-emerald-500/5";
+      ? "border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/5"
+      : "border-border bg-surface-raised";
 
   const iconColor = hasError
     ? "text-red-500"
     : isRunning
       ? "text-blue-500"
-      : "text-emerald-500";
+      : "text-emerald-600 dark:text-emerald-400";
 
   // Format args for display
   const argsStr = toolCall.args
@@ -48,11 +48,11 @@ export const ToolCallBlock = memo(function ToolCallBlock({ toolCall }: ToolCallB
       : toolCall.result;
 
   return (
-    <div className={cn("overflow-hidden rounded-xl border shadow-sm", statusColor)}>
+    <div className={cn("overflow-hidden rounded-lg border", statusColor)}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent/50"
         aria-expanded={expanded}
         aria-label={`${isRunning ? "Running" : "Completed"} tool call: ${toolCall.name}`}
       >
@@ -64,7 +64,7 @@ export const ToolCallBlock = memo(function ToolCallBlock({ toolCall }: ToolCallB
 
         <span className="flex-1 truncate text-xs font-medium text-foreground/80">
           {isRunning ? "Calling" : "Called"}{" "}
-          <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-[11px] dark:bg-white/10">
+          <code className="rounded-md bg-muted px-1 py-0.5 font-mono text-[0.6875rem] ring-1 ring-border">
             {toolCall.name}
           </code>
         </span>

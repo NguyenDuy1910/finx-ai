@@ -4,16 +4,19 @@ import { useState, useRef, useEffect, useCallback, useMemo, memo, FormEvent } fr
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Loader2, ArrowDown, Square, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatWelcome } from "./chat-welcome";
 import { ChatModeSwitcher } from "./chat-mode-switcher";
 import { AgentDetailSidePanel } from "./agent-detail-side-panel";
+import { SourcePreviewPanel } from "./source-preview-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
+import { useChatDataParts } from "@/hooks/use-chat-data-parts";
 import { parseKnowledgeFromToolCalls } from "./knowledge-panel";
 import { parseChartSpecFromToolCalls } from "./chart-block";
-import type { ToolCallData, ReasoningData, MemberRunData, RunMetrics, ChatMode } from "@/types";
+import type { MemberRunData, ChatMode } from "@/types";
 
 interface ChatContainerProps {
   database: string;
@@ -37,7 +40,7 @@ const AGENT_IDS: Partial<Record<ChatMode, string>> = {
 };
 
 export function ChatContainer({
-  database,
+  database: _database,
   threadId,
   initialSessionId,
   initialMode = "agent",
@@ -47,29 +50,36 @@ export function ChatContainer({
 }: ChatContainerProps) {
   const [input, setInput] = useState("");
   const [chatMode, setChatMode] = useState<ChatMode>(initialMode);
-  const [sessionId, setSessionId] = useState<string | undefined>(
-    initialSessionId ?? undefined
-  );
   const sessionIdRef = useRef<string | undefined>(initialSessionId ?? undefined);
   const hasNotifiedSessionRef = useRef(false);
   const hasNotifiedFirstMsgRef = useRef(false);
+  const chatModeRef = useRef<ChatMode>(initialMode);
 
-  const [reasoningMap, setReasoningMap] = useState<Record<string, ReasoningData>>({});
-  const [toolCallMap, setToolCallMap] = useState<Record<string, ToolCallData[]>>({});
-  const [memberRunMap, setMemberRunMap] = useState<Record<string, MemberRunData[]>>({});
-  const [metricsMap, setMetricsMap] = useState<Record<string, RunMetrics>>({});
-  const currentAssistantIdRef = useRef<string | null>(null);
-
-  // Track which data-parts have already been processed to avoid re-processing
-  // the entire message list on every streaming token.
-  const processedPartsRef = useRef(new Set<string>());
-
-  // ── Right-side detail panel state ────────────────────────────
+  // ── Right-side detail panel ──────────────────────────────────
   const [selectedMember, setSelectedMember] = useState<MemberRunData | null>(null);
   const [selectedMemberMessageId, setSelectedMemberMessageId] = useState<string | null>(null);
   const selectedMemberMessageIdRef = useRef<string | null>(null);
 
+  // ── Source preview panel ──────────────────────────────────────
+  const [selectedCitation, setSelectedCitation] = useState<import("@/types").CitationData | null>(null);
+  const [selectedCitationAllSources, setSelectedCitationAllSources] = useState<import("@/types").CitationData[]>([]);
+
+  const handleCitationClick = useCallback((citation: import("@/types").CitationData, allCitations: import("@/types").CitationData[]) => {
+    // Clicking a citation closes the member panel and opens the source panel
+    setSelectedMember(null);
+    setSelectedMemberMessageId(null);
+    selectedMemberMessageIdRef.current = null;
+    setSelectedCitation((prev) => (prev?.id === citation.id ? null : citation));
+    setSelectedCitationAllSources(allCitations);
+  }, []);
+
+  const handleCloseSourcePanel = useCallback(() => {
+    setSelectedCitation(null);
+  }, []);
+
   const handleMemberClick = useCallback((member: MemberRunData, messageId: string) => {
+    // Close source panel when opening member panel
+    setSelectedCitation(null);
     setSelectedMember((prev) => {
       const isSame = prev?.id === member.id && selectedMemberMessageIdRef.current === messageId;
       if (isSame) {
@@ -89,20 +99,9 @@ export function ChatContainer({
     selectedMemberMessageIdRef.current = null;
   }, []);
 
-  // Keep side-panel member data in sync with streaming updates
-  useEffect(() => {
-    if (!selectedMember || !selectedMemberMessageId) return;
-    const membersForMessage = memberRunMap[selectedMemberMessageId];
-    if (!membersForMessage) return;
-    const updated = membersForMessage.find((m) => m.id === selectedMember.id);
-    if (updated && updated !== selectedMember) {
-      setSelectedMember(updated);
-    }
-  }, [memberRunMap, selectedMember, selectedMemberMessageId]);
-
+  // ── Session id handling ──────────────────────────────────────
   const handleSessionId = useCallback(
     (sid: string) => {
-      setSessionId(sid);
       sessionIdRef.current = sid;
       if (!hasNotifiedSessionRef.current && onSessionEstablished) {
         hasNotifiedSessionRef.current = true;
@@ -112,8 +111,7 @@ export function ChatContainer({
     [onSessionEstablished]
   );
 
-  const chatModeRef = useRef<ChatMode>(initialMode);
-
+  // ── Mode switching ───────────────────────────────────────────
   const handleModeSwitch = useCallback(
     (newMode: ChatMode) => {
       setChatMode(newMode);
@@ -123,6 +121,7 @@ export function ChatContainer({
     [onModeChange]
   );
 
+  // ── Transport (recreated only when chatMode changes) ─────────
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -146,410 +145,38 @@ export function ChatContainer({
     transport,
     experimental_throttle: 100,
     onFinish: ({ message }) => {
-      setReasoningMap((prev) => {
-        const r = prev[message.id];
-        if (r && r.isActive) {
-          return { ...prev, [message.id]: { ...r, isActive: false } };
-        }
-        return prev;
-      });
-      setToolCallMap((prev) => {
-        const tcs = prev[message.id];
-        if (tcs) {
-          return {
-            ...prev,
-            [message.id]: tcs.map((tc) =>
-              tc.status === "running" ? { ...tc, status: "completed" as const } : tc
-            ),
-          };
-        }
-        return prev;
-      });
-      setMemberRunMap((prev) => {
-        const members = prev[message.id];
-        if (members) {
-          return {
-            ...prev,
-            [message.id]: members.map((m) =>
-              m.status === "running" ? { ...m, status: "completed" as const } : m
-            ),
-          };
-        }
-        return prev;
-      });
+      markRunsComplete(message.id);
+      // Session id may also arrive in the final message parts
       const sessionPart = message.parts.find((p) => p.type === "data-session");
       if (sessionPart && "data" in sessionPart) {
-        const data = (sessionPart as { data: { session_id?: string } }).data;
-        if (data.session_id) handleSessionId(data.session_id);
+        const d = (sessionPart as { data: { session_id?: string } }).data;
+        if (d.session_id) handleSessionId(d.session_id);
       }
-      currentAssistantIdRef.current = null;
     },
     onData: (dataPart) => {
       if (!dataPart || typeof dataPart !== "object") return;
       const part = dataPart as Record<string, unknown>;
-      if ("session_id" in part) {
-        handleSessionId(part.session_id as string);
-      }
+      if ("session_id" in part) handleSessionId(part.session_id as string);
     },
     onError: (error) => {
       console.error("Agent chat error:", error);
-      currentAssistantIdRef.current = null;
     },
   });
 
+  // ── Data-parts processing (extracted hook) ───────────────────
+  const { reasoningMap, toolCallMap, memberRunMap, metricsMap, citationsMap, activityMap, markRunsComplete } =
+    useChatDataParts(agentMessages, { onSessionId: handleSessionId });
+
+  // Keep side-panel member data in sync with streaming updates
   useEffect(() => {
-    if (agentMessages.length > 0) {
-      const last = agentMessages[agentMessages.length - 1];
-      if (last.role === "assistant") {
-        currentAssistantIdRef.current = last.id;
-      }
-    }
-  }, [agentMessages]);
+    if (!selectedMember || !selectedMemberMessageId) return;
+    const membersForMessage = memberRunMap[selectedMemberMessageId];
+    if (!membersForMessage) return;
+    const updated = membersForMessage.find((m) => m.id === selectedMember.id);
+    if (updated && updated !== selectedMember) setSelectedMember(updated);
+  }, [memberRunMap, selectedMember, selectedMemberMessageId]);
 
-  useEffect(() => {
-    // Only scan the current assistant message to avoid O(n*m) on every token.
-    // All data-parts for previous messages have already been processed; the
-    // Set-based guard below makes re-processing idempotent either way.
-    const lastAssistantId = currentAssistantIdRef.current;
-    const messagesToScan = lastAssistantId
-      ? agentMessages.filter((m) => m.id === lastAssistantId)
-      : agentMessages.filter((m) => m.role === "assistant");
-
-    const processed = processedPartsRef.current;
-
-    for (const msg of messagesToScan) {
-      if (msg.role !== "assistant") continue;
-      for (let i = 0; i < msg.parts.length; i++) {
-        const part = msg.parts[i];
-        if (!part.type.startsWith("data-")) continue;
-
-        // Build a unique key per part. For delta events we include the index
-        // because they appear multiple times with the same type.
-        const partKey = `${msg.id}::${i}::${part.type}`;
-        if (processed.has(partKey)) continue;
-        processed.add(partKey);
-
-        const data = (part as { type: string; data: Record<string, unknown> }).data;
-          switch (part.type) {
-            case "data-reasoning-started": {
-              const rMemberId = (data.memberId as string) || "";
-
-              // If belongs to a member, attach reasoning to that member
-              if (rMemberId) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) =>
-                      m.id === rMemberId
-                        ? {
-                            ...m,
-                            reasoning: {
-                              id: (data.id as string) || msg.id,
-                              content: m.reasoning?.content || "",
-                              isActive: true,
-                            },
-                          }
-                        : m
-                    ),
-                  };
-                });
-              }
-
-              setReasoningMap((prev) => ({
-                ...prev,
-                [msg.id]: {
-                  id: (data.id as string) || msg.id,
-                  content: prev[msg.id]?.content || "",
-                  isActive: true,
-                },
-              }));
-              break;
-            }
-            case "data-reasoning-delta": {
-              const delta = (data.delta as string) || "";
-              const rMemberId = (data.memberId as string) || "";
-
-              if (rMemberId && delta) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) =>
-                      m.id === rMemberId
-                        ? {
-                            ...m,
-                            reasoning: {
-                              ...m.reasoning,
-                              id: (data.id as string) || msg.id,
-                              content: (m.reasoning?.content || "") + delta,
-                              isActive: true,
-                            },
-                          }
-                        : m
-                    ),
-                  };
-                });
-              }
-
-              setReasoningMap((prev) => ({
-                ...prev,
-                [msg.id]: {
-                  ...prev[msg.id],
-                  id: (data.id as string) || msg.id,
-                  content: (prev[msg.id]?.content || "") + delta,
-                  isActive: true,
-                },
-              }));
-              break;
-            }
-            case "data-reasoning-completed": {
-              const rMemberId = (data.memberId as string) || "";
-
-              if (rMemberId) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) =>
-                      m.id === rMemberId
-                        ? {
-                            ...m,
-                            reasoning: {
-                              ...m.reasoning,
-                              id: (data.id as string) || msg.id,
-                              content: m.reasoning?.content || "",
-                              isActive: false,
-                            },
-                          }
-                        : m
-                    ),
-                  };
-                });
-              }
-
-              setReasoningMap((prev) => ({
-                ...prev,
-                [msg.id]: {
-                  ...prev[msg.id],
-                  id: (data.id as string) || msg.id,
-                  content: prev[msg.id]?.content || "",
-                  isActive: false,
-                },
-              }));
-              break;
-            }
-            case "data-tool-call-started": {
-              const tcId = (data.id as string) || "";
-              const tcMemberId = (data.memberId as string) || "";
-
-              // If this tool call belongs to a member, attach it to that member
-              if (tcMemberId) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) => {
-                      if (m.id !== tcMemberId) return m;
-                      const memberTCs = m.toolCalls || [];
-                      if (memberTCs.some((tc) => tc.id === tcId)) return m;
-                      return {
-                        ...m,
-                        toolCalls: [
-                          ...memberTCs,
-                          {
-                            id: tcId,
-                            name: (data.name as string) || "unknown",
-                            args: (data.args as Record<string, unknown>) || {},
-                            status: "running" as const,
-                          },
-                        ],
-                      };
-                    }),
-                  };
-                });
-              }
-
-              // Also track at message level
-              setToolCallMap((prev) => {
-                const existing = prev[msg.id] || [];
-                if (existing.some((tc) => tc.id === tcId)) return prev;
-                return {
-                  ...prev,
-                  [msg.id]: [
-                    ...existing,
-                    {
-                      id: tcId,
-                      name: (data.name as string) || "unknown",
-                      args: (data.args as Record<string, unknown>) || {},
-                      status: "running" as const,
-                    },
-                  ],
-                };
-              });
-              break;
-            }
-            case "data-tool-call-completed": {
-              const tcId = (data.id as string) || "";
-              const tcMemberId = (data.memberId as string) || "";
-
-              // If this tool call belongs to a member, update it there
-              if (tcMemberId) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) => {
-                      if (m.id !== tcMemberId) return m;
-                      const memberTCs = m.toolCalls || [];
-                      return {
-                        ...m,
-                        toolCalls: memberTCs.map((tc) =>
-                          tc.id === tcId
-                            ? {
-                                ...tc,
-                                result: (data.result as string) || "",
-                                error: !!(data.error),
-                                status: data.error ? ("error" as const) : ("completed" as const),
-                              }
-                            : tc
-                        ),
-                      };
-                    }),
-                  };
-                });
-              }
-
-              // Also update at message level
-              setToolCallMap((prev) => {
-                const existing = prev[msg.id] || [];
-                return {
-                  ...prev,
-                  [msg.id]: existing.map((tc) =>
-                    tc.id === tcId
-                      ? {
-                          ...tc,
-                          result: (data.result as string) || "",
-                          error: !!(data.error),
-                          status: data.error ? ("error" as const) : ("completed" as const),
-                        }
-                      : tc
-                  ),
-                };
-              });
-              break;
-            }
-            case "data-session": {
-              if (data.session_id) handleSessionId(data.session_id as string);
-              break;
-            }
-
-            // ── Team member delegation events ─────────────────
-            case "data-member-started": {
-              const memberId = (data.id as string) || "";
-              const memberName = (data.name as string) || "Agent";
-              setMemberRunMap((prev) => {
-                const existing = prev[msg.id] || [];
-                if (existing.some((m) => m.id === memberId)) return prev;
-                return {
-                  ...prev,
-                  [msg.id]: [
-                    ...existing,
-                    {
-                      id: memberId,
-                      name: memberName,
-                      model: (data.model as string) || "",
-                      status: "running" as const,
-                      content: "",
-                    },
-                  ],
-                };
-              });
-              break;
-            }
-
-            case "data-member-content": {
-              const memberId = (data.id as string) || "";
-              const delta = (data.delta as string) || "";
-              if (delta) {
-                setMemberRunMap((prev) => {
-                  const existing = prev[msg.id] || [];
-                  return {
-                    ...prev,
-                    [msg.id]: existing.map((m) =>
-                      m.id === memberId
-                        ? { ...m, content: m.content + delta }
-                        : m
-                    ),
-                  };
-                });
-              }
-              break;
-            }
-
-            case "data-member-completed": {
-              const memberId = (data.id as string) || "";
-              setMemberRunMap((prev) => {
-                const existing = prev[msg.id] || [];
-                return {
-                  ...prev,
-                  [msg.id]: existing.map((m) =>
-                    m.id === memberId
-                      ? {
-                          ...m,
-                          status: "completed" as const,
-                          content: (data.content as string) || m.content,
-                          input_tokens: (data.input_tokens as number) || 0,
-                          output_tokens: (data.output_tokens as number) || 0,
-                          total_tokens: (data.total_tokens as number) || 0,
-                        }
-                      : m
-                  ),
-                };
-              });
-              break;
-            }
-
-            case "data-member-error": {
-              const memberId = (data.id as string) || "";
-              setMemberRunMap((prev) => {
-                const existing = prev[msg.id] || [];
-                return {
-                  ...prev,
-                  [msg.id]: existing.map((m) =>
-                    m.id === memberId
-                      ? {
-                          ...m,
-                          status: "error" as const,
-                          error: (data.error as string) || "Member agent error",
-                        }
-                      : m
-                  ),
-                };
-              });
-              break;
-            }
-
-            // ── Run metrics ───────────────────────────────────
-            case "data-run-metrics": {
-              setMetricsMap((prev) => ({
-                ...prev,
-                [msg.id]: {
-                  input_tokens: (data.input_tokens as number) || 0,
-                  output_tokens: (data.output_tokens as number) || 0,
-                  total_tokens: (data.total_tokens as number) || 0,
-                  time_to_first_token: (data.time_to_first_token as number) || undefined,
-                  reasoning_tokens: (data.reasoning_tokens as number) || 0,
-                },
-              }));
-              break;
-            }
-          }
-        }
-      }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentMessages, handleSessionId]);
-
+  // ── Send / retry ─────────────────────────────────────────────
   const isAgentBusy = status === "submitted" || status === "streaming";
   const isStreaming = status === "streaming";
   const showLoader = status === "submitted";
@@ -569,7 +196,6 @@ export function ChatContainer({
   );
 
   const handleRetry = useCallback(() => {
-    // Resend the last user message
     const lastUserMsg = [...agentMessages].reverse().find((m) => m.role === "user");
     if (lastUserMsg) {
       const text = lastUserMsg.parts
@@ -588,16 +214,17 @@ export function ChatContainer({
     [input, handleSend]
   );
 
+  // ── Auto-scroll ──────────────────────────────────────────────
   const { bottomRef, scrollContainerRef, showScrollBtn, handleScroll, scrollToBottom } =
     useAutoScroll([agentMessages, isAgentBusy, reasoningMap, toolCallMap, memberRunMap]);
 
+  // ── Render list ──────────────────────────────────────────────
   const renderMessages = useMemo(
     () =>
       agentMessages.map((m) => {
         const members = memberRunMap[m.id];
         const tcs = toolCallMap[m.id];
 
-        // Extract chart spec from Chart Builder Agent member tool calls
         let chartSpec = null;
         if (members) {
           for (const member of members) {
@@ -607,10 +234,7 @@ export function ChatContainer({
             }
           }
         }
-        // Fallback: check top-level tool calls
-        if (!chartSpec && tcs) {
-          chartSpec = parseChartSpecFromToolCalls(tcs);
-        }
+        if (!chartSpec && tcs) chartSpec = parseChartSpecFromToolCalls(tcs);
 
         return {
           id: m.id,
@@ -619,19 +243,18 @@ export function ChatContainer({
             .filter((p) => p.type === "text")
             .map((p) => (p as { text: string }).text)
             .join(""),
-          streaming:
-            isStreaming &&
-            m.role === "assistant" &&
-            m === agentMessages[agentMessages.length - 1],
+          streaming: isStreaming && m.role === "assistant" && m === agentMessages[agentMessages.length - 1],
           reasoning: reasoningMap[m.id],
           toolCalls: tcs,
           memberRuns: members,
           runMetrics: metricsMap[m.id],
           knowledgeData: tcs ? parseKnowledgeFromToolCalls(tcs) : null,
           chartData: chartSpec,
+          citations: citationsMap[m.id],
+          activity: activityMap[m.id],
         };
       }),
-    [agentMessages, isStreaming, reasoningMap, toolCallMap, memberRunMap, metricsMap]
+    [agentMessages, isStreaming, reasoningMap, toolCallMap, memberRunMap, metricsMap, citationsMap, activityMap]
   );
 
   const hasMessages = renderMessages.length > 0;
@@ -640,120 +263,138 @@ export function ChatContainer({
     <div className="relative flex h-full">
       {/* ── Chat thread area ──────────────────────────────────── */}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {/* Messages + input unified area */}
+
+        {/* ── Scrollable message list ──────────────────────────── */}
         <ScrollArea
           ref={scrollContainerRef}
           onScroll={handleScroll}
           className="flex-1"
         >
-        {!hasMessages && (
-          <ChatWelcome mode={chatMode} onSuggestionClick={handleSend} />
-        )}
+          {/* Accessible live region */}
+          <div aria-live="polite" aria-atomic="false" className="sr-only">
+            {hasMessages && (
+              <span>
+                {renderMessages[renderMessages.length - 1].role === "assistant"
+                  ? "New response from FinX AI"
+                  : "Message sent"}
+              </span>
+            )}
+          </div>
 
-        {/* Accessible live region for new messages */}
-        <div aria-live="polite" aria-atomic="false" className="sr-only">
-          {hasMessages && (
-            <span>
-              {renderMessages[renderMessages.length - 1].role === "assistant"
-                ? "New response from FinX AI"
-                : "Message sent"}
-            </span>
+          {!hasMessages && (
+            <ChatWelcome mode={chatMode} onSuggestionClick={handleSend} />
           )}
-        </div>
 
-        {hasMessages && (
-          <div className="pb-4">
-            {renderMessages.map((message, index) => (
-              <MemoizedMessage
-                key={message.id}
-                messageId={message.id}
-                index={index}
-                role={message.role}
-                content={message.content}
-                streaming={message.streaming}
-                reasoning={message.reasoning}
-                toolCalls={message.toolCalls}
-                memberRuns={message.memberRuns}
-                runMetrics={message.runMetrics}
-                knowledgeData={message.knowledgeData}
-                chartData={message.chartData}
-                onSuggestionClick={handleSend}
-                onMemberClick={handleMemberClick}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Error with retry */}
-        {agentError && (
-          <div className="mx-auto max-w-3xl px-4 py-3 animate-message-in">
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">Something went wrong</p>
-                  <p className="mt-1 truncate text-xs opacity-70">
-                    {agentError.message || "Please try again."}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRetry}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/15 active:scale-95"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Retry
-                </button>
-              </div>
+          {hasMessages && (
+            <div className="pb-4">
+              {renderMessages.map((message, index) => (
+                <MemoizedMessage
+                  key={message.id}
+                  messageId={message.id}
+                  index={index}
+                  role={message.role}
+                  content={message.content}
+                  streaming={message.streaming}
+                  reasoning={message.reasoning}
+                  toolCalls={message.toolCalls}
+                  memberRuns={message.memberRuns}
+                  knowledgeData={message.knowledgeData}
+                  chartData={message.chartData}
+                  citations={message.citations}
+                  activity={message.activity}
+                  onSuggestionClick={handleSend}
+                  onMemberClick={handleMemberClick}
+                  onCitationClick={handleCitationClick}
+                />
+              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loading indicator */}
-        {showLoader && (
-          <div className="px-4 py-5 bg-gradient-to-r from-muted/30 via-muted/10 to-transparent animate-message-in">
-            <div className="mx-auto flex max-w-3xl gap-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/20 to-blue-500/20 ring-1 ring-primary/15 shadow-sm shadow-primary/5 animate-pulse-ring">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              </div>
-              <div className="flex items-center gap-2.5 pt-1.5">
-                <span className="text-xs font-medium text-muted-foreground/70">FinX AI is thinking</span>
-                <div className="flex items-center gap-0.5">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/40 [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/40 [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/40" />
+          {/* Error with retry */}
+          {agentError && (
+            <div className="mx-auto max-w-[var(--chat-max-width,760px)] px-4 py-3 animate-message-in">
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">Something went wrong</p>
+                    <p className="mt-1 truncate text-xs opacity-70">
+                      {agentError.message || "Please try again."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/15 active:scale-95"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Retry
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div ref={bottomRef} className="h-4" />
+          {/* Typing / thinking indicator */}
+          {showLoader && (
+            <div className="px-4 py-5 animate-message-in">
+              <div className="mx-auto flex max-w-[var(--chat-max-width,760px)] gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                </div>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="text-[0.8125rem] font-medium text-muted-foreground/60">FinX AI is thinking</span>
+                  <div className="flex items-center gap-0.5">
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-primary/40 [animation-delay:-0.3s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-primary/40 [animation-delay:-0.15s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-primary/40" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Stop generating bar — inside scroll area */}
-        {isAgentBusy && (
-          <div className="flex justify-center py-2">
+          <div ref={bottomRef} className="h-4" />
+        </ScrollArea>
+
+        {/* ── Scroll to bottom FAB ─────────────────────────────── */}
+        {showScrollBtn && (
+          <div className="absolute bottom-[calc(var(--composer-height,130px)+8px)] left-1/2 z-10 -translate-x-1/2">
             <button
               type="button"
-              onClick={stop}
-              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive active:scale-95"
-              aria-label="Stop generating"
+              onClick={scrollToBottom}
+              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg shadow-black/5 backdrop-blur-md transition-all hover:bg-accent hover:text-foreground hover:shadow-xl active:scale-95 animate-scale-in"
+              aria-label="Scroll to bottom"
             >
-              <Square className="h-3 w-3" />
-              Stop generating
+              <ArrowDown className="h-3 w-3" />
+              <span className="hidden sm:inline">New messages</span>
             </button>
           </div>
         )}
 
-        {/* Chat input — inside scroll area, unified block */}
-        <div className="sticky bottom-0 z-10 border-t border-border/10 bg-background/90 px-3 py-2.5 backdrop-blur-md sm:px-4 sm:py-3">
-          <div className="mx-auto max-w-3xl">
+        {/* ── Composer — fixed below the scroll area, never scrolls away ── */}
+        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3 shadow-[0_-1px_3px_0_rgba(0,0,0,0.04)] sm:px-5 sm:py-4">
+          <div className="mx-auto max-w-[var(--chat-max-width,760px)]">
+            {/* Mode switcher row */}
             <div className="mb-2 flex items-center justify-between">
               <ChatModeSwitcher
                 mode={chatMode}
                 onModeChange={handleModeSwitch}
                 isDisabled={isAgentBusy}
               />
+              {/* Stop generating — inline with mode switcher */}
+              {isAgentBusy && (
+                <button
+                  type="button"
+                  onClick={stop}
+                  className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive active:scale-95"
+                  aria-label="Stop generating"
+                >
+                  <Square className="h-3 w-3" />
+                  Stop
+                </button>
+              )}
             </div>
+
             <ChatInput
               value={input}
               onChange={setInput}
@@ -769,52 +410,54 @@ export function ChatContainer({
             />
           </div>
         </div>
-      </ScrollArea>
-
-      {/* Scroll to bottom FAB */}
-      {showScrollBtn && (
-        <div className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2 sm:bottom-24">
-          <button
-            type="button"
-            onClick={scrollToBottom}
-            className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg shadow-black/5 backdrop-blur-md transition-all hover:bg-accent hover:text-foreground hover:shadow-xl active:scale-95 animate-scale-in"
-            aria-label="Scroll to bottom"
-          >
-            <ArrowDown className="h-3 w-3" />
-            <span className="hidden sm:inline">New messages</span>
-          </button>
-        </div>
-      )}
       </div>
 
-      {/* ── Right-side agent detail panel ──────────────────────── */}
-      {selectedMember && (
-        <div className="hidden w-[380px] shrink-0 lg:block xl:w-[420px]">
+      {/* ── Right-side contextual panel (agent detail OR source preview) ── */}
+      <div
+        className={cn(
+          "hidden shrink-0 overflow-hidden border-l border-border/60 transition-[width] duration-200 ease-out lg:block",
+          selectedMember || selectedCitation ? "w-[380px] xl:w-[420px]" : "w-0 border-l-0"
+        )}
+      >
+        {selectedMember && (
           <AgentDetailSidePanel
             member={selectedMember}
             onClose={handleClosePanel}
           />
-        </div>
-      )}
+        )}
+        {selectedCitation && !selectedMember && (
+          <SourcePreviewPanel
+            citation={selectedCitation}
+            allCitations={selectedCitationAllSources}
+            onClose={handleCloseSourcePanel}
+            onSelectCitation={(c) => {
+              setSelectedCitation(c);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-// ── Memoized message wrapper (avoids re-rendering unchanged messages) ──
+// ── Memoized message wrapper ──────────────────────────────────────
+
 interface MemoizedMessageProps {
   messageId: string;
   index: number;
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
-  reasoning?: ReasoningData;
-  toolCalls?: ToolCallData[];
-  memberRuns?: MemberRunData[];
-  runMetrics?: RunMetrics;
+  reasoning?: import("@/types").ReasoningData;
+  toolCalls?: import("@/types").ToolCallData[];
+  memberRuns?: import("@/types").MemberRunData[];
   knowledgeData?: import("./knowledge-panel").KnowledgeData | null;
   chartData?: import("./chart-block").ChartSpec | null;
+  citations?: import("@/types").CitationData[];
+  activity?: import("@/types").ActivityData;
   onSuggestionClick: (text: string) => void;
   onMemberClick?: (member: MemberRunData, messageId: string) => void;
+  onCitationClick?: (citation: import("@/types").CitationData, allCitations: import("@/types").CitationData[]) => void;
 }
 
 const MemoizedMessage = memo(function MemoizedMessage({
@@ -826,11 +469,13 @@ const MemoizedMessage = memo(function MemoizedMessage({
   reasoning,
   toolCalls,
   memberRuns,
-  runMetrics,
   knowledgeData,
   chartData,
+  citations,
+  activity,
   onSuggestionClick,
   onMemberClick,
+  onCitationClick,
 }: MemoizedMessageProps) {
   return (
     <div
@@ -845,11 +490,13 @@ const MemoizedMessage = memo(function MemoizedMessage({
         reasoning={reasoning}
         toolCalls={toolCalls}
         memberRuns={memberRuns}
-        runMetrics={runMetrics}
         knowledgeData={knowledgeData}
         chartData={chartData}
+        citations={citations}
+        activity={activity}
         onSuggestionClick={onSuggestionClick}
         onMemberClick={onMemberClick}
+        onCitationClick={onCitationClick}
       />
     </div>
   );

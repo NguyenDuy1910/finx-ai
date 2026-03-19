@@ -4,6 +4,36 @@ import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 
 export const maxDuration = 180;
 
+// Known tool names used by the company-knowledge agent for knowledge retrieval
+const KNOWLEDGE_SEARCH_TOOLS = new Set(["search_knowledge", "search_knowledge_base", "retrieve_documents"]);
+
+/**
+ * Parse the <citations>[...json...]</citations> block appended by the
+ * backend post-hook, returning the parsed array and the cleaned content.
+ */
+function extractCitationsBlock(content: string): {
+  citations: Array<Record<string, unknown>>;
+  cleanedContent: string;
+} {
+  const tagStart = content.lastIndexOf("<citations>");
+  const tagEnd = content.lastIndexOf("</citations>");
+  if (tagStart === -1 || tagEnd === -1 || tagEnd < tagStart) {
+    return { citations: [], cleanedContent: content };
+  }
+
+  const jsonStr = content.slice(tagStart + "<citations>".length, tagEnd);
+  let citations: Array<Record<string, unknown>> = [];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed)) citations = parsed;
+  } catch {
+    // Malformed block — ignore citations but still clean up the tag
+  }
+
+  const cleanedContent = content.slice(0, tagStart).trimEnd();
+  return { citations, cleanedContent };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -171,6 +201,21 @@ export async function POST(req: NextRequest) {
                   const toolName = (tool?.tool_name as string) || "unknown";
                   toolCallCounter++;
                   const tcId = (tool?.tool_call_id as string) || `tc-${toolCallCounter}`;
+
+                  // Emit activity status for knowledge search tools
+                  if (KNOWLEDGE_SEARCH_TOOLS.has(toolName)) {
+                    const toolArgs = (tool?.tool_args as Record<string, unknown>) || {};
+                    const query = (toolArgs.query as string) || (toolArgs.q as string) || "";
+                    writer.write({
+                      type: "data-activity" as `data-${string}`,
+                      data: {
+                        status: "searching",
+                        query,
+                        timestamp: Date.now(),
+                      },
+                    });
+                  }
+
                   writer.write({
                     type: "data-tool-call-started" as `data-${string}`,
                     data: {
@@ -187,6 +232,18 @@ export async function POST(req: NextRequest) {
                   const toolName = (tool?.tool_name as string) || "unknown";
                   const resultStr = (tool?.result as string) || "";
                   const tcId = (tool?.tool_call_id as string) || `tc-${toolCallCounter}`;
+
+                  // Emit activity done for knowledge search tools
+                  if (KNOWLEDGE_SEARCH_TOOLS.has(toolName)) {
+                    writer.write({
+                      type: "data-activity" as `data-${string}`,
+                      data: {
+                        status: "done",
+                        timestamp: Date.now(),
+                      },
+                    });
+                  }
+
                   writer.write({
                     type: "data-tool-call-completed" as `data-${string}`,
                     data: {
@@ -203,6 +260,14 @@ export async function POST(req: NextRequest) {
                   const tool = parsed.tool as Record<string, unknown> | undefined;
                   const toolName = (tool?.tool_name as string) || "unknown";
                   const tcId = (tool?.tool_call_id as string) || `tc-${toolCallCounter}`;
+
+                  if (KNOWLEDGE_SEARCH_TOOLS.has(toolName)) {
+                    writer.write({
+                      type: "data-activity" as `data-${string}`,
+                      data: { status: "done", timestamp: Date.now() },
+                    });
+                  }
+
                   writer.write({
                     type: "data-tool-call-completed" as `data-${string}`,
                     data: {
@@ -242,18 +307,43 @@ export async function POST(req: NextRequest) {
                 }
 
                 case "RunCompleted": {
-                  if (!textStarted && parsed.content) {
-                    const content = (parsed.content as string).trim();
-                    if (content) {
+                  const rawContent = (parsed.content as string) || "";
+
+                  // Extract citations block before deciding what text to emit
+                  const { citations, cleanedContent } = extractCitationsBlock(rawContent);
+
+                  // If text wasn't already streamed during RunContent events,
+                  // emit the cleaned content now (before closing the text part)
+                  if (!textStarted && cleanedContent) {
+                    const trimmed = cleanedContent.trim();
+                    if (trimmed) {
                       writer.write({ type: "text-start", id: textPartId });
                       textStarted = true;
-                      const chunks = content.split(/(\n\n)/);
+                      const chunks = trimmed.split(/(\n\n)/);
                       for (const chunk of chunks) {
                         if (chunk) {
                           writer.write({ type: "text-delta", id: textPartId, delta: chunk });
                         }
                       }
                     }
+                  }
+
+                  // Emit citations BEFORE text-end so they land in the same message
+                  for (const citation of citations) {
+                    writer.write({
+                      type: "data-citation-added" as `data-${string}`,
+                      data: {
+                        id: (citation.id as string) || crypto.randomUUID(),
+                        title: (citation.title as string) || "",
+                        sourceType: (citation.source_type as string) || "unknown",
+                        snippet: (citation.snippet as string) || "",
+                        content: (citation.content as string) || "",
+                        page: citation.page ?? undefined,
+                        url: (citation.url as string) || undefined,
+                        score: typeof citation.score === "number" ? citation.score : undefined,
+                        index: typeof citation.index === "number" ? citation.index : undefined,
+                      },
+                    });
                   }
 
                   if (parsed.session_id) {

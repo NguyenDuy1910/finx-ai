@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useMemo, memo, useRef, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Bot, User, Copy, Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { User, Copy, Check, Sparkles, Search, BookOpen, Loader2 } from "lucide-react";
 import { SQLBlock } from "./sql-block";
 import { MarkdownContent } from "./markdown-content";
 import { AgentDelegationBlock } from "./agent-delegation-block";
 import { ToolCallList } from "./tool-call-block";
-import { RunMetricsBlock } from "./run-metrics-block";
 import { KnowledgePanel, type KnowledgeData } from "./knowledge-panel";
 import { ChartBlock, parseChartSpecFromToolCalls, type ChartSpec } from "./chart-block";
+import { CitationPanel } from "./citation-panel";
 import { Badge } from "@/components/ui/badge";
+import { ThinkingBlock } from "./thinking-block";
 import { useClipboard } from "@/hooks/use-clipboard";
-import { INTENT_LABELS, ToolCallData, ReasoningData, MemberRunData, RunMetrics } from "@/types";
+import { INTENT_LABELS, ToolCallData, ReasoningData, MemberRunData, CitationData, ActivityData } from "@/types";
 
 interface MessageMetadata {
   intent?: string;
@@ -34,11 +35,13 @@ interface ChatMessageProps {
   reasoning?: ReasoningData;
   toolCalls?: ToolCallData[];
   memberRuns?: MemberRunData[];
-  runMetrics?: RunMetrics;
   knowledgeData?: KnowledgeData | null;
   chartData?: ChartSpec | null;
+  citations?: CitationData[];
+  activity?: ActivityData;
   onSuggestionClick?: (suggestion: string) => void;
   onMemberClick?: (member: MemberRunData, messageId: string) => void;
+  onCitationClick?: (citation: CitationData, allCitations: CitationData[]) => void;
 }
 
 function IntentBadge({ intent }: { intent: string }) {
@@ -57,6 +60,49 @@ function IntentBadge({ intent }: { intent: string }) {
   );
 }
 
+/** Subtle inline activity indicator shown while streaming. */
+function ActivityStatusRow({
+  activity,
+  streaming,
+}: {
+  activity: ActivityData;
+  streaming: boolean;
+}) {
+  if (!streaming) return null;
+  if (activity.status === "idle" || activity.status === "done") return null;
+
+  const labels: Record<ActivityData["status"], string> = {
+    idle: "",
+    searching: "Searching knowledge base",
+    reading: "Reading sources",
+    reranking: "Reranking results",
+    drafting: "Drafting answer",
+    done: "",
+  };
+
+  const label = labels[activity.status] || "Processing";
+  const query = activity.query;
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.04] px-2.5 py-1.5">
+      {activity.status === "searching" ? (
+        <Search className="h-3 w-3 shrink-0 text-primary/50" />
+      ) : (
+        <BookOpen className="h-3 w-3 shrink-0 text-primary/50" />
+      )}
+      <span className="text-[0.75rem] text-primary/60 font-medium">
+        {label}
+        {query ? (
+          <span className="ml-1 font-normal text-muted-foreground/50">
+            &ldquo;{query.length > 60 ? query.slice(0, 60) + "…" : query}&rdquo;
+          </span>
+        ) : null}
+      </span>
+      <Loader2 className="ml-auto h-2.5 w-2.5 animate-spin text-primary/40" />
+    </div>
+  );
+}
+
 export const ChatMessage = memo(function ChatMessage({
   messageId,
   role,
@@ -66,17 +112,17 @@ export const ChatMessage = memo(function ChatMessage({
   reasoning,
   toolCalls,
   memberRuns,
-  runMetrics,
   knowledgeData,
   chartData,
+  citations,
+  activity,
   onSuggestionClick,
   onMemberClick,
+  onCitationClick,
 }: ChatMessageProps) {
   const isUser = role === "user";
   const { copied, copy } = useClipboard();
 
-  // Wrap onMemberClick to inject the messageId so the parent can
-  // disambiguate members with the same id across different messages.
   const handleMemberClick = useCallback(
     (member: MemberRunData) => {
       if (onMemberClick && messageId) onMemberClick(member, messageId);
@@ -84,7 +130,6 @@ export const ChatMessage = memo(function ChatMessage({
     [onMemberClick, messageId]
   );
 
-  // Extract chart spec from Chart Builder Agent tool calls in member runs
   const resolvedChart = useMemo<ChartSpec | null>(() => {
     if (chartData) return chartData;
     if (!memberRuns) return null;
@@ -94,275 +139,200 @@ export const ChatMessage = memo(function ChatMessage({
         if (spec) return spec;
       }
     }
-    // Also check top-level tool calls
     return parseChartSpecFromToolCalls(toolCalls) ?? null;
   }, [chartData, memberRuns, toolCalls]);
 
-  // Truncate long assistant content unless user expands.
-  // Use a higher threshold when member runs exist (team responses are naturally longer).
   const hasMemberRuns = !isUser && memberRuns && memberRuns.length > 0;
-  const CONTENT_TRUNCATE_THRESHOLD = hasMemberRuns ? 2000 : 600;
-  const isLongContent = !isUser && content.length > CONTENT_TRUNCATE_THRESHOLD;
-  // Auto-expand while streaming OR when just finished streaming (avoid jarring snap)
-  const [contentExpanded, setContentExpanded] = useState(false);
-  const wasStreamingRef = useRef(false);
-  if (streaming) wasStreamingRef.current = true;
-  // Keep expanded until user explicitly collapses — never auto-truncate after streaming
-  const effectiveExpanded = contentExpanded || streaming || wasStreamingRef.current;
-
-  // Truncate at a clean boundary (paragraph / sentence / word) instead of mid-text
-  const displayContent = useMemo(() => {
-    if (isUser || !isLongContent || effectiveExpanded) return content;
-    const rough = content.slice(0, CONTENT_TRUNCATE_THRESHOLD);
-    // Try paragraph break first
-    const paraBreak = rough.lastIndexOf("\n\n");
-    if (paraBreak > CONTENT_TRUNCATE_THRESHOLD * 0.5) return rough.slice(0, paraBreak).trimEnd() + "\n\n…";
-    // Then sentence break
-    const sentenceBreak = Math.max(rough.lastIndexOf(". "), rough.lastIndexOf(".\n"));
-    if (sentenceBreak > CONTENT_TRUNCATE_THRESHOLD * 0.4) return rough.slice(0, sentenceBreak + 1).trimEnd() + " …";
-    // Fallback: word boundary
-    const wordBreak = rough.lastIndexOf(" ");
-    if (wordBreak > CONTENT_TRUNCATE_THRESHOLD * 0.3) return rough.slice(0, wordBreak).trimEnd() + " …";
-    return rough.trimEnd() + "…";
-  }, [content, isUser, isLongContent, effectiveExpanded, CONTENT_TRUNCATE_THRESHOLD]);
-
-  // When the user clicks "Show less"/"Show more"
-  const handleToggleExpand = useCallback(() => {
-    if (effectiveExpanded) {
-      // Currently expanded → collapse: clear both flags so truncation kicks in
-      wasStreamingRef.current = false;
-      setContentExpanded(false);
-    } else {
-      // Currently collapsed → expand
-      setContentExpanded(true);
-    }
-  }, [effectiveExpanded]);
+  const hasCitations = !isUser && citations && citations.length > 0;
+  const showActivity = !isUser && streaming && activity && activity.status !== "idle" && activity.status !== "done";
 
   return (
     <div
       className={cn(
-        "group relative px-3 py-4 transition-colors sm:px-4 sm:py-5",
-        isUser
-          ? "bg-transparent"
-          : "border-b border-border/5 bg-gradient-to-r from-muted/30 via-muted/10 to-transparent"
+        "group relative animate-message-in",
+        isUser ? "px-4 py-4 sm:px-6" : "px-4 py-5 sm:px-6 sm:py-6"
       )}
       role="article"
       aria-label={`${isUser ? "Your" : "FinX AI"} message`}
     >
-      <div className="mx-auto flex max-w-3xl gap-3 sm:gap-4">
-        {/* Avatar */}
-        <div className="flex shrink-0 pt-0.5">
-          <div
-            className={cn(
-              "flex items-center justify-center rounded-full transition-shadow",
-              isUser
-                ? "h-7 w-7 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm sm:h-8 sm:w-8"
-                : "h-7 w-7 bg-gradient-to-br from-violet-500/20 to-blue-500/20 text-primary ring-1 ring-primary/15 shadow-sm shadow-primary/5 sm:h-8 sm:w-8"
-            )}
-          >
-            {isUser ? (
-              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            ) : (
-              <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            )}
+      {isUser ? (
+        /* ── User message — clean right-aligned bubble ── */
+        <div className="mx-auto flex max-w-[var(--chat-max-width,760px)] items-start justify-end gap-3">
+          <div className="flex max-w-[72%] flex-col items-end gap-1">
+            <div className="rounded-2xl rounded-tr-md bg-primary px-4 py-3 shadow-sm">
+              <p className="whitespace-pre-wrap text-[0.9375rem] leading-[1.65] text-primary-foreground">
+                {content}
+              </p>
+            </div>
+          </div>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted ring-1 ring-border mt-0.5">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         </div>
-
-        {/* Content */}
-        <div className="min-w-0 flex-1 overflow-hidden space-y-3 sm:space-y-3.5">
-          {/* Role label */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">
-              {isUser ? "You" : "FinX AI"}
+      ) : (
+        /* ── Assistant message ── */
+        <div className="mx-auto max-w-[var(--chat-max-width,760px)]">
+          {/* Role header */}
+          <div className="mb-3 flex items-center gap-2.5">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+              <Sparkles className="h-3 w-3" />
+            </div>
+            <span className="text-[0.75rem] font-semibold text-foreground/60 tracking-[-0.005em]">
+              FinX AI
             </span>
-            {!isUser && metadata?.intent && (
-              <IntentBadge intent={metadata.intent} />
-            )}
-            {!isUser && metadata?.database && (
-              <span className="text-[10px] text-muted-foreground/60">
-                {metadata.database}
+            {metadata?.intent && <IntentBadge intent={metadata.intent} />}
+            {metadata?.database && (
+              <span className="text-[0.6875rem] font-medium text-muted-foreground/40 tabular-nums ml-0.5">
+                · {metadata.database}
               </span>
             )}
           </div>
 
-          {/* Agent delegation (team member runs) */}
-          {!isUser && memberRuns && memberRuns.length > 0 && (
-            <AgentDelegationBlock members={memberRuns} onMemberClick={handleMemberClick} />
-          )}
+          {/* Content area */}
+          <div className="ml-[2.125rem] space-y-3">
+            {/* Reasoning / thinking */}
+            {reasoning && (reasoning.content || reasoning.isActive) && (
+              <ThinkingBlock content={reasoning.content} isActive={reasoning.isActive} />
+            )}
 
-          {/* Tool calls (agent mode — no member delegation) */}
-          {!isUser && toolCalls && toolCalls.length > 0 && (!memberRuns || memberRuns.length === 0) && (
-            <ToolCallList toolCalls={toolCalls} />
-          )}
+            {/* Activity status — only while streaming */}
+            {showActivity && (
+              <ActivityStatusRow activity={activity!} streaming={!!streaming} />
+            )}
 
-          {/* Message content */}
-          {isUser ? (
-            <div className="inline-block max-w-[85%] rounded-2xl rounded-tl-sm bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 shadow-sm">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">
-                {content}
-              </p>
-            </div>
-          ) : content ? (
-            hasMemberRuns ? (
-              /* ── Team Final Response — polished summary card ── */
-              <div className="team-summary-card mt-2 overflow-hidden rounded-2xl border border-primary/12 bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent shadow-md ring-1 ring-primary/5 transition-all">
-                {/* Header bar */}
-                <div className="flex items-center gap-2.5 border-b border-primary/10 bg-gradient-to-r from-primary/[0.06] to-transparent px-4 py-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 ring-1 ring-violet-500/10">
-                    <Sparkles className="h-3.5 w-3.5 text-primary/80" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-foreground/80 tracking-wide">
-                      FinX Analysis
+            {/* Agent delegation (team member runs) */}
+            {memberRuns && memberRuns.length > 0 && (
+              <AgentDelegationBlock members={memberRuns} onMemberClick={handleMemberClick} />
+            )}
+
+            {/* Tool calls (agent mode only, not team) */}
+            {toolCalls && toolCalls.length > 0 && !hasMemberRuns && (
+              <ToolCallList toolCalls={toolCalls} />
+            )}
+
+            {/* Message content */}
+            {content ? (
+              hasMemberRuns ? (
+                /* ── Team response card ── */
+                <div className="rounded-xl border border-border bg-surface-raised overflow-hidden">
+                  <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+                    <span className="text-[0.8125rem] font-semibold text-foreground/75">
+                      Analysis
                     </span>
-                    <span className="text-[10px] text-muted-foreground/50">
-                      Synthesized from {memberRuns!.length} agent{memberRuns!.length > 1 ? "s" : ""}
+                    <span className="text-[0.75rem] text-muted-foreground/50">
+                      from {memberRuns!.length} agent{memberRuns!.length > 1 ? "s" : ""}
                     </span>
+                    {streaming && (
+                      <span className="ml-auto flex items-center gap-1 text-[0.6875rem] text-primary/50">
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-primary/50" />
+                        Streaming
+                      </span>
+                    )}
                   </div>
-                  {!streaming && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60" />
-                      <span className="text-[10px] font-medium text-emerald-600/60">Complete</span>
-                    </div>
-                  )}
-                  {streaming && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60" />
-                      <span className="text-[10px] font-medium text-primary/60">Streaming</span>
-                    </div>
-                  )}
+                  <div className="min-w-0 max-w-full overflow-hidden px-4 py-4">
+                    <MarkdownContent content={content} className="team-summary-content" />
+                    {streaming && (
+                      <span
+                        className="ml-0.5 inline-block h-[1.1em] w-1.5 animate-pulse rounded-sm bg-primary/70 align-text-bottom"
+                        aria-label="Typing indicator"
+                      />
+                    )}
+                  </div>
                 </div>
-                {/* Body */}
-                <div className="team-summary-body min-w-0 max-w-full overflow-hidden px-4 py-4 text-sm leading-relaxed">
-                  <MarkdownContent content={displayContent} className="team-summary-content" />
+              ) : (
+                /* ── Standard assistant response ── */
+                <div className="min-w-0 max-w-full overflow-hidden">
+                  <MarkdownContent
+                    content={content}
+                    citations={citations}
+                    onCitationClick={onCitationClick}
+                  />
                   {streaming && (
                     <span
-                      className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-primary align-text-bottom"
+                      className="ml-0.5 inline-block h-[1.1em] w-1.5 animate-pulse rounded-sm bg-primary/70 align-text-bottom"
                       aria-label="Typing indicator"
                     />
                   )}
-                  {/* Show more / less toggle */}
-                  {isLongContent && !streaming && (
-                    <button
-                      type="button"
-                      onClick={handleToggleExpand}
-                      className="mt-3 flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.04] px-3 py-1.5 text-[11px] font-medium text-primary/70 shadow-sm transition-all hover:border-primary/25 hover:bg-primary/8 hover:text-primary hover:shadow-md"
-                    >
-                      {effectiveExpanded ? (
-                        <>
-                          <ChevronUp className="h-3 w-3" />
-                          Show less
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="h-3 w-3" />
-                          Show full analysis
-                        </>
-                      )}
-                    </button>
-                  )}
                 </div>
-              </div>
-            ) : (
-              /* ── Standard assistant response (no member delegation) ── */
-              <div className="min-w-0 max-w-full overflow-hidden text-sm leading-relaxed">
-                <MarkdownContent content={displayContent} />
-                {streaming && (
-                  <span
-                    className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-primary align-text-bottom"
-                    aria-label="Typing indicator"
-                  />
-                )}
-                {isLongContent && !streaming && (
+              )
+            ) : null}
+
+            {/* SQL block */}
+            {metadata?.sql && (
+              <SQLBlock
+                sql={metadata.sql}
+                tablesUsed={metadata.tables_used ?? []}
+                isValid={metadata.is_valid ?? false}
+                errors={metadata.errors ?? []}
+                warnings={metadata.warnings ?? []}
+              />
+            )}
+
+            {/* Chart visualization */}
+            {resolvedChart && <ChartBlock spec={resolvedChart} />}
+
+            {/* Knowledge panel */}
+            {knowledgeData && <KnowledgePanel data={knowledgeData} />}
+
+            {/* Citations */}
+            {hasCitations && (
+              <CitationPanel
+                citations={citations!}
+                onCitationClick={onCitationClick ? (c) => onCitationClick(c, citations!) : undefined}
+              />
+            )}
+
+            {/* Follow-up suggestions */}
+            {metadata?.suggestions && metadata.suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {metadata.suggestions.map((suggestion, i) => (
                   <button
+                    key={i}
                     type="button"
-                    onClick={handleToggleExpand}
-                    className="mt-1.5 flex items-center gap-1 rounded-full border border-border/40 px-2.5 py-1 text-[11px] font-medium text-primary/70 transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    onClick={() => onSuggestionClick?.(suggestion)}
+                    className="rounded-lg border border-border bg-background px-3 py-1.5 text-[0.8125rem] text-foreground/65 transition-all hover:border-border-strong hover:bg-accent hover:text-foreground active:scale-95"
                   >
-                    {effectiveExpanded ? (
-                      <>
-                        <ChevronUp className="h-3 w-3" />
-                        Show less
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-3 w-3" />
-                        Show full response ({content.length.toLocaleString()} chars)
-                      </>
-                    )}
+                    {suggestion}
                   </button>
-                )}
+                ))}
               </div>
-            )
-          ) : null}
+            )}
+          </div>
 
-          {/* SQL block */}
-          {metadata?.sql && (
-            <SQLBlock
-              sql={metadata.sql}
-              tablesUsed={metadata.tables_used ?? []}
-              isValid={metadata.is_valid ?? false}
-              errors={metadata.errors ?? []}
-              warnings={metadata.warnings ?? []}
-            />
-          )}
-
-          {/* Chart visualization */}
-          {!isUser && resolvedChart && (
-            <ChartBlock spec={resolvedChart} />
-          )}
-
-          {/* Knowledge panel */}
-          {!isUser && knowledgeData && (
-            <KnowledgePanel data={knowledgeData} />
-          )}
-
-          {/* Run metrics (tokens, timing) */}
-          {!isUser && runMetrics && (
-            <RunMetricsBlock metrics={runMetrics} />
-          )}
-
-          {/* Suggestions */}
-          {metadata?.suggestions && metadata.suggestions.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-2 sm:gap-2">
-              {metadata.suggestions.map((suggestion, i) => (
+          {/* Message actions — on hover */}
+          {content && (
+            <div className="chat-message-actions ml-[2.125rem] mt-2 flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => copy(content)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[0.75rem] transition-all",
+                  copied
+                    ? "text-success"
+                    : "text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground"
+                )}
+                title={copied ? "Copied!" : "Copy response"}
+                aria-label={copied ? "Copied to clipboard" : "Copy response"}
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                <span>{copied ? "Copied" : "Copy"}</span>
+              </button>
+              {hasCitations && onCitationClick && (
                 <button
-                  key={i}
                   type="button"
-                  onClick={() => onSuggestionClick?.(suggestion)}
-                  className="cursor-pointer rounded-full border border-primary/15 bg-primary/[0.03] px-3 py-1.5 text-xs text-primary/80 transition-all hover:border-primary/30 hover:bg-primary/8 hover:text-primary hover:shadow-sm active:scale-95"
+                  onClick={() => onCitationClick(citations![0], citations!)}
+                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[0.75rem] text-muted-foreground/40 transition-all hover:bg-accent hover:text-muted-foreground"
+                  title="View sources"
+                  aria-label="View sources"
                 >
-                  {suggestion}
+                  <BookOpen className="h-3 w-3" />
+                  <span>Sources</span>
                 </button>
-              ))}
+              )}
             </div>
           )}
         </div>
-
-        {/* Copy button (assistant only) */}
-        {!isUser && content && (
-          <div className="shrink-0 opacity-0 transition-all duration-200 group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={() => copy(content)}
-              className={cn(
-                "rounded-lg p-1.5 transition-all",
-                copied
-                  ? "text-emerald-500 bg-emerald-500/10"
-                  : "text-muted-foreground/50 hover:bg-accent hover:text-foreground"
-              )}
-              title={copied ? "Copied!" : "Copy message"}
-              aria-label={copied ? "Copied to clipboard" : "Copy message"}
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 });

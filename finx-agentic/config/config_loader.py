@@ -60,9 +60,10 @@ class AtlassianConfig:
 class AIModelConfig:
     """AI Model Configuration"""
 
-    provider: str = ""  # google, openai, anthropic
+    provider: str = ""  # google, openai, anthropic, 9router
     model_id: str = ""
     api_key: str = ""
+    base_url: Optional[str] = None
     temperature: float = 0.7
     max_tokens: int = 2000
 
@@ -82,12 +83,13 @@ class AgentModelConfig:
     max_tokens: int = 2000
     description: str = ""
 
-    def to_ai_model_config(self, api_key: str = "") -> AIModelConfig:
-        """Convert to AIModelConfig, inheriting the API key from global config"""
+    def to_ai_model_config(self, api_key: str = "", base_url: Optional[str] = None) -> AIModelConfig:
+        """Convert to AIModelConfig, inheriting the API key and base_url from global config"""
         return AIModelConfig(
             provider=self.provider,
             model_id=self.model_id,
             api_key=api_key,
+            base_url=base_url,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
@@ -143,10 +145,45 @@ class AppConfig:
         """
         Get model config for a specific agent.
         Falls back to global ai_model config if agent not found in team_workflow.
+
+        When the per-agent provider differs from the global provider (e.g. agent
+        uses '9router' but global is 'openai'), the correct credentials are
+        resolved from environment variables automatically.
         """
-        if agent_name in self.team_workflow:
-            return self.team_workflow[agent_name].to_ai_model_config(api_key=self.ai_model.api_key)
-        return None
+        if agent_name not in self.team_workflow:
+            return None
+
+        agent_cfg = self.team_workflow[agent_name]
+        agent_provider = agent_cfg.provider.lower()
+        global_provider = self.ai_model.provider.lower()
+
+        # If the agent uses the same provider as global, inherit credentials
+        if agent_provider == global_provider or not agent_provider:
+            return agent_cfg.to_ai_model_config(
+                api_key=self.ai_model.api_key,
+                base_url=self.ai_model.base_url,
+            )
+
+        # Agent uses a different provider — resolve credentials from env
+        api_key, base_url = self._resolve_provider_credentials(agent_provider)
+        return agent_cfg.to_ai_model_config(api_key=api_key, base_url=base_url)
+
+    @staticmethod
+    def _resolve_provider_credentials(provider: str) -> tuple[str, Optional[str]]:
+        """Resolve API key and base_url for a given provider from env vars."""
+        provider = provider.lower()
+        if provider == "9router":
+            return (
+                os.getenv("NINE_ROUTER_API_KEY", ""),
+                os.getenv("NINE_ROUTER_BASE_URL", ""),
+            )
+        if provider == "openai":
+            return os.getenv("OPENAI_API_KEY", ""), None
+        if provider == "anthropic":
+            return os.getenv("ANTHROPIC_API_KEY", ""), None
+        if provider in ("google", "gemini"):
+            return os.getenv("GOOGLE_API_KEY", ""), None
+        return "", None
 
 
 class ConfigLoader:
@@ -347,6 +384,13 @@ class ConfigLoader:
             config.ai_model.api_key = os.getenv("OPENAI_API_KEY", "")
         elif config.ai_model.provider == "anthropic":
             config.ai_model.api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        elif config.ai_model.provider == "9router":
+            config.ai_model.api_key = os.getenv("NINE_ROUTER_API_KEY", "")
+            config.ai_model.base_url = os.getenv("NINE_ROUTER_BASE_URL", "")
+            # Allow NINE_ROUTER_MODEL to override AI_MODEL_ID
+            nine_router_model = os.getenv("NINE_ROUTER_MODEL", "")
+            if nine_router_model:
+                config.ai_model.model_id = nine_router_model
 
         # Neo4j Configuration
         config.neo4j.uri = os.getenv("NEO4J_URI", config.neo4j.uri)

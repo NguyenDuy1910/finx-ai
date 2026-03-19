@@ -2,46 +2,108 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ─────────────────────────────────────────────────────────────
+   FINX AI — Design Token System
+   Light-first, enterprise-grade, warm blue-slate palette.
+   Uses OKLCH for perceptually uniform, maintainable colors.
+   ───────────────────────────────────────────────────────────── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* ── Surfaces ──────────────────────────────────────────────── */
+  /* Background: warm off-white, not clinical pure white */
+  --background: oklch(0.978 0.004 252);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(0.992 0.003 252);
+
+  /* ── Foreground ────────────────────────────────────────────── */
+  --foreground: oklch(0.148 0.012 258);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.45 0.18 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.96 0.005 260);
-  --secondary-foreground: oklch(0.25 0 0);
-  --muted: oklch(0.96 0.005 260);
-  --muted-foreground: oklch(0.55 0.01 260);
-  --accent: oklch(0.94 0.01 260);
-  --accent-foreground: oklch(0.25 0 0);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0.005 260);
-  --input: oklch(0.87 0.008 260);
-  --ring: oklch(0.45 0.18 260);
-  --sidebar-width: 280px;
-  --header-height: 56px;
+  --card-foreground: oklch(0.148 0.012 258);
+
+  /* ── Primary brand: professional indigo-blue ─────────────────
+     Trustworthy, premium, enterprise. Not consumer-blue.       */
+  --primary: oklch(0.44 0.165 252);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-subtle: oklch(0.955 0.022 252);
+  --primary-hover: oklch(0.39 0.165 252);
+
+  /* ── Secondary / neutral surfaces ───────────────────────────── */
+  --secondary: oklch(0.965 0.007 252);
+  --secondary-foreground: oklch(0.255 0.012 258);
+  --muted: oklch(0.962 0.006 252);
+  --muted-foreground: oklch(0.52 0.012 258);
+  --accent: oklch(0.955 0.008 252);
+  --accent-foreground: oklch(0.22 0.012 258);
+
+  /* ── Semantic colors ─────────────────────────────────────────── */
+  --destructive: oklch(0.53 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.50 0.14 152);
+  --warning: oklch(0.57 0.17 68);
+
+  /* ── Borders & inputs ────────────────────────────────────────── */
+  --border: oklch(0.905 0.007 252);
+  --border-strong: oklch(0.82 0.012 252);
+  --input: oklch(0.905 0.007 252);
+  --ring: oklch(0.44 0.165 252);
+
+  /* ── Sidebar ─────────────────────────────────────────────────── */
+  --sidebar-bg: oklch(0.968 0.007 252);
+  --sidebar-border: oklch(0.9 0.008 252);
+  --sidebar-active-bg: oklch(0.948 0.018 252);
+  --sidebar-active-text: oklch(0.38 0.165 252);
+  --sidebar-hover-bg: oklch(0.958 0.01 252);
+  --sidebar-width: 256px;
+
+  /* ── Layout ─────────────────────────────────────────────────── */
+  --header-height: 52px;
+  --chat-max-width: 760px;
 }
 
 .dark {
-  --background: oklch(0.12 0.01 260);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.15 0.01 260);
-  --card-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.6 0.18 260);
-  --primary-foreground: oklch(0.1 0 0);
-  --secondary: oklch(0.2 0.01 260);
-  --secondary-foreground: oklch(0.9 0 0);
-  --muted: oklch(0.2 0.01 260);
-  --muted-foreground: oklch(0.6 0.01 260);
-  --accent: oklch(0.22 0.015 260);
-  --accent-foreground: oklch(0.9 0 0);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0.01 260);
-  --input: oklch(0.25 0.01 260);
-  --ring: oklch(0.6 0.18 260);
+  /* ── Surfaces — deep navy-gray, NOT pitch-black ──────────────
+     oklch(0.175) ≈ a rich dark surface, like a pro code editor.
+     Much warmer and more premium than pure black.             */
+  --background: oklch(0.177 0.016 257);
+  --surface: oklch(0.207 0.015 257);
+  --surface-raised: oklch(0.235 0.013 256);
+
+  /* ── Foreground ─────────────────────────────────────────────── */
+  --foreground: oklch(0.932 0.006 252);
+  --card: oklch(0.207 0.015 257);
+  --card-foreground: oklch(0.932 0.006 252);
+
+  /* ── Primary — brighter in dark for sufficient contrast ──────── */
+  --primary: oklch(0.625 0.175 252);
+  --primary-foreground: oklch(0.09 0 0);
+  --primary-subtle: oklch(0.245 0.04 252);
+  --primary-hover: oklch(0.665 0.175 252);
+
+  /* ── Neutrals ─────────────────────────────────────────────────── */
+  --secondary: oklch(0.242 0.016 257);
+  --secondary-foreground: oklch(0.875 0.006 252);
+  --muted: oklch(0.237 0.015 257);
+  --muted-foreground: oklch(0.575 0.013 255);
+  --accent: oklch(0.252 0.016 257);
+  --accent-foreground: oklch(0.875 0.006 252);
+
+  /* ── Semantic ─────────────────────────────────────────────────── */
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.62 0.14 152);
+  --warning: oklch(0.64 0.16 68);
+
+  /* ── Borders ──────────────────────────────────────────────────── */
+  --border: oklch(0.278 0.016 257);
+  --border-strong: oklch(0.345 0.018 256);
+  --input: oklch(0.248 0.016 257);
+  --ring: oklch(0.625 0.175 252);
+
+  /* ── Sidebar ──────────────────────────────────────────────────── */
+  --sidebar-bg: oklch(0.157 0.018 258);
+  --sidebar-border: oklch(0.255 0.017 257);
+  --sidebar-active-bg: oklch(0.237 0.026 255);
+  --sidebar-active-text: oklch(0.625 0.175 252);
+  --sidebar-hover-bg: oklch(0.215 0.015 257);
 }
 
 * {
@@ -52,9 +114,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* ── Smooth scrollbar ───────────────────────────────────────── */
@@ -257,20 +321,20 @@ body {
 }
 
 /* ── Team summary card styling ────────────────────────────── */
-/* Enhanced markdown rendering inside the team summary card */
 .team-summary-card {
   container-type: inline-size;
 }
 
 .team-summary-body .team-summary-content {
-  /* Section headings with emoji — make them stand out */
+  /* Section headings — clear visual breaks with balanced spacing */
   & h3,
   & h4,
   & h5 {
     position: relative;
-    padding-top: 0.75rem;
-    margin-top: 1rem;
+    padding-top: 0.875rem;
+    margin-top: 1.125rem;
     border-top: 1px solid oklch(0.5 0.1 260 / 0.06);
+    letter-spacing: -0.01em;
   }
 
   & h3:first-child,
@@ -281,7 +345,7 @@ body {
     border-top: none;
   }
 
-  /* Data tables — better spacing and visual treatment */
+  /* Data tables — full readable cells, no truncation */
   & table {
     font-size: 12px;
     border-radius: 0.5rem;
@@ -296,16 +360,17 @@ body {
   & th {
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: none;
-    color: oklch(0.5 0.1 260 / 0.7);
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    color: oklch(0.5 0.1 260 / 0.65);
   }
 
   & td {
     font-variant-numeric: tabular-nums;
+    max-width: none;
   }
 
-  /* Code blocks (SQL) — tighter */
+  /* Code blocks */
   & pre {
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
@@ -315,31 +380,32 @@ body {
   /* Blockquotes — insight callouts */
   & blockquote {
     border-left-width: 3px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.875rem;
     border-radius: 0 0.5rem 0.5rem 0;
     background: oklch(0.5 0.1 260 / 0.03);
   }
 
-  /* Lists — tighter spacing for data lists */
+  /* Lists */
   & ul,
   & ol {
-    margin-left: 1rem;
+    margin-left: 1.125rem;
     margin-bottom: 0.5rem;
   }
 
   & li {
-    margin-bottom: 0.125rem;
-    line-height: 1.5;
+    margin-bottom: 0.2rem;
+    line-height: 1.6;
   }
 
-  /* Strong text — slightly more prominent */
+  /* Strong text */
   & strong {
-    color: oklch(0.3 0.02 260);
+    color: oklch(0.28 0.02 260);
+    font-weight: 600;
   }
 
-  /* Horizontal rules — section dividers */
+  /* Horizontal rules */
   & hr {
-    margin: 0.75rem 0;
+    margin: 0.875rem 0;
     border-color: oklch(0.5 0.1 260 / 0.08);
   }
 }
@@ -355,7 +421,7 @@ body {
   }
 
   & th {
-    color: oklch(0.7 0.1 260 / 0.7);
+    color: oklch(0.7 0.1 260 / 0.65);
   }
 
   & blockquote {
@@ -363,7 +429,14 @@ body {
   }
 
   & strong {
-    color: oklch(0.85 0.02 260);
+    color: oklch(0.88 0.02 260);
+  }
+}
+
+/* ── Chat message copy button — visible on touch devices ── */
+@media (hover: none) {
+  .chat-message-actions {
+    opacity: 1 !important;
   }
 }
 
@@ -381,6 +454,7 @@ body {
   --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-subtle: var(--primary-subtle);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -389,7 +463,49 @@ body {
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-active-bg: var(--sidebar-active-bg);
+  --color-sidebar-active-text: var(--sidebar-active-text);
+  --color-sidebar-hover-bg: var(--sidebar-hover-bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+}
+
+/* ── Type scale ─────────────────────────────────────────────────
+   Ratio: ~1.2 (minor third) — tight, suitable for dense app UI
+   xs   : 11px  — labels, meta, helper text
+   sm   : 12px  — captions, timestamps, secondary labels
+   base : 14px  — UI chrome labels, badge text
+   md   : 15px  — body copy, message content, input text
+   lg   : 17px  — subheadings inside content
+   xl   : 19px  — content section headings
+   2xl  : 22px  — page / modal headings
+──────────────────────────────────────────────────────────────── */
+:root {
+  --text-xs:   0.6875rem;   /* 11px */
+  --text-sm:   0.75rem;     /* 12px */
+  --text-base: 0.875rem;    /* 14px */
+  --text-md:   0.9375rem;   /* 15px */
+  --text-lg:   1.0625rem;   /* 17px */
+  --text-xl:   1.1875rem;   /* 19px */
+  --text-2xl:  1.375rem;    /* 22px */
+
+  /* Line-heights mapped to roles */
+  --lh-tight:  1.25;   /* headings */
+  --lh-snug:   1.45;   /* subheadings, labels */
+  --lh-body:   1.70;   /* body / message paragraphs */
+  --lh-loose:  1.80;   /* long-form reading */
+
+  /* Letter-spacing */
+  --ls-tight:  -0.015em;  /* headings */
+  --ls-normal:  0em;
+  --ls-wide:    0.02em;   /* caps / labels */
+  --ls-wider:   0.05em;   /* micro labels */
 }

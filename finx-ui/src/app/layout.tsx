@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "FinX AI - Text2SQL Assistant",
-  description: "AI-powered natural language to SQL query assistant",
+  title: "FinX AI — Executive Agent",
+  description: "AI-powered executive agent for fintech data intelligence, knowledge retrieval, and analytics.",
 };
 
 export const viewport: Viewport = {
@@ -25,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${plusJakartaSans.variable} antialiased`}>{children}</body>
     </html>
   );
 }

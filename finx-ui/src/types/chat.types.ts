@@ -49,6 +49,27 @@ export interface MemberRunData {
   reasoning?: ReasoningData;
 }
 
+export interface CitationData {
+  id: string;
+  title: string;
+  sourceType: "confluence" | "qdrant" | "mcp" | "unknown";
+  snippet: string;
+  /** Full document content for rendering in the source panel */
+  content?: string;
+  page?: number | string;
+  url?: string;
+  score?: number;
+  /** 1-based index matching [N] inline citation markers produced by the LLM */
+  index?: number;
+}
+
+export interface ActivityData {
+  status: "idle" | "searching" | "reading" | "reranking" | "drafting" | "done";
+  query?: string;
+  count?: number;
+  timestamp: number;
+}
+
 export interface ChatThread {
   id: string;
   sessionId: string | null;
