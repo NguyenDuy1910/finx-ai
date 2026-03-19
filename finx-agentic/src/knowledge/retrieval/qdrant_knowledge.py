@@ -194,6 +194,7 @@ def _hit_to_document(hit: Any) -> Document:
     title = payload.get("title", "")
     summary = payload.get("summary", "")
     source_uri = payload.get("source_uri", "")
+    source_system = payload.get("source_system", "")
     document_type = payload.get("document_type", "")
     domains: list[str] = payload.get("domains", [])
     language = payload.get("language", "")
@@ -248,6 +249,7 @@ def _hit_to_document(hit: Any) -> Document:
         meta_data={
             "title": title,
             "source_uri": source_uri,
+            "source_system": source_system,
             "source_document_id": source_document_id,
             "document_type": document_type,
             "domains": domains,

@@ -56,51 +56,108 @@ export const MarkdownContent = memo(function MarkdownContent({
 
   /**
    * Walk React children and replace `[N]` text patterns with CitationMarker
-   * components. Only processes direct string children — does not recurse into
-   * nested React elements (citation markers won't be inside code/links).
+   * components. When a `<strong>` element is immediately followed by `[N]`,
+   * wraps both in a highlight span to visually emphasize cited claims.
    */
   const withCitations = useMemo(() => {
     if (!citations || citations.length === 0) return null;
 
     const citationRef = citations; // capture for closures
 
-    return function processChildren(children: React.ReactNode): React.ReactNode {
-      return React.Children.map(children, (child) => {
-        if (typeof child !== "string") return child;
+    /** Replace [N] patterns in a text string with CitationMarker components */
+    function replaceMarkers(text: string, keyPrefix: string): React.ReactNode {
+      const regex = /\[(\d+)\]/g;
+      const parts: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let partIdx = 0;
+      let match: RegExpExecArray | null;
 
-        const regex = /\[(\d+)\]/g;
-        const parts: React.ReactNode[] = [];
-        let lastIndex = 0;
-        let match: RegExpExecArray | null;
+      while ((match = regex.exec(text)) !== null) {
+        const num = parseInt(match[1], 10);
+        if (num < 1 || num > 99) continue;
 
-        while ((match = regex.exec(child)) !== null) {
-          const num = parseInt(match[1], 10);
-          if (num < 1 || num > 99) continue;
-
-          if (match.index > lastIndex) {
-            parts.push(child.slice(lastIndex, match.index));
-          }
-
-          // Resolve citation: prefer matching by explicit index, fall back to positional
-          const resolved =
-            citationRef.find((c) => c.index === num) || citationRef[num - 1];
-
-          parts.push(
-            <CitationMarker
-              key={`cite-${match.index}-${num}`}
-              index={num}
-              citation={resolved}
-              allCitations={citationRef}
-              onClick={onCitationClickRef.current}
-            />
-          );
-          lastIndex = match.index + match[0].length;
+        if (match.index > lastIndex) {
+          parts.push(<React.Fragment key={`${keyPrefix}-t${partIdx++}`}>{text.slice(lastIndex, match.index)}</React.Fragment>);
         }
 
-        if (parts.length === 0) return child;
-        if (lastIndex < child.length) parts.push(child.slice(lastIndex));
-        return <>{parts}</>;
-      });
+        const resolved =
+          citationRef.find((c) => c.index === num) || citationRef[num - 1];
+
+        parts.push(
+          <CitationMarker
+            key={`${keyPrefix}-${match.index}-${num}`}
+            index={num}
+            citation={resolved}
+            allCitations={citationRef}
+            onClick={onCitationClickRef.current}
+          />
+        );
+        lastIndex = match.index + match[0].length;
+      }
+
+      if (parts.length === 0) return null; // no markers found
+      if (lastIndex < text.length) {
+        parts.push(<React.Fragment key={`${keyPrefix}-t${partIdx}`}>{text.slice(lastIndex)}</React.Fragment>);
+      }
+      return <>{parts}</>;
+    }
+
+    return function processChildren(children: React.ReactNode): React.ReactNode {
+      const childArray = React.Children.toArray(children);
+      const result: React.ReactNode[] = [];
+
+      for (let i = 0; i < childArray.length; i++) {
+        const child = childArray[i];
+        const next = i + 1 < childArray.length ? childArray[i + 1] : null;
+
+        // Detect <strong>text</strong>[N] pattern — the LLM bolds cited claims
+        const isStrong =
+          React.isValidElement(child) &&
+          (child.type === "strong" || (child.props as Record<string, unknown>)?.className?.toString().includes("font-semibold"));
+
+        if (isStrong && typeof next === "string" && /^\[(\d+)\]/.test(next)) {
+          // Extract the leading [N] marker(s) from the next text node
+          const markerMatch = next.match(/^(\[(\d+)\])+/);
+          const markerText = markerMatch ? markerMatch[0] : "";
+          const remainder = next.slice(markerText.length);
+          const markers = replaceMarkers(markerText, `ev-${i}`);
+
+          // Wrap <strong> + citation marker in a trusted-evidence highlight
+          result.push(
+            <span
+              key={`cite-ev-${i}`}
+              className={cn(
+                "inline rounded-sm px-1 py-[2px]",
+                "bg-primary/[0.06] border-l-[2.5px] border-primary/30",
+                "transition-all duration-150",
+                "hover:bg-primary/[0.12] hover:border-primary/50",
+              )}
+            >
+              {child}
+              {markers}
+            </span>
+          );
+
+          // Push the remainder of the text node (if any), processed for markers
+          if (remainder) {
+            const processed = replaceMarkers(remainder, `rem-${i}`);
+            result.push(processed ?? remainder);
+          }
+
+          i++; // skip the next text node (already consumed)
+          continue;
+        }
+
+        // Regular text nodes — replace [N] markers as before
+        if (typeof child === "string") {
+          const processed = replaceMarkers(child, `cite-${i}`);
+          result.push(processed ?? child);
+        } else {
+          result.push(child);
+        }
+      }
+
+      return <>{result}</>;
     };
   }, [citations]);
   // Memoize the components map so ReactMarkdown keeps stable references

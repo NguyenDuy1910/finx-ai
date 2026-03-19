@@ -199,6 +199,7 @@ class FetchUrlRequest(BaseModel):
 
 class FetchUrlResponse(BaseModel):
     text: str
+    html: str = ""
     char_count: int = 0
     source_name: str = ""
     is_confluence: bool = False

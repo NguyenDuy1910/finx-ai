@@ -11,11 +11,13 @@ import { ChatWelcome } from "./chat-welcome";
 import { ChatModeSwitcher } from "./chat-mode-switcher";
 import { AgentDetailSidePanel } from "./agent-detail-side-panel";
 import { SourcePreviewPanel } from "./source-preview-panel";
+import { ResizeHandle } from "./resize-handle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { useChatDataParts } from "@/hooks/use-chat-data-parts";
 import { parseKnowledgeFromToolCalls } from "./knowledge-panel";
 import { parseChartSpecFromToolCalls } from "./chart-block";
+import { saveMessageCache, loadMessageCache, type CachedMessage } from "@/lib/chat-store";
 import type { MemberRunData, ChatMode } from "@/types";
 
 interface ChatContainerProps {
@@ -63,6 +65,12 @@ export function ChatContainer({
   // ── Source preview panel ──────────────────────────────────────
   const [selectedCitation, setSelectedCitation] = useState<import("@/types").CitationData | null>(null);
   const [selectedCitationAllSources, setSelectedCitationAllSources] = useState<import("@/types").CitationData[]>([]);
+
+  // ── Resizable side panel ──────────────────────────────────────
+  const [panelWidth, setPanelWidth] = useState(400);
+
+  // ── Cached message history (restored from localStorage) ─────
+  const [cachedMessages, setCachedMessages] = useState<CachedMessage[]>(() => loadMessageCache(threadId));
 
   const handleCitationClick = useCallback((citation: import("@/types").CitationData, allCitations: import("@/types").CitationData[]) => {
     // Clicking a citation closes the member panel and opens the source panel
@@ -219,7 +227,7 @@ export function ChatContainer({
     useAutoScroll([agentMessages, isAgentBusy, reasoningMap, toolCallMap, memberRunMap]);
 
   // ── Render list ──────────────────────────────────────────────
-  const renderMessages = useMemo(
+  const liveMessages = useMemo(
     () =>
       agentMessages.map((m) => {
         const members = memberRunMap[m.id];
@@ -257,10 +265,29 @@ export function ChatContainer({
     [agentMessages, isStreaming, reasoningMap, toolCallMap, memberRunMap, metricsMap, citationsMap, activityMap]
   );
 
+  // Persist messages to cache whenever a non-streaming snapshot is available
+  useEffect(() => {
+    if (liveMessages.length > 0 && !isAgentBusy) {
+      saveMessageCache(threadId, liveMessages);
+      // Clear cached fallback once live messages exist
+      if (cachedMessages.length > 0) setCachedMessages([]);
+    }
+  }, [liveMessages, isAgentBusy, threadId, cachedMessages.length]);
+
+  // Use live messages when available, fall back to cached history
+  const renderMessages = liveMessages.length > 0 ? liveMessages : cachedMessages.map((m) => ({
+    ...m,
+    streaming: false,
+    knowledgeData: null as import("./knowledge-panel").KnowledgeData | null,
+    chartData: null as import("./chart-block").ChartSpec | null,
+  }));
+
   const hasMessages = renderMessages.length > 0;
 
+  const isPanelOpen = !!(selectedMember || selectedCitation);
+
   return (
-    <div className="relative flex h-full">
+    <div className="relative flex h-full overflow-hidden">
       {/* ── Chat thread area ──────────────────────────────────── */}
       <div className="relative flex min-w-0 flex-1 flex-col">
 
@@ -268,7 +295,7 @@ export function ChatContainer({
         <ScrollArea
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1"
+          className="flex-1 overscroll-contain"
         >
           {/* Accessible live region */}
           <div aria-live="polite" aria-atomic="false" className="sr-only">
@@ -286,7 +313,7 @@ export function ChatContainer({
           )}
 
           {hasMessages && (
-            <div className="pb-4">
+            <div className="pb-6 pt-2">
               {renderMessages.map((message, index) => (
                 <MemoizedMessage
                   key={message.id}
@@ -353,16 +380,16 @@ export function ChatContainer({
             </div>
           )}
 
-          <div ref={bottomRef} className="h-4" />
+          <div ref={bottomRef} className="h-6" />
         </ScrollArea>
 
         {/* ── Scroll to bottom FAB ─────────────────────────────── */}
         {showScrollBtn && (
-          <div className="absolute bottom-[calc(var(--composer-height,130px)+8px)] left-1/2 z-10 -translate-x-1/2">
+          <div className="absolute bottom-28 left-1/2 z-10 -translate-x-1/2">
             <button
               type="button"
               onClick={scrollToBottom}
-              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-lg shadow-black/5 backdrop-blur-md transition-all hover:bg-accent hover:text-foreground hover:shadow-xl active:scale-95 animate-scale-in"
+              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 text-xs text-muted-foreground shadow-lg shadow-black/5 backdrop-blur-md transition-all hover:bg-accent hover:text-foreground hover:shadow-xl active:scale-95 animate-scale-in"
               aria-label="Scroll to bottom"
             >
               <ArrowDown className="h-3 w-3" />
@@ -371,17 +398,15 @@ export function ChatContainer({
           </div>
         )}
 
-        {/* ── Composer — fixed below the scroll area, never scrolls away ── */}
+        {/* ── Composer ── */}
         <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3 shadow-[0_-1px_3px_0_rgba(0,0,0,0.04)] sm:px-5 sm:py-4">
           <div className="mx-auto max-w-[var(--chat-max-width,760px)]">
-            {/* Mode switcher row */}
             <div className="mb-2 flex items-center justify-between">
               <ChatModeSwitcher
                 mode={chatMode}
                 onModeChange={handleModeSwitch}
                 isDisabled={isAgentBusy}
               />
-              {/* Stop generating — inline with mode switcher */}
               {isAgentBusy && (
                 <button
                   type="button"
@@ -412,12 +437,23 @@ export function ChatContainer({
         </div>
       </div>
 
-      {/* ── Right-side contextual panel (agent detail OR source preview) ── */}
+      {/* ── Resize handle (only when panel is open) ─────────────── */}
+      {isPanelOpen && (
+        <ResizeHandle
+          onResize={setPanelWidth}
+          minWidth={300}
+          maxWidth={640}
+          className="hidden lg:block"
+        />
+      )}
+
+      {/* ── Right-side contextual panel (resizable) ─────────────── */}
       <div
         className={cn(
-          "hidden shrink-0 overflow-hidden border-l border-border/60 transition-[width] duration-200 ease-out lg:block",
-          selectedMember || selectedCitation ? "w-[380px] xl:w-[420px]" : "w-0 border-l-0"
+          "hidden shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out lg:block",
+          isPanelOpen ? "opacity-100" : "w-0 opacity-0"
         )}
+        style={isPanelOpen ? { width: panelWidth } : undefined}
       >
         {selectedMember && (
           <AgentDetailSidePanel
@@ -436,6 +472,26 @@ export function ChatContainer({
           />
         )}
       </div>
+
+      {/* ── Mobile bottom sheet for source preview ─────────────── */}
+      {selectedCitation && !selectedMember && (
+        <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden animate-in slide-in-from-bottom duration-200">
+          <div
+            className="mx-auto max-h-[70vh] overflow-hidden rounded-t-2xl border border-border/60 bg-background shadow-2xl"
+          >
+            <div className="max-h-[70vh] overflow-y-auto overscroll-contain">
+              <SourcePreviewPanel
+                citation={selectedCitation}
+                allCitations={selectedCitationAllSources}
+                onClose={handleCloseSourcePanel}
+                onSelectCitation={(c) => {
+                  setSelectedCitation(c);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

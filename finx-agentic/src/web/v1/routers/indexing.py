@@ -292,7 +292,7 @@ async def fetch_url_context(body: FetchUrlRequest):
     is_confluence = _is_confluence_url(url)
 
     try:
-        text = fetch_url_content(
+        result = fetch_url_content(
             url,
             confluence_base_url=body.confluence_base_url,
             confluence_username=body.confluence_username,
@@ -309,6 +309,16 @@ async def fetch_url_context(body: FetchUrlRequest):
             detail=f"Could not fetch content from URL: {exc}",
         ) from exc
 
+    # ConfluenceContent carries both text and html; plain str has only text
+    from src.knowledge.indexing.utils.doc_parser import ConfluenceContent
+
+    if isinstance(result, ConfluenceContent):
+        text = result.text
+        raw_html = result.html
+    else:
+        text = result
+        raw_html = ""
+
     if len(text) > MAX_CONTEXT_CHARS:
         text = text[:MAX_CONTEXT_CHARS] + "\n... [truncated for prompt size]"
         logger.warning("URL content from %s truncated to %d chars", url, MAX_CONTEXT_CHARS)
@@ -317,6 +327,7 @@ async def fetch_url_context(body: FetchUrlRequest):
 
     return FetchUrlResponse(
         text=text,
+        html=raw_html,
         char_count=len(text),
         source_name=source_name,
         is_confluence=is_confluence,

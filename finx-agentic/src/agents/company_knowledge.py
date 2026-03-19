@@ -56,14 +56,29 @@ def _build_knowledge_retriever(knowledge: QdrantKnowledge) -> Callable:
         existing_count = len((agent.session_state or {}).get(_CITATIONS_STATE_KEY) or [])
         for i, doc in enumerate(docs):
             meta = doc.meta_data or {}
+            # Resolve source type from metadata — Qdrant stores "source_system"
+            # (e.g. "confluence"), MCP tools set "source" or "source_type".
+            source_type = (
+                meta.get("source_system")
+                or meta.get("source")
+                or meta.get("source_type")
+                or "qdrant"
+            )
+            # Resolve URL — Qdrant stores "source_uri", other sources may use "url"
+            source_url = (
+                meta.get("source_uri")
+                or meta.get("url")
+                or meta.get("source_url")
+                or None
+            )
             citation = {
                 "id": doc.id or doc.content_id or "",
                 "title": doc.name or meta.get("title", ""),
-                "source_type": meta.get("source", meta.get("source_type", "qdrant")),
+                "source_type": source_type,
                 "snippet": doc.content[:300] if doc.content else "",
                 "content": doc.content or "",
                 "page": meta.get("page_number", meta.get("page", None)),
-                "url": meta.get("url", meta.get("source_url", None)),
+                "url": source_url,
                 "score": doc.reranking_score,
                 "index": existing_count + i + 1,  # 1-based, continues from prior retrievals
             }
@@ -79,7 +94,24 @@ def _build_knowledge_retriever(knowledge: QdrantKnowledge) -> Callable:
         else:
             agent.session_state = {_CITATIONS_STATE_KEY: citations}
 
-        return [doc.to_dict() for doc in docs]
+        # Embed citation metadata in the retrieval result so the API route
+        # can emit citation events immediately on ToolCallCompleted (streaming),
+        # without waiting for the post-hook at RunCompleted.
+        doc_dicts = [doc.to_dict() for doc in docs]
+        valid = [c for c in citations if c.get("title") or c.get("snippet")]
+        if valid:
+            citations_block = json.dumps(valid, ensure_ascii=False)
+            # Append as a machine-readable block that the API route will parse
+            # and strip — the LLM sees the documents above, not this block.
+            if doc_dicts:
+                last = doc_dicts[-1]
+                last_content = last.get("content", "")
+                last["content"] = (
+                    last_content
+                    + f"\n\n<retrieval-citations>{citations_block}</retrieval-citations>"
+                )
+
+        return doc_dicts
 
     return _retriever
 

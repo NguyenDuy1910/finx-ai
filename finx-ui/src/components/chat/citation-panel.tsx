@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, memo } from "react";
-import { ExternalLink, ChevronDown, ChevronUp, BookOpen, FileText, Globe } from "lucide-react";
+import { ExternalLink, ChevronDown, ChevronUp, BookOpen, FileText, Globe, ShieldCheck, CheckCircle2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CitationData } from "@/types";
 
@@ -34,6 +34,59 @@ function SourceIcon({ type }: { type: CitationData["sourceType"] }) {
   return <FileText className={cls} />;
 }
 
+type TrustLevel = "high" | "verified" | "low" | "neutral";
+
+function getTrustLevel(citation: CitationData): TrustLevel {
+  const score = citation.score ?? 0;
+  if (score > 0.8 && citation.sourceType === "confluence") return "high";
+  if (score > 0.6) return "verified";
+  if (score > 0 && score < 0.4) return "low";
+  return "neutral";
+}
+
+const trustConfig: Record<TrustLevel, {
+  label: string;
+  icon: typeof ShieldCheck;
+  className: string;
+  borderColor: string;
+}> = {
+  high: {
+    label: "High confidence",
+    icon: ShieldCheck,
+    className: "text-emerald-600",
+    borderColor: "border-l-emerald-400/60",
+  },
+  verified: {
+    label: "Verified",
+    icon: CheckCircle2,
+    className: "text-blue-600",
+    borderColor: "border-l-blue-400/60",
+  },
+  low: {
+    label: "Low relevance",
+    icon: AlertTriangle,
+    className: "text-muted-foreground/50",
+    borderColor: "border-l-muted-foreground/30",
+  },
+  neutral: {
+    label: "",
+    icon: CheckCircle2,
+    className: "text-muted-foreground/40",
+    borderColor: "border-l-border",
+  },
+};
+
+function TrustBadge({ level }: { level: TrustLevel }) {
+  if (level === "neutral") return null;
+  const { label, icon: Icon, className } = trustConfig[level];
+  return (
+    <span className={cn("flex items-center gap-0.5 text-[0.5625rem] font-semibold", className)}>
+      <Icon className="h-2.5 w-2.5" />
+      {label}
+    </span>
+  );
+}
+
 interface CitationCardProps {
   citation: CitationData;
   index: number;
@@ -41,11 +94,17 @@ interface CitationCardProps {
 }
 
 const CitationCard = memo(function CitationCard({ citation, index, onCitationClick }: CitationCardProps) {
+  const trust = getTrustLevel(citation);
+  const { borderColor } = trustConfig[trust];
+
   return (
     <button
       type="button"
       onClick={() => onCitationClick?.(citation)}
-      className="w-full rounded-lg border border-border/60 bg-background text-left transition-colors hover:border-border hover:bg-accent/30 active:scale-[0.99]"
+      className={cn(
+        "w-full rounded-lg border border-border/60 border-l-[3px] bg-background text-left transition-colors hover:border-border hover:bg-accent/30 active:scale-[0.99]",
+        borderColor
+      )}
     >
       <div className="flex items-start gap-2.5 px-3 py-2.5">
         {/* Index badge */}
@@ -62,6 +121,7 @@ const CitationCard = memo(function CitationCard({ citation, index, onCitationCli
                 {Math.round(citation.score * 100)}% match
               </span>
             )}
+            <TrustBadge level={trust} />
           </div>
 
           <div className="mt-1 flex items-start gap-1">

@@ -170,13 +170,27 @@ def _strip_html_tags(raw_html: str) -> str:
     return parser.get_text()
 
 
+class ConfluenceContent:
+    """Result of Confluence page extraction, carrying both text and HTML."""
+
+    __slots__ = ("text", "html", "title")
+
+    def __init__(self, text: str, html: str = "", title: str = "") -> None:
+        self.text = text
+        self.html = html
+        self.title = title
+
+    def __str__(self) -> str:
+        return self.text
+
+
 def extract_text_from_confluence(
     url: str,
     *,
     base_url: Optional[str] = None,
     username: Optional[str] = None,
     api_token: Optional[str] = None,
-) -> str:
+) -> ConfluenceContent:
     confluence_base = (
         base_url
         or os.getenv("CONFLUENCE_BASE_URL")
@@ -193,7 +207,8 @@ def extract_text_from_confluence(
 
     if not user or not token:
         logger.warning("No Confluence credentials configured, falling back to plain HTTP fetch")
-        return extract_text_from_url(url)
+        plain = extract_text_from_url(url)
+        return ConfluenceContent(text=plain)
 
     try:
         from atlassian import Confluence
@@ -216,7 +231,8 @@ def extract_text_from_confluence(
             page = confluence.get_page_by_title(space_key, title, expand="body.storage")
         else:
             logger.warning("Could not parse Confluence URL structure: %s", url)
-            return extract_text_from_url(url)
+            plain = extract_text_from_url(url)
+            return ConfluenceContent(text=plain)
 
     if not page:
         raise ValueError(f"Confluence page not found for URL: {url}")
@@ -225,7 +241,8 @@ def extract_text_from_confluence(
     body_html = page.get("body", {}).get("storage", {}).get("value", "")
     plain_text = _strip_html_tags(body_html)
 
-    return f"# {page_title}\n\n{plain_text}" if page_title else plain_text
+    text = f"# {page_title}\n\n{plain_text}" if page_title else plain_text
+    return ConfluenceContent(text=text, html=body_html, title=page_title)
 
 
 def extract_text_from_url(url: str, *, timeout: int = 15) -> str:
@@ -257,7 +274,8 @@ def fetch_url_content(
     confluence_base_url: Optional[str] = None,
     confluence_username: Optional[str] = None,
     confluence_api_token: Optional[str] = None,
-) -> str:
+) -> str | ConfluenceContent:
+    """Fetch page content. Returns ConfluenceContent for Confluence URLs, plain str otherwise."""
     if _is_confluence_url(url):
         return extract_text_from_confluence(
             url,

@@ -8,30 +8,73 @@ export const maxDuration = 180;
 const KNOWLEDGE_SEARCH_TOOLS = new Set(["search_knowledge", "search_knowledge_base", "retrieve_documents"]);
 
 /**
- * Parse the <citations>[...json...]</citations> block appended by the
- * backend post-hook, returning the parsed array and the cleaned content.
+ * Parse a tagged JSON block from content.
+ * Supports both `<citations>` (post-hook) and `<retrieval-citations>` (streaming).
  */
+function extractTaggedBlock(
+  content: string,
+  tag: string
+): { items: Array<Record<string, unknown>>; cleaned: string } {
+  const openTag = `<${tag}>`;
+  const closeTag = `</${tag}>`;
+  const tagStart = content.lastIndexOf(openTag);
+  const tagEnd = content.lastIndexOf(closeTag);
+  if (tagStart === -1 || tagEnd === -1 || tagEnd < tagStart) {
+    return { items: [], cleaned: content };
+  }
+
+  const jsonStr = content.slice(tagStart + openTag.length, tagEnd);
+  let items: Array<Record<string, unknown>> = [];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed)) items = parsed;
+  } catch {
+    // Malformed block — ignore but still clean up the tag
+  }
+
+  const cleaned = content.slice(0, tagStart).trimEnd();
+  return { items, cleaned };
+}
+
+/** Backward-compatible wrapper for the post-hook <citations> block */
 function extractCitationsBlock(content: string): {
   citations: Array<Record<string, unknown>>;
   cleanedContent: string;
 } {
-  const tagStart = content.lastIndexOf("<citations>");
-  const tagEnd = content.lastIndexOf("</citations>");
-  if (tagStart === -1 || tagEnd === -1 || tagEnd < tagStart) {
-    return { citations: [], cleanedContent: content };
-  }
+  const { items, cleaned } = extractTaggedBlock(content, "citations");
+  return { citations: items, cleanedContent: cleaned };
+}
 
-  const jsonStr = content.slice(tagStart + "<citations>".length, tagEnd);
-  let citations: Array<Record<string, unknown>> = [];
-  try {
-    const parsed = JSON.parse(jsonStr);
-    if (Array.isArray(parsed)) citations = parsed;
-  } catch {
-    // Malformed block — ignore citations but still clean up the tag
-  }
+/** Parse <retrieval-citations> block embedded in tool call results (streaming) */
+function extractRetrievalCitations(resultStr: string): Array<Record<string, unknown>> {
+  const { items } = extractTaggedBlock(resultStr, "retrieval-citations");
+  return items;
+}
 
-  const cleanedContent = content.slice(0, tagStart).trimEnd();
-  return { citations, cleanedContent };
+/** Emit a single citation as a data-citation-added event */
+function writeCitationEvent(
+  writer: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"],
+  citation: Record<string, unknown>,
+  emittedIds: Set<string>
+) {
+  const id = (citation.id as string) || crypto.randomUUID();
+  if (emittedIds.has(id)) return;
+  emittedIds.add(id);
+
+  writer.write({
+    type: "data-citation-added" as `data-${string}`,
+    data: {
+      id,
+      title: (citation.title as string) || "",
+      sourceType: (citation.source_type as string) || "unknown",
+      snippet: (citation.snippet as string) || "",
+      content: (citation.content as string) || "",
+      page: citation.page ?? undefined,
+      url: (citation.url as string) || undefined,
+      score: typeof citation.score === "number" ? citation.score : undefined,
+      index: typeof citation.index === "number" ? citation.index : undefined,
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -107,6 +150,9 @@ export async function POST(req: NextRequest) {
         let reasoningPartId = "";
         let reasoningStarted = false;
         let toolCallCounter = 0;
+        // Track emitted citation IDs to deduplicate between streaming
+        // (ToolCallCompleted) and final (RunCompleted) emission.
+        const emittedCitationIds = new Set<string>();
 
         try {
           while (true) {
@@ -233,14 +279,31 @@ export async function POST(req: NextRequest) {
                   const resultStr = (tool?.result as string) || "";
                   const tcId = (tool?.tool_call_id as string) || `tc-${toolCallCounter}`;
 
-                  // Emit activity done for knowledge search tools
                   if (KNOWLEDGE_SEARCH_TOOLS.has(toolName)) {
+                    // Extract streaming citations from the retrieval result
+                    const streamCitations = extractRetrievalCitations(resultStr);
+
+                    // Emit "reading N sources" activity
+                    if (streamCitations.length > 0) {
+                      writer.write({
+                        type: "data-activity" as `data-${string}`,
+                        data: {
+                          status: "reading",
+                          count: streamCitations.length,
+                          timestamp: Date.now(),
+                        },
+                      });
+
+                      // Emit each citation immediately (streaming)
+                      for (const citation of streamCitations) {
+                        writeCitationEvent(writer, citation, emittedCitationIds);
+                      }
+                    }
+
+                    // Transition to "drafting" — LLM will start generating now
                     writer.write({
                       type: "data-activity" as `data-${string}`,
-                      data: {
-                        status: "done",
-                        timestamp: Date.now(),
-                      },
+                      data: { status: "drafting", timestamp: Date.now() },
                     });
                   }
 
@@ -328,22 +391,11 @@ export async function POST(req: NextRequest) {
                     }
                   }
 
-                  // Emit citations BEFORE text-end so they land in the same message
+                  // Emit citations BEFORE text-end so they land in the same message.
+                  // Uses dedup set — citations already emitted during streaming
+                  // (via ToolCallCompleted) will be skipped here.
                   for (const citation of citations) {
-                    writer.write({
-                      type: "data-citation-added" as `data-${string}`,
-                      data: {
-                        id: (citation.id as string) || crypto.randomUUID(),
-                        title: (citation.title as string) || "",
-                        sourceType: (citation.source_type as string) || "unknown",
-                        snippet: (citation.snippet as string) || "",
-                        content: (citation.content as string) || "",
-                        page: citation.page ?? undefined,
-                        url: (citation.url as string) || undefined,
-                        score: typeof citation.score === "number" ? citation.score : undefined,
-                        index: typeof citation.index === "number" ? citation.index : undefined,
-                      },
-                    });
+                    writeCitationEvent(writer, citation, emittedCitationIds);
                   }
 
                   if (parsed.session_id) {
