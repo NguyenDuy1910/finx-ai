@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { X, ExternalLink, BookOpen, FileText, Globe, Hash, Star, Loader2, RefreshCw, ChevronDown, ChevronUp, Code2, Eye, Quote } from "lucide-react";
+import { X, ExternalLink, BookOpen, FileText, Globe, ShieldCheck, CheckCircle2, Loader2, RefreshCw, ChevronDown, ChevronUp, Code2, Eye, Quote, ImageIcon, FileSpreadsheet, File as FileIcon, Download, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from "./markdown-content";
 import { ConfluenceEmbed, isConfluenceUrl } from "./confluence-embed";
+import { resolveArtifactUrl, getFileTypeStyle, hasParentContext } from "@/lib/artifact-utils";
+import { mimeToExtLabel } from "@/types/chat.types";
 import type { CitationData } from "@/types";
 
 interface SourcePreviewPanelProps {
@@ -12,22 +14,6 @@ interface SourcePreviewPanelProps {
   allCitations?: CitationData[];
   onClose: () => void;
   onSelectCitation?: (citation: CitationData) => void;
-}
-
-function SourceTypeBadge({ type }: { type: CitationData["sourceType"] }) {
-  const config = {
-    confluence: { label: "Confluence", className: "bg-blue-50 text-blue-600 border-blue-200/60" },
-    qdrant: { label: "Knowledge Base", className: "bg-violet-50 text-violet-600 border-violet-200/60" },
-    mcp: { label: "Live Search", className: "bg-emerald-50 text-emerald-600 border-emerald-200/60" },
-    unknown: { label: "Source", className: "bg-muted text-muted-foreground border-border" },
-  } as const;
-
-  const { label, className } = config[type] ?? config.unknown;
-  return (
-    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold", className)}>
-      {label}
-    </span>
-  );
 }
 
 function SourceIcon({ type, className }: { type: CitationData["sourceType"]; className?: string }) {
@@ -228,17 +214,12 @@ function EvidenceSnippetCard({ snippet, title }: { snippet: string; title?: stri
       <div className="mb-2 flex items-center gap-1.5">
         <Quote className="h-3 w-3 text-primary/50" />
         <span className="text-[0.6875rem] font-semibold text-primary/60 uppercase tracking-wider">
-          Evidence from source
+          Relevant excerpt
         </span>
       </div>
       <blockquote className="border-l-[3px] border-primary/30 pl-3 text-[0.8125rem] leading-[1.7] text-foreground/80 italic">
         {snippet.length > 300 ? snippet.slice(0, 300) + "\u2026" : snippet}
       </blockquote>
-      {title && (
-        <p className="mt-2 text-[0.6875rem] text-muted-foreground/50">
-          — {title}
-        </p>
-      )}
     </div>
   );
 }
@@ -264,10 +245,16 @@ export function SourcePreviewPanel({
   const fetchLiveContent = useCallback(async (url: string) => {
     const cached = liveContentCache.get(url);
     if (cached) {
-      setLiveContent(cached.text);
-      setLiveHtml(cached.html || null);
-      setFetchState("loaded");
-      return;
+      // Don't serve cached Atlassian error pages
+      const cachedCombined = cached.text + cached.html;
+      if (cachedCombined.includes("Atlassian JavaScript load error")) {
+        liveContentCache.delete(url);
+      } else {
+        setLiveContent(cached.text);
+        setLiveHtml(cached.html || null);
+        setFetchState("loaded");
+        return;
+      }
     }
 
     setFetchState("loading");
@@ -287,6 +274,19 @@ export function SourcePreviewPanel({
 
       const data: { text: string; html?: string; char_count: number; source_name: string; is_confluence: boolean } = await res.json();
 
+      // Detect Atlassian auth/error pages returned instead of real content
+      const combined = (data.text || "") + (data.html || "");
+      const isAtlassianError =
+        combined.includes("Atlassian JavaScript load error") ||
+        combined.includes("id-frontend.prod-east.frontend.public.atl-paas.net") ||
+        combined.includes("We tried to load scripts but something went wrong");
+
+      if (isAtlassianError) {
+        setFetchState("error");
+        setFetchError("Confluence requires authentication — content not accessible");
+        return;
+      }
+
       if (data.text || data.html) {
         liveContentCache.set(url, { text: data.text, html: data.html || "" });
         setLiveContent(data.text);
@@ -302,11 +302,21 @@ export function SourcePreviewPanel({
     }
   }, []);
 
+  // Attachments/artifacts should NOT trigger live page fetch or Confluence embed
+  const isFileAttachment = !!(citation.isArtifact || citation.contentSourceType === "attachment");
+
+  // Confluence pages require auth — skip live fetch entirely, use stored content
+  const isConfluence = !!(
+    citation.sourceType === "confluence" ||
+    (citation.url && isConfluenceUrl(citation.url))
+  );
+
   // Auto-fetch when citation changes and has a URL
+  // Skip for: file attachments, Confluence pages (auth required)
   useEffect(() => {
     panelRef.current?.focus();
 
-    if (citation.url) {
+    if (citation.url && !isFileAttachment && !isConfluence) {
       const cached = liveContentCache.get(citation.url);
       if (cached) {
         setLiveContent(cached.text);
@@ -325,13 +335,14 @@ export function SourcePreviewPanel({
     }
     setShowStoredContent(false);
     setViewMode("formatted");
-  }, [citation.id, citation.url, fetchLiveContent]);
+  }, [citation.id, citation.url, fetchLiveContent, isFileAttachment, isConfluence]);
 
   const hasOtherCitations = allCitations && allCitations.length > 1;
   const displayContent = liveContent || citation.content || citation.snippet;
   const hasStoredContent = !!(citation.content || citation.snippet);
   const isLiveView = fetchState === "loaded" && !!liveContent;
   const showConfluenceEmbed = !!(
+    !isFileAttachment &&
     citation.url &&
     (citation.sourceType === "confluence" || isConfluenceUrl(citation.url))
   );
@@ -379,9 +390,17 @@ export function SourcePreviewPanel({
       {/* ── Header ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-3">
         <div className="flex items-center gap-2">
-          <SourceIcon type={citation.sourceType} className="h-3.5 w-3.5 text-muted-foreground/60" />
-          <span className="text-[0.75rem] font-semibold text-foreground/60 tracking-tight">Source</span>
-          <SourceTypeBadge type={citation.sourceType} />
+          {isFileAttachment ? (
+            <>{citation.artifactType === "image" ? <ImageIcon className="h-3.5 w-3.5 text-sky-500/70" /> :
+              citation.artifactType === "pdf" ? <FileText className="h-3.5 w-3.5 text-red-500/70" /> :
+              citation.artifactType === "spreadsheet" ? <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-500/70" /> :
+              <FileIcon className="h-3.5 w-3.5 text-muted-foreground/60" />}</>
+          ) : (
+            <SourceIcon type={citation.sourceType} className="h-3.5 w-3.5 text-muted-foreground/60" />
+          )}
+          <span className="text-[0.75rem] font-semibold text-foreground/60 tracking-tight">
+            {isFileAttachment ? "Attachment" : "Source"}
+          </span>
         </div>
         <button
           type="button"
@@ -402,26 +421,55 @@ export function SourcePreviewPanel({
               {citation.title || "Untitled source"}
             </h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              {citation.score != null && (
-                <span className="flex items-center gap-1 text-[0.6875rem] text-muted-foreground/50">
-                  <Star className="h-2.5 w-2.5 fill-amber-400/70 text-amber-400/70" />
-                  {Math.round(citation.score * 100)}% relevance
-                </span>
-              )}
-              {citation.page != null && (
-                <span className="flex items-center gap-1 text-[0.6875rem] text-muted-foreground/50">
-                  <Hash className="h-2.5 w-2.5" />
-                  {typeof citation.page === "number" ? `Page ${citation.page}` : citation.page}
-                </span>
-              )}
-              {isLiveView && (
-                <span className="flex items-center gap-1 text-[0.6875rem] text-emerald-600/70">
-                  <Globe className="h-2.5 w-2.5" />
-                  Live page
+              {citation.score != null && (() => {
+                const score = citation.score;
+                const trustLabel = score > 0.75 ? "Highly relevant" : score > 0.5 ? "Relevant" : "Related";
+                const trustColor = score > 0.75 ? "text-emerald-600/70" : score > 0.5 ? "text-blue-600/60" : "text-muted-foreground/50";
+                return (
+                  <span className={cn("flex items-center gap-1 text-[0.6875rem] font-medium", trustColor)}>
+                    {score > 0.75 ? <ShieldCheck className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                    {trustLabel}
+                  </span>
+                );
+              })()}
+              {(citation.isArtifact || citation.contentSourceType === "attachment") && (
+                <span className={cn("flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.5625rem] font-semibold ring-1",
+                  getFileTypeStyle(citation.artifactType).bg,
+                  getFileTypeStyle(citation.artifactType).color,
+                  getFileTypeStyle(citation.artifactType).ring)}>
+                  {mimeToExtLabel(citation.mimeType)}
                 </span>
               )}
             </div>
           </div>
+
+          {/* Parent page context banner */}
+          {hasParentContext(citation) && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-blue-200/40 bg-gradient-to-r from-blue-50/70 to-blue-50/30 px-3 py-2.5">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-600/10">
+                <BookOpen className="h-3.5 w-3.5 text-blue-600/70" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.5625rem] font-semibold uppercase tracking-wider text-blue-500/60">
+                  From Confluence Page
+                </p>
+                <p className="truncate text-[0.8125rem] font-medium leading-snug text-foreground/75">
+                  {citation.parentTitle || `Page #${citation.parentContentId}`}
+                </p>
+              </div>
+              {citation.parentContentId && (
+                <a
+                  href={`https://galaxyfinx.atlassian.net/wiki/pages/viewpage.action?pageId=${citation.parentContentId}`}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="shrink-0 rounded p-1 text-blue-500/50 transition-colors hover:bg-blue-100/60 hover:text-blue-600"
+                  title="Open parent page"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Confluence metadata card */}
           {showConfluenceEmbed && (
@@ -432,8 +480,8 @@ export function SourcePreviewPanel({
             />
           )}
 
-          {/* Open link button (non-Confluence sources) */}
-          {citation.url && !showConfluenceEmbed && (
+          {/* Open link button (non-Confluence, non-attachment sources) */}
+          {citation.url && !showConfluenceEmbed && !isFileAttachment && (
             <a
               href={citation.url}
               target="_blank"
@@ -451,16 +499,115 @@ export function SourcePreviewPanel({
           {/* Evidence snippet — the retrieved text that supports the AI answer */}
           {snippetText && <EvidenceSnippetCard snippet={snippetText} title={citation.title} />}
 
-          {/* Loading state */}
-          {fetchState === "loading" && (
+          {/* Artifact preview — images rendered inline, PDF via iframe, files as download cards */}
+          {isFileAttachment && citation.artifactUri && (() => {
+            const artUrl = resolveArtifactUrl(citation.artifactUri);
+            if (!artUrl) return null;
+            return (
+              <div className="space-y-2">
+                <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/40">
+                  <span className="inline-flex items-center gap-1"><Paperclip className="h-2.5 w-2.5" /> Attachment</span>
+                </p>
+                {citation.artifactType === "image" ? (
+                  <div className="overflow-hidden rounded-lg border border-border/40">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={artUrl}
+                      alt={citation.title || "Image attachment"}
+                      className="max-h-[480px] w-full object-contain bg-muted/20"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : citation.artifactType === "pdf" ? (
+                  <div className="overflow-hidden rounded-lg border border-border/40">
+                    <iframe
+                      src={artUrl}
+                      title={citation.title || "PDF preview"}
+                      className="h-[400px] w-full bg-white"
+                    />
+                    <div className="flex items-center justify-between border-t border-border/30 bg-muted/20 px-3 py-2">
+                      <span className="text-[0.6875rem] text-muted-foreground/50">PDF Document</span>
+                      <a href={artUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[0.6875rem] font-medium text-primary/60 hover:text-primary">
+                        <Download className="h-3 w-3" /> Download
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <a
+                    href={artUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 transition-colors hover:bg-accent/40"
+                  >
+                    {citation.artifactType === "spreadsheet" ? (
+                      <FileSpreadsheet className="h-5 w-5 shrink-0 text-emerald-600" />
+                    ) : citation.artifactType === "document" ? (
+                      <FileText className="h-5 w-5 shrink-0 text-blue-600" />
+                    ) : (
+                      <FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[0.8125rem] font-medium text-foreground/80">
+                        {citation.title || "Download file"}
+                      </p>
+                      <p className="text-[0.6875rem] text-muted-foreground/50">
+                        {mimeToExtLabel(citation.mimeType)} {citation.mimeType ? `· ${citation.mimeType}` : ""}
+                      </p>
+                    </div>
+                    <Download className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                  </a>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Fallback download card for attachments without local artifact */}
+          {isFileAttachment && !citation.artifactUri && citation.url && (
+            <div className="space-y-2">
+              <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/40">
+                <span className="inline-flex items-center gap-1"><Paperclip className="h-2.5 w-2.5" /> Attachment</span>
+              </p>
+              <a
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 transition-colors hover:bg-accent/40"
+              >
+                {citation.artifactType === "image" ? (
+                  <ImageIcon className="h-5 w-5 shrink-0 text-sky-600" />
+                ) : citation.artifactType === "pdf" ? (
+                  <FileText className="h-5 w-5 shrink-0 text-red-600" />
+                ) : citation.artifactType === "spreadsheet" ? (
+                  <FileSpreadsheet className="h-5 w-5 shrink-0 text-emerald-600" />
+                ) : citation.artifactType === "document" ? (
+                  <FileText className="h-5 w-5 shrink-0 text-blue-600" />
+                ) : (
+                  <FileIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[0.8125rem] font-medium text-foreground/80">
+                    {citation.title || "Download file"}
+                  </p>
+                  <p className="text-[0.6875rem] text-muted-foreground/50">
+                    {mimeToExtLabel(citation.mimeType)} {citation.mimeType ? `· ${citation.mimeType}` : ""}
+                  </p>
+                </div>
+                <Download className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+              </a>
+            </div>
+          )}
+
+          {/* Loading state (not for file attachments) */}
+          {!isFileAttachment && fetchState === "loading" && (
             <div className="flex items-center gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] px-3 py-3">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-primary/50" />
               <span className="text-[0.8125rem] text-primary/60 font-medium">Loading full page content…</span>
             </div>
           )}
 
-          {/* Error state with retry */}
-          {fetchState === "error" && (
+          {/* Error state with retry (not for file attachments) */}
+          {!isFileAttachment && fetchState === "error" && (
             <div className="rounded-lg border border-amber-200/60 bg-amber-50/50 px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[0.75rem] text-amber-700/70">
@@ -480,8 +627,8 @@ export function SourcePreviewPanel({
             </div>
           )}
 
-          {/* View mode toggle — only when HTML is available */}
-          {hasHtml && isLiveView && (
+          {/* View mode toggle — only when HTML is available and not a file attachment */}
+          {!isFileAttachment && hasHtml && isLiveView && (
             <div className="flex items-center gap-1 rounded-lg bg-muted/40 p-0.5">
               <button
                 type="button"
@@ -512,12 +659,12 @@ export function SourcePreviewPanel({
             </div>
           )}
 
-          {/* Page content */}
-          {hasHtml && isLiveView && viewMode === "formatted" ? (
+          {/* Page content (skip live HTML for file attachments — only show stored excerpt) */}
+          {!isFileAttachment && hasHtml && isLiveView && viewMode === "formatted" ? (
             /* ── Structured HTML view (Confluence) ── */
             <div>
               <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/40">
-                Full page content
+                Document content
               </p>
               <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-3 overflow-x-auto">
                 <style dangerouslySetInnerHTML={{ __html: confluenceHtmlStyles }} />
@@ -531,7 +678,7 @@ export function SourcePreviewPanel({
             /* ── Plain text / markdown view with evidence highlighting ── */
             <div>
               <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground/40">
-                {isLiveView ? "Full page content" : citation.content ? "Stored content" : "Excerpt"}
+                Document content
               </p>
               <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-3">
                 {textSegments ? (
@@ -563,8 +710,8 @@ export function SourcePreviewPanel({
             <p className="text-[0.8125rem] text-muted-foreground/40 italic">No content available.</p>
           ) : null}
 
-          {/* Toggle stored content when live content is shown */}
-          {isLiveView && hasStoredContent && (
+          {/* Toggle stored content when live content is shown (not for file attachments) */}
+          {!isFileAttachment && isLiveView && hasStoredContent && (
             <div>
               <button
                 type="button"
@@ -616,7 +763,11 @@ export function SourcePreviewPanel({
                   <span className="min-w-0 flex-1 truncate text-[0.8125rem]">
                     {c.title || "Untitled source"}
                   </span>
-                  <SourceIcon type={c.sourceType} className="h-3 w-3 text-muted-foreground/30" />
+                  {c.isArtifact || c.contentSourceType === "attachment" ? (
+                    <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground/30" />
+                  ) : (
+                    <BookOpen className="h-3 w-3 shrink-0 text-muted-foreground/30" />
+                  )}
                 </button>
               ))}
             </div>

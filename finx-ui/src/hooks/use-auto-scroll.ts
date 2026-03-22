@@ -19,7 +19,7 @@ export function useAutoScroll(deps: unknown[]): {
   const rafRef = useRef<number | null>(null);
 
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     setAutoScroll(true);
     setShowScrollBtn(false);
   }, []);

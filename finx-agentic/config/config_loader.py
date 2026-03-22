@@ -392,6 +392,19 @@ class ConfigLoader:
             if nine_router_model:
                 config.ai_model.model_id = nine_router_model
 
+        # Per-agent model overrides from env vars.
+        # Pattern: {AGENT_NAME_UPPER}_PROVIDER, {AGENT_NAME_UPPER}_MODEL_ID
+        # Example: COMPANY_KNOWLEDGE_AGENT_PROVIDER=openai
+        #          COMPANY_KNOWLEDGE_AGENT_MODEL_ID=gpt-4o-mini
+        for agent_name, agent_cfg in config.team_workflow.items():
+            env_prefix = agent_name.upper()
+            env_provider = os.getenv(f"{env_prefix}_PROVIDER", "")
+            env_model_id = os.getenv(f"{env_prefix}_MODEL_ID", "")
+            if env_provider:
+                agent_cfg.provider = env_provider.lower()
+            if env_model_id:
+                agent_cfg.model_id = env_model_id
+
         # Neo4j Configuration
         config.neo4j.uri = os.getenv("NEO4J_URI", config.neo4j.uri)
         config.neo4j.username = os.getenv("NEO4J_USERNAME", config.neo4j.username)

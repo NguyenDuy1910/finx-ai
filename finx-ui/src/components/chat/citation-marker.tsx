@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useRef, useEffect } from "react";
-import { BookOpen, FileText, Globe, Star } from "lucide-react";
+import { BookOpen, FileText, ShieldCheck, CheckCircle2, ImageIcon, FileSpreadsheet, File as FileIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CitationData } from "@/types";
 
@@ -15,27 +15,10 @@ interface CitationMarkerProps {
   onClick?: (citation: CitationData, allCitations: CitationData[]) => void;
 }
 
-function SourceTypeLabel({ type }: { type: CitationData["sourceType"] }) {
-  const config = {
-    confluence: { label: "Confluence", icon: BookOpen, className: "text-blue-600" },
-    qdrant: { label: "Knowledge Base", icon: FileText, className: "text-violet-600" },
-    mcp: { label: "Live Search", icon: Globe, className: "text-emerald-600" },
-    unknown: { label: "Source", icon: FileText, className: "text-muted-foreground" },
-  } as const;
-
-  const { label, icon: Icon, className } = config[type] ?? config.unknown;
-  return (
-    <span className={cn("flex items-center gap-1 text-[0.625rem] font-semibold", className)}>
-      <Icon className="h-2.5 w-2.5" />
-      {label}
-    </span>
-  );
-}
-
 /**
  * Inline superscript citation marker rendered inside markdown text.
  * Shows [N] as a small clickable pill. Hovering reveals a rich popover
- * with source type, title, snippet, and relevance score.
+ * with title, file type, and trust indicator.
  */
 export const CitationMarker = memo(function CitationMarker({
   index,
@@ -69,12 +52,6 @@ export const CitationMarker = memo(function CitationMarker({
       </sup>
     );
   }
-
-  const snippetPreview = citation.snippet
-    ? citation.snippet.length > 120
-      ? citation.snippet.slice(0, 120) + "\u2026"
-      : citation.snippet
-    : null;
 
   return (
     <span className="relative inline-block align-baseline">
@@ -110,29 +87,46 @@ export const CitationMarker = memo(function CitationMarker({
             "pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-150"
           )}
         >
-          {/* Source type */}
-          <SourceTypeLabel type={citation.sourceType} />
+          {/* File type indicator for attachments */}
+          {citation.isArtifact && citation.artifactType && (
+            <div className="flex items-center gap-1.5">
+              <span className={cn("flex items-center gap-0.5 text-[0.625rem] font-semibold", {
+                "text-sky-600": citation.artifactType === "image",
+                "text-red-600": citation.artifactType === "pdf",
+                "text-emerald-600": citation.artifactType === "spreadsheet",
+                "text-blue-600": citation.artifactType === "document",
+                "text-amber-600": citation.artifactType === "file",
+              })}>
+                {citation.artifactType === "image" ? <ImageIcon className="h-2.5 w-2.5" /> :
+                 citation.artifactType === "pdf" ? <FileText className="h-2.5 w-2.5" /> :
+                 citation.artifactType === "spreadsheet" ? <FileSpreadsheet className="h-2.5 w-2.5" /> :
+                 <FileIcon className="h-2.5 w-2.5" />}
+                {citation.artifactType === "image" ? "Image" :
+                 citation.artifactType === "pdf" ? "PDF" :
+                 citation.artifactType === "spreadsheet" ? "Spreadsheet" :
+                 citation.artifactType === "document" ? "Document" : "File"}
+              </span>
+            </div>
+          )}
 
           {/* Title */}
-          <p className="mt-1.5 text-[0.8125rem] font-semibold leading-snug text-foreground/90 line-clamp-2">
+          <p className={cn("text-[0.8125rem] font-semibold leading-snug text-foreground/90 line-clamp-2", citation.isArtifact ? "mt-1" : "")}>
             {citation.title || "Untitled source"}
           </p>
 
-          {/* Snippet */}
-          {snippetPreview && (
-            <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted-foreground/60 line-clamp-3">
-              {snippetPreview}
-            </p>
-          )}
-
-          {/* Score + CTA */}
+          {/* Trust indicator + CTA */}
           <div className="mt-2 flex items-center justify-between">
-            {citation.score != null && (
-              <span className="flex items-center gap-1 text-[0.625rem] text-muted-foreground/50">
-                <Star className="h-2.5 w-2.5 fill-amber-400/70 text-amber-400/70" />
-                {Math.round(citation.score * 100)}% relevance
-              </span>
-            )}
+            {citation.score != null && (() => {
+              const score = citation.score;
+              const label = score > 0.75 ? "Highly relevant" : score > 0.5 ? "Relevant" : "Related";
+              const color = score > 0.75 ? "text-emerald-600/70" : score > 0.5 ? "text-blue-600/60" : "text-muted-foreground/50";
+              return (
+                <span className={cn("flex items-center gap-0.5 text-[0.625rem] font-medium", color)}>
+                  {score > 0.75 ? <ShieldCheck className="h-2.5 w-2.5" /> : <CheckCircle2 className="h-2.5 w-2.5" />}
+                  {label}
+                </span>
+              );
+            })()}
             <span className="ml-auto text-[0.625rem] font-medium text-primary/60">
               Click to view
             </span>

@@ -31,6 +31,25 @@ class RawDocument:
     metadata: dict[str, Any] = field(default_factory=dict)
     fetched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
+    # ── Multi-type content fields (Confluence / Jira) ─────────────────────
+    content_type: str = ""
+    """Source-specific content type: page, blogpost, comment, attachment, issue, etc."""
+
+    parent_id: str = ""
+    """ID of the parent content object (e.g. page for a comment/attachment)."""
+
+    parent_type: str = ""
+    """Content type of the parent (e.g. 'page', 'blogpost', 'issue')."""
+
+    body_representation: str = ""
+    """Body format used: storage, atlas_doc_format, export_view, etc."""
+
+    version: int = 0
+    """Content version number from the source system."""
+
+    acl: list[str] = field(default_factory=list)
+    """Access control list entries (group/user IDs with read access)."""
+
     @property
     def content_hash(self) -> str:
         """SHA-256 of raw_content for idempotency / change detection."""

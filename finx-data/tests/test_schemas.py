@@ -16,12 +16,6 @@ from pipeline.schemas.blocks import (
     TextBlock,
 )
 from pipeline.schemas.canonical import CanonicalDocument
-from pipeline.schemas.provenance import (
-    ProcessingStage,
-    ProcessingStep,
-    Provenance,
-    QualitySignal,
-)
 
 
 # ── Block types ───────────────────────────────────────────────────────────────
@@ -78,53 +72,6 @@ class TestBlocks:
         )
         assert node.title == "Introduction"
         assert len(node.block_indices) == 3
-
-
-# ── Provenance ────────────────────────────────────────────────────────────────
-
-
-class TestProvenance:
-    def test_processing_step(self):
-        step = ProcessingStep(
-            stage=ProcessingStage.EXTRACTION,
-            processor="html_extractor",
-            duration_ms=42.5,
-        )
-        assert step.stage == ProcessingStage.EXTRACTION
-        assert step.duration_ms == 42.5
-        assert step.error is None
-
-    def test_quality_signal(self):
-        q = QualitySignal(
-            extraction_confidence=0.9,
-            word_count=500,
-            has_tables=True,
-        )
-        assert q.extraction_confidence == 0.9
-        assert q.has_tables is True
-        assert q.has_images is False
-
-    def test_provenance_add_step(self):
-        prov = Provenance()
-        step = ProcessingStep(
-            stage=ProcessingStage.EXTRACTION,
-            processor="test",
-        )
-        prov.add_step(step)
-        assert len(prov.steps) == 1
-        assert prov.last_stage == ProcessingStage.EXTRACTION
-        assert not prov.has_errors
-
-    def test_provenance_detects_errors(self):
-        prov = Provenance()
-        prov.add_step(
-            ProcessingStep(
-                stage=ProcessingStage.NORMALIZATION,
-                processor="test",
-                error="Something failed",
-            )
-        )
-        assert prov.has_errors
 
 
 # ── CanonicalDocument ─────────────────────────────────────────────────────────

@@ -19,12 +19,12 @@
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.148 0.012 258);
 
-  /* ── Primary brand: professional indigo-blue ─────────────────
-     Trustworthy, premium, enterprise. Not consumer-blue.       */
-  --primary: oklch(0.44 0.165 252);
+  /* ── Primary brand: professional blue (ChatGPT-style) ────────
+     Focus-friendly, neutral, enterprise-grade.                 */
+  --primary: oklch(0.45 0.16 252);
   --primary-foreground: oklch(0.99 0 0);
-  --primary-subtle: oklch(0.955 0.022 252);
-  --primary-hover: oklch(0.39 0.165 252);
+  --primary-subtle: oklch(0.96 0.02 252);
+  --primary-hover: oklch(0.40 0.16 252);
 
   /* ── Secondary / neutral surfaces ───────────────────────────── */
   --secondary: oklch(0.965 0.007 252);
@@ -72,11 +72,11 @@
   --card: oklch(0.207 0.015 257);
   --card-foreground: oklch(0.932 0.006 252);
 
-  /* ── Primary — brighter in dark for sufficient contrast ──────── */
-  --primary: oklch(0.625 0.175 252);
+  /* ── Primary — brighter blue in dark for contrast ──────────── */
+  --primary: oklch(0.60 0.16 252);
   --primary-foreground: oklch(0.09 0 0);
-  --primary-subtle: oklch(0.245 0.04 252);
-  --primary-hover: oklch(0.665 0.175 252);
+  --primary-subtle: oklch(0.25 0.03 252);
+  --primary-hover: oklch(0.65 0.16 252);
 
   /* ── Neutrals ─────────────────────────────────────────────────── */
   --secondary: oklch(0.242 0.016 257);
@@ -455,6 +455,7 @@ body {
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-subtle: var(--primary-subtle);
+  --color-primary-accent: var(--primary-accent);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

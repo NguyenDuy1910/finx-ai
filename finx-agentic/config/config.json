@@ -134,8 +134,8 @@
       "description": "Summarize accumulated node/edge descriptions in knowledge graph"
     },
     "company_knowledge_agent": {
-      "provider": "9router",
-      "model_id": "cx/gpt-5.4",
+      "provider": "openai",
+      "model_id": "gpt-4o-mini",
       "temperature": 0.2,
       "max_tokens": 4000,
       "description": "Company knowledge assistant — answers from Qdrant Confluence knowledge base with grounded citations"

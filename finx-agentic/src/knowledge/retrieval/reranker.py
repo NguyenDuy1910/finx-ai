@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -8,7 +9,10 @@ if TYPE_CHECKING:
 
 log = logging.getLogger("finx-agentic.reranker")
 
-_DEFAULT_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+_DEFAULT_MODEL = os.environ.get(
+    "RERANKER_MODEL",
+    "BAAI/bge-reranker-v2-m3",
+)
 
 
 class DocumentReranker:
@@ -60,8 +64,7 @@ class DocumentReranker:
         self._load()
 
         if self._model is None:
-            # Graceful fallback — no reranking
-            return docs[:top_n]
+            return self._fallback_rerank(docs, top_n)
 
         pairs = [(query, d.content or "") for d in docs]
         try:
@@ -86,3 +89,18 @@ class DocumentReranker:
             [round(s, 3) for s, _ in ranked[:top_n]],
         )
         return result
+
+    @staticmethod
+    def _fallback_rerank(docs: list["Document"], top_n: int) -> list["Document"]:
+        """Sort by boosted_score when cross-encoder is unavailable."""
+        scored = []
+        for doc in docs:
+            meta = doc.meta_data or {}
+            score = meta.get("boosted_score") or meta.get("qdrant_score") or 0.0
+            scored.append((float(score), doc))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        for rank_score, doc in scored:
+            if doc.meta_data is None:
+                doc.meta_data = {}
+            doc.meta_data["rerank_score"] = round(rank_score, 4)
+        return [doc for _, doc in scored[:top_n]]

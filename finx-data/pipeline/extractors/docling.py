@@ -1,37 +1,14 @@
-"""Docling document extraction integration.
-
-Docling (https://github.com/docling-project/docling) provides high-fidelity
-document parsing for PDF, DOCX, PPTX, XLSX, HTML, and images.  It produces
-a unified ``DoclingDocument`` with typed content items (texts, tables,
-pictures) and hierarchical structure.
-
-This extractor wraps Docling's ``DocumentConverter`` and maps the output
-into our pipeline's ``CanonicalDocument`` format.
-
-Docling must be installed separately::
-
-    pip install docling
-
-Strategy
---------
-1. Binary content (PDF, DOCX, PPTX, XLSX, images) → Docling converter
-2. DoclingDocument → export to Markdown → parse into typed content blocks
-3. Tables exported as markdown tables preserve column headers and structure
-
-Compared to MinerU:
-- Broader format support (DOCX, PPTX, XLSX, not just PDF)
-- Built-in layout model (Heron) — no external binary dependencies
-- Unified DoclingDocument → Pydantic types → clean JSON/markdown export
-- Native table structure with merged cell handling
-"""
-
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
-import time
+from io import BytesIO
 from pathlib import Path
-from typing import Any
+
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from pipeline.adapters.base import RawDocument
 from pipeline.schemas.blocks import (
@@ -40,78 +17,85 @@ from pipeline.schemas.blocks import (
     HeadingBlock,
     ImageBlock,
     LinkRef,
-    SectionNode,
+    ListBlock,
     TableBlock,
     TextBlock,
 )
 from pipeline.schemas.canonical import CanonicalDocument
-from pipeline.schemas.provenance import ProcessingStage, ProcessingStep, QualitySignal
-from .base import BaseExtractor
+from pipeline.storage import ArtifactStore, create_artifact_store
+from .base import BaseExtractor, build_sections
 
 log = logging.getLogger("finx-data.extractor.docling")
 
+_MIME_EXT = {
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.ms-excel": ".xls",
+    "text/html": ".html",
+    "text/markdown": ".md",
+    "text/plain": ".txt",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/tiff": ".tiff",
+}
 
-def _docling_available() -> bool:
-    """Check if docling is installed."""
-    try:
-        from docling.document_converter import DocumentConverter  # noqa: F401
-        return True
-    except ImportError:
-        return False
+_HANDLED_MIMES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+}
+
+_HANDLED_EXTS = {"pdf", "docx", "pptx", "xlsx", "xls", "png", "jpg", "jpeg", "tiff"}
 
 
 class DoclingExtractor(BaseExtractor):
-    """Extract structured content using Docling's DocumentConverter.
-
-    Handles: PDF, DOCX, PPTX, XLSX, images.
-    Falls back to MarkdownExtractor if Docling is not installed.
-    """
+    """Extract structured content using Docling's native DoclingDocument API."""
 
     name = "docling_extractor"
 
-    def __init__(self, *, output_dir: str | Path | None = None):
-        self._output_dir = Path(output_dir) if output_dir else None
-        self._available = _docling_available()
-        if not self._available:
-            log.warning("Docling not installed. Install with: pip install docling")
+    def __init__(self, artifact_store: ArtifactStore | None = None):
+        self.artifact_store = artifact_store or create_artifact_store()
+        artifacts_path = os.getenv("DOCLING_ARTIFACTS_PATH")
+        pipeline_options = PdfPipelineOptions(do_table_structure=True)
+        if artifacts_path:
+            pipeline_options.artifacts_path = artifacts_path
+        self._converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+            }
+        )
 
     def can_handle(self, raw: RawDocument) -> bool:
-        if not self._available:
-            return False
         mime = (raw.mime_type or "").lower()
-        # PDF, Office formats, images
-        if mime in (
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ):
+        if mime in _HANDLED_MIMES or mime.startswith("image/"):
             return True
-        if mime.startswith("image/"):
-            return True
-        # Check file extension
         uri = raw.source_uri or ""
         ext = uri.rsplit(".", 1)[-1].lower() if "." in uri else ""
-        return ext in ("pdf", "docx", "pptx", "xlsx", "png", "jpg", "jpeg", "tiff")
+        return ext in _HANDLED_EXTS
 
     def extract(self, raw: RawDocument) -> CanonicalDocument:
-        t0 = time.monotonic()
-
-        if not self._available:
-            # Fallback: treat as text
-            return self._fallback_extract(raw, t0)
-
         try:
-            markdown_text = self._convert_with_docling(raw)
-            blocks, links = self._parse_docling_markdown(markdown_text)
+            blocks, links = self._convert(raw)
         except Exception as exc:
-            log.warning("Docling conversion failed for %s: %s — falling back to text", raw.source_uri, exc)
-            return self._fallback_extract(raw, t0)
+            log.warning("Docling conversion failed for %s: %s", raw.source_uri, exc)
+            return self._fallback(raw)
 
-        sections = self._build_sections(blocks)
-        quality = self._assess_quality(blocks)
+        # VLM fallback for scanned PDFs: if Docling extracted very little
+        # text, try OCR via vision LLM
+        is_pdf = (raw.mime_type or "").lower() == "application/pdf" or (raw.source_uri or "").lower().endswith(".pdf")
+        if is_pdf and self._is_scanned(blocks):
+            vlm_blocks = self._vlm_ocr_fallback(raw)
+            if vlm_blocks:
+                blocks = vlm_blocks
+                log.info("VLM OCR fallback used for scanned PDF: %s", raw.source_uri)
 
-        doc = CanonicalDocument(
+        sections = build_sections(blocks)
+
+        return CanonicalDocument(
             source_system=raw.source_system,
             source_uri=raw.source_uri,
             source_document_id=raw.source_id,
@@ -122,197 +106,181 @@ class DoclingExtractor(BaseExtractor):
             links=links,
             metadata=raw.metadata,
         )
-        doc.provenance.add_step(
-            ProcessingStep(
-                stage=ProcessingStage.EXTRACTION,
-                processor=self.name,
-                duration_ms=(time.monotonic() - t0) * 1000,
-                input_hash=raw.content_hash,
-                parameters={"method": "docling"},
-            )
-        )
-        doc.provenance.quality = quality
-        return doc
 
-    def _convert_with_docling(self, raw: RawDocument) -> str:
-        """Run Docling DocumentConverter and return markdown output."""
-        from docling.document_converter import DocumentConverter
-
-        converter = DocumentConverter()
-
-        # Write binary to temp file for Docling to read
-        if raw.binary_content:
-            ext = self._ext_for_mime(raw.mime_type)
-            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
-                f.write(raw.binary_content)
-                tmp_path = f.name
-
-            try:
-                result = converter.convert(tmp_path)
-                return result.document.export_to_markdown()
-            finally:
-                Path(tmp_path).unlink(missing_ok=True)
-
-        # For text-based content, write to temp file
-        if raw.raw_content:
-            ext = self._ext_for_mime(raw.mime_type) or ".txt"
-            with tempfile.NamedTemporaryFile(suffix=ext, delete=False, mode="w") as f:
-                f.write(raw.raw_content)
-                tmp_path = f.name
-
-            try:
-                result = converter.convert(tmp_path)
-                return result.document.export_to_markdown()
-            finally:
-                Path(tmp_path).unlink(missing_ok=True)
-
-        return ""
-
-    def _parse_docling_markdown(
-        self, text: str
-    ) -> tuple[list[ContentBlock], list[LinkRef]]:
-        """Parse Docling's markdown output into typed content blocks."""
-        import re
+    def _convert(self, raw: RawDocument) -> tuple[list[ContentBlock], list[LinkRef]]:
+        """Run Docling and map native items to ContentBlocks."""
+        result = self._run_converter(raw)
+        docling_doc = result.document
 
         blocks: list[ContentBlock] = []
         links: list[LinkRef] = []
-        current_text: list[str] = []
+        pending_list_items: list[str] = []
+        pending_list_ordered = False
 
-        def flush_text() -> None:
-            if current_text:
-                content = "\n".join(current_text).strip()
-                if content:
-                    blocks.append(TextBlock(content=content))
-                current_text.clear()
+        def flush_list():
+            if pending_list_items:
+                blocks.append(ListBlock(items=list(pending_list_items), ordered=pending_list_ordered))
+                pending_list_items.clear()
 
-        in_code = False
-        code_lines: list[str] = []
-        code_lang: str | None = None
+        from docling_core.types.doc.document import (
+            CodeItem,
+            ListItem as DoclingListItem,
+            PictureItem,
+            SectionHeaderItem,
+            TableItem,
+        )
 
-        in_table = False
-        table_lines: list[str] = []
-
-        for line in text.split("\n"):
-            stripped = line.strip()
-
-            # Code blocks
-            if stripped.startswith("```"):
-                if in_code:
-                    flush_text()
-                    blocks.append(CodeBlock(content="\n".join(code_lines), language=code_lang))
-                    code_lines.clear()
-                    code_lang = None
-                    in_code = False
-                else:
-                    flush_text()
-                    in_code = True
-                    lang = stripped[3:].strip()
-                    code_lang = lang if lang else None
+        for item, _ in docling_doc.iterate_items():
+            if isinstance(item, SectionHeaderItem):
+                flush_list()
+                blocks.append(HeadingBlock(content=item.text, level=item.level))
                 continue
 
-            if in_code:
-                code_lines.append(line)
+            if isinstance(item, DoclingListItem):
+                if not pending_list_items:
+                    pending_list_ordered = item.enumerated
+                pending_list_items.append(item.text)
+                continue
+            else:
+                flush_list()
+
+            if isinstance(item, TableItem):
+                table_block = self._extract_table(item, docling_doc)
+                if table_block:
+                    blocks.append(table_block)
                 continue
 
-            # Table detection (lines with pipes)
-            if "|" in stripped and stripped.startswith("|"):
-                if not in_table:
-                    flush_text()
-                    in_table = True
-                    table_lines = []
-                table_lines.append(stripped)
-                continue
-            elif in_table:
-                # End of table
-                self._flush_table(blocks, table_lines)
-                table_lines.clear()
-                in_table = False
-
-            # Headings
-            heading_m = re.match(r"^(#{1,6})\s+(.+)", stripped)
-            if heading_m:
-                flush_text()
-                level = len(heading_m.group(1))
-                blocks.append(HeadingBlock(content=heading_m.group(2).strip(), level=level))
+            if isinstance(item, PictureItem):
+                img = self._extract_image(item)
+                if img:
+                    blocks.append(img)
                 continue
 
-            # Images
-            img_m = re.match(r"!\[([^\]]*)\]\(([^)]+)\)", stripped)
-            if img_m:
-                flush_text()
-                blocks.append(ImageBlock(src=img_m.group(2), alt_text=img_m.group(1)))
+            if isinstance(item, CodeItem):
+                blocks.append(CodeBlock(content=item.text, language=item.code_language))
                 continue
 
-            # Links
-            for lm in re.finditer(r"\[([^\]]+)\]\(([^)]+)\)", stripped):
-                links.append(LinkRef(url=lm.group(2), text=lm.group(1)))
+            text = getattr(item, "text", "")
+            if text and text.strip():
+                blocks.append(TextBlock(content=text.strip()))
+                hyperlink = getattr(item, "hyperlink", None)
+                if hyperlink:
+                    links.append(LinkRef(url=str(hyperlink), text=text.strip()))
 
-            # Regular text
-            if stripped:
-                current_text.append(stripped)
-            elif current_text:
-                flush_text()
-
-        # Flush remaining
-        flush_text()
-        if in_table and table_lines:
-            self._flush_table(blocks, table_lines)
-
+        flush_list()
         return blocks, links
 
-    def _flush_table(self, blocks: list[ContentBlock], lines: list[str]) -> None:
-        """Parse markdown table lines into a TableBlock."""
-        if len(lines) < 2:
-            return
+    def _run_converter(self, raw: RawDocument):
+        """Convert a RawDocument using DocumentConverter."""
+        binary = raw.binary_content
 
-        def parse_row(line: str) -> list[str]:
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            return cells
+        # Load from artifact store if no in-memory content
+        if not binary and not raw.raw_content:
+            artifact_uri = raw.metadata.get("artifact_uri", "")
+            if artifact_uri and self.artifact_store.exists(artifact_uri):
+                binary = self.artifact_store.load(artifact_uri)
+                log.debug("Loaded %d bytes from artifact store: %s", len(binary), artifact_uri)
 
-        headers = parse_row(lines[0])
-        # Skip separator line (---|----|---)
-        rows: list[list[str]] = []
-        for line in lines[2:] if len(lines) > 2 else []:
-            row = parse_row(line)
-            if row and not all(set(c) <= {"-", " ", ":"} for c in row):
-                rows.append(row)
+        if binary:
+            ext = _MIME_EXT.get((raw.mime_type or "").lower()) \
+                or self._ext_from_uri(raw.metadata.get("filename", "")) \
+                or self._ext_from_uri(raw.source_uri)
+            source = DocumentStream(name=f"doc{ext}", stream=BytesIO(binary))
+            return self._converter.convert(source)
 
-        markdown = "\n".join(lines)
-        blocks.append(TableBlock(headers=headers, rows=rows, markdown=markdown))
+        if raw.raw_content:
+            ext = _MIME_EXT.get((raw.mime_type or "").lower()) or ".txt"
+            with tempfile.NamedTemporaryFile(suffix=ext, delete=False, mode="w") as f:
+                f.write(raw.raw_content)
+                tmp_path = f.name
+            try:
+                return self._converter.convert(tmp_path)
+            finally:
+                Path(tmp_path).unlink(missing_ok=True)
 
-    def _build_sections(self, blocks: list[ContentBlock]) -> list[SectionNode]:
-        sections: list[SectionNode] = []
-        current_path: list[str] = []
-        for i, block in enumerate(blocks):
-            if isinstance(block, HeadingBlock):
-                while current_path and len(current_path) >= block.level:
-                    current_path.pop()
-                current_path.append(block.content)
-                sections.append(SectionNode(
-                    title=block.content, level=block.level,
-                    path=list(current_path), block_indices=[i],
-                ))
-            elif sections:
-                sections[-1].block_indices.append(i)
-        return sections
+        raise ValueError("RawDocument has no content")
 
-    def _assess_quality(self, blocks: list[ContentBlock]) -> QualitySignal:
-        word_count = sum(
-            len(getattr(b, "content", "").split())
-            for b in blocks if hasattr(b, "content")
-        )
-        return QualitySignal(
-            word_count=word_count,
-            has_tables=any(isinstance(b, TableBlock) for b in blocks),
-            has_images=any(isinstance(b, ImageBlock) for b in blocks),
-            has_code=any(isinstance(b, CodeBlock) for b in blocks),
-        )
+    def _extract_table(self, item, docling_doc) -> TableBlock | None:
+        data = getattr(item, "data", None)
+        if not data:
+            return None
 
-    def _fallback_extract(self, raw: RawDocument, t0: float) -> CanonicalDocument:
-        """Simple text-based fallback when Docling is unavailable."""
+        grid = data.grid
+        if not grid or len(grid) == 0:
+            return None
+
+        headers = [cell.text for cell in grid[0]]
+        rows = [[cell.text for cell in row] for row in grid[1:]]
+        md = item.export_to_markdown(docling_doc)
+        caption = self._get_caption(item, docling_doc)
+        return TableBlock(headers=headers, rows=rows, markdown=md, caption=caption)
+
+    def _extract_image(self, item) -> ImageBlock | None:
+        image_ref = getattr(item, "image", None)
+        src = str(image_ref.uri) if image_ref and hasattr(image_ref, "uri") else ""
+        alt = self._get_caption(item) or ""
+        return ImageBlock(src=src, alt_text=alt)
+
+    @staticmethod
+    def _get_caption(item, docling_doc=None) -> str:
+        captions = getattr(item, "captions", None)
+        if not captions:
+            return ""
+        first = captions[0]
+        if docling_doc and hasattr(first, "resolve"):
+            resolved = first.resolve(docling_doc)
+            return getattr(resolved, "text", "")
+        return getattr(first, "text", str(first))
+
+    def _is_scanned(self, blocks: list[ContentBlock]) -> bool:
+        """Detect if Docling produced very little text (likely a scanned PDF)."""
+        total_chars = 0
+        for block in blocks:
+            text = getattr(block, "content", "") or getattr(block, "markdown", "")
+            total_chars += len(text)
+        # If less than 50 chars total, likely scanned
+        return total_chars < 50
+
+    def _vlm_ocr_fallback(self, raw: RawDocument) -> list[ContentBlock]:
+        """Try OCR via VLM for scanned PDFs."""
+        try:
+            import asyncio
+            from pipeline.extractors.vlm import VLMService
+
+            image_bytes = raw.binary_content
+            if not image_bytes:
+                artifact_uri = raw.metadata.get("artifact_uri", "")
+                if artifact_uri:
+                    from pipeline.storage import create_artifact_store
+                    store = create_artifact_store()
+                    if store.exists(artifact_uri):
+                        image_bytes = store.load(artifact_uri)
+
+            if not image_bytes:
+                return []
+
+            vlm = VLMService()
+            result = asyncio.run(vlm.ocr_page(image_bytes, "application/pdf"))
+
+            blocks: list[ContentBlock] = []
+            text = result.get("text", "")
+            if text and text.strip():
+                blocks.append(TextBlock(content=text.strip()))
+
+            tables = result.get("tables", [])
+            for table_md in tables:
+                if table_md and table_md.strip():
+                    blocks.append(TableBlock(markdown=table_md))
+
+            return blocks
+        except Exception as exc:
+            log.debug("VLM OCR fallback failed: %s", exc)
+            return []
+
+    def _fallback(self, raw: RawDocument) -> CanonicalDocument:
         content = raw.raw_content or ""
         blocks: list[ContentBlock] = [TextBlock(content=content)] if content else []
-        doc = CanonicalDocument(
+        return CanonicalDocument(
             source_system=raw.source_system,
             source_uri=raw.source_uri,
             source_document_id=raw.source_id,
@@ -321,29 +289,9 @@ class DoclingExtractor(BaseExtractor):
             content_blocks=blocks,
             metadata=raw.metadata,
         )
-        doc.provenance.add_step(
-            ProcessingStep(
-                stage=ProcessingStage.EXTRACTION,
-                processor=self.name,
-                duration_ms=(time.monotonic() - t0) * 1000,
-                input_hash=raw.content_hash,
-                parameters={"method": "fallback_text"},
-            )
-        )
-        return doc
 
     @staticmethod
-    def _ext_for_mime(mime: str) -> str:
-        _map = {
-            "application/pdf": ".pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-            "text/html": ".html",
-            "text/markdown": ".md",
-            "text/plain": ".txt",
-            "image/png": ".png",
-            "image/jpeg": ".jpg",
-            "image/tiff": ".tiff",
-        }
-        return _map.get(mime, ".bin")
+    def _ext_from_uri(uri: str) -> str:
+        if "." in (uri or ""):
+            return "." + uri.rsplit(".", 1)[-1].lower()
+        return ".bin"

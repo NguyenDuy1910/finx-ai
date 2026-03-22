@@ -1,5 +1,3 @@
-"""Map knowledge document dicts to Qdrant point IDs and payload dicts."""
-
 from __future__ import annotations
 
 import hashlib
@@ -7,146 +5,212 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from pipeline.schemas.chunk import ChunkDocument, ChunkKind
 
-def doc_to_point_id(document_id: str) -> str:
-    """Convert a hex document_id to a UUID string for use as a Qdrant point ID.
 
-    Uses the first 32 hex characters of the SHA-256 document_id, formatted
-    as a UUID.  This is deterministic and stable across pipeline reruns.
+def chunk_to_point_id(chunk_id: str) -> str:
+    """Convert a hex chunk_id to a UUID string for use as a Qdrant point ID.
+
+    Uses the first 32 hex characters of the SHA-256 chunk_id.
+    Deterministic and stable across reruns.
+
+    Args:
+        chunk_id: 64-char SHA-256 hex string
+
+    Returns:
+        UUID string for Qdrant point ID
 
     Example:
         "c0c19c9b088edbbb0c195599a49f08a6..." → "c0c19c9b-088e-dbbb-0c19-5599a49f08a6"
     """
-    hex32 = document_id[:32].ljust(32, "0")
+    hex32 = chunk_id[:32].ljust(32, "0")
     return str(uuid.UUID(hex32))
 
 
-def doc_to_embedding_text(doc: dict) -> str:
-    """Build a compact, semantically dense text for embedding.
+def _build_heading_prefix(chunk: ChunkDocument) -> str:
+    """Build the '[doc_title] path > heading' prefix line."""
+    parts = [f"[{chunk.doc_title}]"]
+    if chunk.heading_path:
+        parts.append(" > ".join(chunk.heading_path))
+    if chunk.heading:
+        parts.append(chunk.heading)
+    return " > ".join(parts) if len(parts) > 1 else parts[0]
 
-    Why NOT embed the raw `text` field directly:
-    - It contains full Markdown tables, raw URLs, row separators — noisy tokens
-    - It often exceeds 8192 tokens, requiring truncation that cuts real content
-    - The LLM normalizer already extracted the semantic essence into structured fields
 
-    Strategy: compose from highest-signal enriched fields in priority order:
-      title > summary > key_concepts > salient points > entities > definitions > insights
-    This produces ~400–1500 clean tokens with dense semantic coverage.
+def _build_dense_text(chunk: ChunkDocument) -> str:
+    """Assemble rich embedding text for dense (semantic) vector.
+
+    Combines structural context + content + LLM enrichments so the
+    embedding captures both *what* the chunk says and *where* it sits.
+
+    Layer order (each on its own paragraph):
+        1. doc_title  +  heading_path / heading          (structural)
+        2. display_text  (main human-readable content)   (content)
+        3. summary — only if short and accurate           (semantic boost)
+        4. keywords                                       (term boost)
+        5. kind-specific metadata:
+           - table_summary / table_schema → table headers + schema context
+           - spreadsheet / SCHEMA_SUMMARY → column descriptions
+           - COMMENT                      → comment_text already in chunk_text
+           - RESOLUTION                   → resolution already in chunk_text
+        6. acronym_expansions                             (disambiguation)
     """
-    parts: list[str] = []
+    sections: list[str] = []
 
-    title = doc.get("title", "").strip()
-    if title:
-        parts.append(f"# {title}")
+    # ── 1. structural prefix ─────────────────────────────────────────────
+    # Prefer section_path (content-graph prefix) if available
+    if chunk.section_path:
+        sections.append("\n".join(f"[{p}]" for p in chunk.section_path))
+    else:
+        sections.append(_build_heading_prefix(chunk))
 
-    doc_type = doc.get("document_type", "")
-    domains = doc.get("domains", [])
-    if doc_type or domains:
-        meta = " | ".join(filter(None, [doc_type] + domains))
-        parts.append(f"[{meta}]")
+    body = chunk.display_text or chunk.chunk_text
+    if body:
+        sections.append(body)
 
-    summary = doc.get("summary", "").strip()
-    if summary:
-        parts.append(summary)
+    # ── 3. summary (short only — avoids diluting the embedding) ──────────
+    if chunk.summary:
+        word_count = len(chunk.summary.split())
+        # Only include summaries ≤ 60 words — long summaries add noise
+        if word_count <= 60:
+            sections.append(f"Summary: {chunk.summary}")
 
-    structured: dict = doc.get("structured_content", {}) or {}
+    # ── 4. keywords ──────────────────────────────────────────────────────
+    if chunk.keywords:
+        sections.append(f"Keywords: {', '.join(chunk.keywords)}")
 
-    # Key concepts
-    concepts: list[str] = structured.get("key_concepts", [])
-    if concepts:
-        parts.append("Concepts: " + ", ".join(str(c) for c in concepts[:20]))
+    # ── 5. kind-specific metadata ────────────────────────────────────────
+    kind = chunk.chunk_kind
 
-    # Definitions — most precise signal for domain-specific terms
-    definitions: list[dict] = structured.get("definitions", [])
-    if definitions:
-        defs = [f"{d.get('term', '')}: {d.get('meaning', '')}" for d in definitions[:15] if d.get("term")]
-        if defs:
-            parts.append("Definitions:\n" + "\n".join(defs))
+    if kind in (ChunkKind.TABLE_SUMMARY, ChunkKind.TABLE_SCHEMA, ChunkKind.TABLE_ROW_GROUP):
+        # table_headers are always useful for matching column-name queries
+        if chunk.table_headers:
+            sections.append(f"Columns: {', '.join(chunk.table_headers)}")
+        if chunk.table_row_count:
+            sections.append(f"Total rows: {chunk.table_row_count}")
 
-    # Salient points — pre-ranked by priority, high information density
-    salient: list[dict] = structured.get("salient_points", [])
-    if salient:
-        points = []
-        for sp in salient[:10]:
-            stmt = sp.get("statement", "").strip()
-            why = sp.get("why_it_matters", "").strip()
-            if stmt:
-                points.append(f"- {stmt}" + (f" ({why})" if why else ""))
-        if points:
-            parts.append("Key points:\n" + "\n".join(points))
+    if kind == ChunkKind.SCHEMA_SUMMARY:
+        # For spreadsheet/schema chunks the chunk_text already contains
+        # column descriptions — no extra layer needed, but add headers
+        # separately so partial column-name queries still hit.
+        if chunk.table_headers:
+            sections.append(f"Columns: {', '.join(chunk.table_headers)}")
 
-    # Insights
-    insights: list[dict] = structured.get("insights", [])
-    if insights:
-        ins = [str(i.get("insight", "")).strip() for i in insights[:5] if i.get("insight")]
-        if ins:
-            parts.append("Insights:\n" + "\n".join(f"- {i}" for i in ins))
+    # KEY_VALUE chunks: content already in chunk_text — no extra layer.
 
-    # Key entities — boosts entity-based retrieval
-    entities: list[str] = doc.get("key_entities", [])
-    if entities:
-        parts.append("Entities: " + ", ".join(str(e) for e in entities[:30]))
+    # CHART_SUMMARY: content already in chunk_text — include chart type for matching.
+    if kind == ChunkKind.CHART_SUMMARY and chunk.content_type == "chart":
+        sections.append("Content type: chart/graph")
 
-    # Abbreviations — critical for Vietnamese/financial domain
-    abbrevs: dict = doc.get("abbreviations", {})
-    if abbrevs:
-        abbrev_parts = [f"{k}={v}" for k, v in list(abbrevs.items())[:20]]
-        parts.append("Abbreviations: " + ", ".join(abbrev_parts))
+    # DIAGRAM_SUMMARY: content already in chunk_text — include type for matching.
+    if kind == ChunkKind.DIAGRAM_SUMMARY and chunk.content_type == "diagram":
+        sections.append("Content type: diagram")
 
-    return "\n\n".join(parts)
+    # COMMENT and RESOLUTION kinds: their chunk_text already carries the
+    # "[Comment by …]" / resolution preamble — no extra layer needed.
 
+    # ── 6. acronym expansions ────────────────────────────────────────────
+    if chunk.acronym_expansions:
+        expansions = "; ".join(
+            f"{acr} = {full}" for acr, full in chunk.acronym_expansions.items()
+        )
+        sections.append(f"Terminology: {expansions}")
 
-# Keep backward-compatible alias used by pipeline.py for content_hash computation
-def doc_to_text(doc: dict) -> str:
-    """Return the semantic embedding text for a document (uses enriched fields)."""
-    return doc_to_embedding_text(doc)
+    return "\n\n".join(sections)
 
 
-def content_hash(text: str) -> str:
-    """SHA-256 fingerprint of the text to embed.  Used for skip-on-rerun."""
-    return hashlib.sha256(text.encode()).hexdigest()
+def chunk_to_embedding_texts(chunk: ChunkDocument) -> tuple[str, str]:
+
+    dense_text = _build_dense_text(chunk)
+
+    # Sparse embedding: raw text only (keyword matching should match actual
+    # document terms without structural noise)
+    sparse_text = chunk.chunk_text
+
+    return dense_text, sparse_text
 
 
-def doc_to_payload(doc: dict, ingestion_ts: str | None = None) -> dict[str, Any]:
-    """Build the Qdrant payload dict from a knowledge document.
-
-    Only scalar and list-of-scalar fields are included — large nested objects
-    (structured_content, tables) are intentionally excluded to keep the payload
-    lean and filterable.  They remain available in the source JSON files on disk
-    addressable by source_document_id / source_uri.
-
-    Fields added:
-    - content_hash: SHA-256 of the embedding text; enables skip-on-rerun
-    - ingestion_timestamp: ISO datetime of this ingestion run
-    - embedding_strategy: label indicating what content was embedded
-    """
-    text = doc_to_embedding_text(doc)
+def chunk_to_payload(chunk: ChunkDocument) -> dict[str, Any]:
 
     payload: dict[str, Any] = {
-        # Identity
-        "document_id": doc.get("document_id", ""),
-        "source_system": doc.get("source_system", ""),
-        "source_uri": doc.get("source_uri", ""),
-        "source_document_id": doc.get("source_document_id", ""),
-        "source_path": doc.get("_source_path", ""),
-        # Display / search
-        "title": doc.get("title", ""),
-        "summary": doc.get("summary", ""),
-        "key_entities": doc.get("key_entities", []),
-        # Classification (filterable)
-        "document_type": doc.get("document_type", "general"),
-        "domains": doc.get("domains", []),
-        "language": doc.get("language", ""),
-        "space_key": doc.get("space_key", ""),
-        # Quality (filterable)
-        "quality_score": float(doc.get("quality_score") or 0.0),
-        # Timestamps (filterable)
-        "processed_at": doc.get("processed_at", ""),
-        "ingestion_timestamp": ingestion_ts or datetime.now(timezone.utc).isoformat(),
-        # Change-detection
-        "content_hash": content_hash(text),
-        # Traceability — which embedding strategy produced this point
-        "embedding_strategy": "structured_enriched_v1",
+        # ── Identity ──────────────────────────────────────────────────────
+        "tenant_id": chunk.tenant_id,
+        "doc_id": chunk.doc_id,
+        "chunk_id": chunk.chunk_id,
+        "section_id": chunk.section_id,
+        "external_id": chunk.external_id,
+        "source_url": chunk.source_url,
+
+        # ── Content ───────────────────────────────────────────────────────
+        "source_system": chunk.source_system,
+        "doc_title": chunk.doc_title,
+        "heading": chunk.heading,
+        "heading_path": chunk.heading_path,
+        "chunk_kind": chunk.chunk_kind.value,
+
+        # ── Classification ────────────────────────────────────────────────
+        "language": chunk.language,
+        "doc_type": chunk.doc_type,
+        "domains": chunk.domains,
+        "project_key": chunk.project_key,
+        "space_key": chunk.space_key,
+        "ticket_status": chunk.ticket_status,
+        "ticket_type": chunk.ticket_type,
+        "source_type": chunk.source_type,
+        "content_type": chunk.content_type,
+
+        # ── Content-Graph Linking ─────────────────────────────────────────
+        "attachment_id": chunk.attachment_id,
+        "comment_id": chunk.comment_id,
+        "parent_content_id": chunk.parent_content_id,
+        "mime_type": chunk.mime_type,
+        "artifact_uri": chunk.artifact_uri,
+        "body_representation": chunk.body_representation,
+        "section_path": chunk.section_path,
+
+        # ── LLM Enrichment ────────────────────────────────────────────────
+        "summary": chunk.summary,
+        "keywords": chunk.keywords,
+
+        # ── Timestamps ────────────────────────────────────────────────────
+        "source_created_at": chunk.source_created_at.isoformat() if chunk.source_created_at else None,
+        "source_updated_at": chunk.source_updated_at.isoformat() if chunk.source_updated_at else None,
+        "ingested_at": chunk.ingested_at.isoformat(),
+
+        # ── Change Detection ──────────────────────────────────────────────
+        "doc_hash": chunk.doc_hash,
+        "section_hash": chunk.section_hash,
+        "chunk_hash": chunk.chunk_hash,
+
+        # ── Embedding Metadata ────────────────────────────────────────────
+        "embedding_model": chunk.embedding_model,
+        "embedding_version": chunk.embedding_version,
+
+        # ── ACL ───────────────────────────────────────────────────────────
+        "acl_readers": chunk.acl_readers,
+        "acl_spaces": chunk.acl_spaces,
+        "is_public": chunk.is_public,
+
+        # ── Soft Delete ───────────────────────────────────────────────────
+        "is_deleted": chunk.is_deleted,
+
+        # ── Quality ───────────────────────────────────────────────────────
+        "quality_score": chunk.quality_score,
+        "chunk_position": chunk.chunk_position,
+        "total_chunks": chunk.total_chunks,
+
+        # ── Table-Specific ────────────────────────────────────────────────
+        "table_headers": chunk.table_headers,
+        "table_row_count": chunk.table_row_count,
+
+        # ── Terminology ──────────────────────────────────────────────────
+        "acronym_expansions": chunk.acronym_expansions or None,
+
+        # ── Enhanced fields ──────────────────────────────────────────────
+        "pipeline_version": chunk.pipeline_version or None,
+        "parent_chunk_id": chunk.parent_chunk_id or None,
+        "entities": chunk.entities or None,
     }
 
-    return payload
+    # Remove None values to keep payload lean and efficient
+    return {k: v for k, v in payload.items() if v is not None}

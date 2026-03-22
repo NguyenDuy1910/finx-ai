@@ -287,6 +287,19 @@ export function useChatDataParts(
               url: (data.url as string) || undefined,
               score: typeof data.score === "number" ? data.score : undefined,
               index: typeof data.index === "number" ? data.index : undefined,
+              // Artifact metadata
+              artifactUri: (data.artifactUri as string) || undefined,
+              mimeType: (data.mimeType as string) || undefined,
+              isArtifact: data.isArtifact === true ? true : undefined,
+              artifactType: (data.artifactType as CitationData["artifactType"]) || undefined,
+              // Parent Confluence page context
+              parentContentId: (data.parentContentId as string) || undefined,
+              parentTitle: (data.parentTitle as string) || undefined,
+              parentUrl: (data.parentUrl as string) || undefined,
+              spaceKey: (data.spaceKey as string) || undefined,
+              // Source classification
+              contentSourceType: (data.contentSourceType as string) || undefined,
+              chunkKind: (data.chunkKind as string) || undefined,
             };
             setCitationsMap((p) => {
               const ex = p[msg.id] || [];

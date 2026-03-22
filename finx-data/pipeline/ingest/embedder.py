@@ -1,15 +1,9 @@
-"""Embedding provider abstraction with an OpenAI implementation.
-
-Keeping a thin ABC here makes it straightforward to swap providers
-(e.g. local sentence-transformers, Cohere) without touching the pipeline.
-"""
-
 from __future__ import annotations
 
 import logging
+import os
 import time
 from abc import ABC, abstractmethod
-
 log = logging.getLogger("finx-data.ingest.embedder")
 
 _MAX_RETRIES = 3
@@ -25,8 +19,6 @@ _MAX_TOKENS_PER_TEXT = 8191
 # Vietnamese is ~2 chars/token; English ~4. Use 2 to be safe for mixed content.
 _CHARS_PER_TOKEN = 2
 
-# Try to load tiktoken for accurate token counting.
-# Falls back to the char-based estimate if not installed.
 try:
     import tiktoken as _tiktoken
     _TOKENIZER = _tiktoken.get_encoding("cl100k_base")  # works for all text-embedding-3-* models
@@ -42,19 +34,13 @@ def _token_count(text: str) -> int:
 
 
 def truncate_to_token_limit(text: str, max_tokens: int = _MAX_TOKENS_PER_TEXT) -> str:
-    """Truncate *text* so it fits within *max_tokens*.
 
-    Uses tiktoken for exact truncation when available; otherwise binary-searches
-    the character boundary using the conservative estimate.
-    """
     if _TOKENIZER is not None:
         tokens = _TOKENIZER.encode(text, disallowed_special=())
         if len(tokens) <= max_tokens:
             return text
         return _TOKENIZER.decode(tokens[:max_tokens])
 
-    # Char-based fallback: start at the conservative estimate and walk back
-    # in 256-char steps until the estimate fits.
     limit_chars = max_tokens * _CHARS_PER_TOKEN
     candidate = text[:limit_chars]
     while _token_count(candidate) > max_tokens and len(candidate) > 256:
@@ -91,7 +77,7 @@ class OpenAIEmbedder(EmbeddingProvider):
             raise ImportError("openai package is required for OpenAIEmbedder") from exc
 
         self._client = OpenAI()
-        self._model = model
+        self._model = os.environ.get("EMBEDDING_MODEL", model)
         self._expected_dim = expected_dim
 
     @property
@@ -139,13 +125,7 @@ class OpenAIEmbedder(EmbeddingProvider):
         return all_vectors
 
     def _embed_single_request(self, texts: list[str]) -> list[list[float]]:
-        """Send one API request with retry.
 
-        Texts are pre-truncated to _MAX_TOKENS_PER_TEXT before the call.
-        On a context_length_exceeded error (can happen when tiktoken is not
-        installed and the estimate is slightly off), the texts are truncated
-        more aggressively and retried once before giving up.
-        """
         # Always truncate each text to the model's per-input limit before sending.
         safe_texts = [truncate_to_token_limit(t) for t in texts]
 
@@ -174,7 +154,7 @@ class OpenAIEmbedder(EmbeddingProvider):
                     raise
 
                 msg = str(exc)
-                if "maximum context length" in msg or "context_length_exceeded" in msg:
+                if "maximum context length" in msg or "context_length_exceeded" in msg or "maximum input length" in msg:
                     # Truncation was not aggressive enough (tiktoken unavailable).
                     # Halve the limit and retry once.
                     if attempt == 1:

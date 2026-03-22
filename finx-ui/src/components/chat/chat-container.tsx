@@ -313,7 +313,8 @@ export function ChatContainer({
           )}
 
           {hasMessages && (
-            <div className="pb-6 pt-2">
+            <div className="px-4 sm:px-6 pb-6 pt-6 sm:pt-8">
+              <div className="mx-auto max-w-[var(--chat-max-width,760px)]">
               {renderMessages.map((message, index) => (
                 <MemoizedMessage
                   key={message.id}
@@ -334,6 +335,7 @@ export function ChatContainer({
                   onCitationClick={handleCitationClick}
                 />
               ))}
+              </div>
             </div>
           )}
 
@@ -399,7 +401,7 @@ export function ChatContainer({
         )}
 
         {/* ── Composer ── */}
-        <div className="shrink-0 border-t border-border/60 bg-background px-4 py-3 shadow-[0_-1px_3px_0_rgba(0,0,0,0.04)] sm:px-5 sm:py-4">
+        <div className="shrink-0 border-t border-border bg-background px-4 py-3 shadow-[0_-1px_3px_0_rgba(0,0,0,0.04)] sm:px-5 sm:py-4">
           <div className="mx-auto max-w-[var(--chat-max-width,760px)]">
             <div className="mb-2 flex items-center justify-between">
               <ChatModeSwitcher

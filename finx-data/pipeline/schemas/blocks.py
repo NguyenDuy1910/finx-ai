@@ -22,6 +22,9 @@ class BlockType(str, Enum):
     CODE = "code"
     HEADING = "heading"
     LIST = "list"
+    KEY_VALUE = "key_value"
+    CHART = "chart"
+    DIAGRAM = "diagram"
 
 
 class TextBlock(BaseModel):
@@ -84,6 +87,71 @@ class ListBlock(BaseModel):
     ordered: bool = False
 
 
+class KeyValueBlock(BaseModel):
+    """Extracted key-value pairs (from forms, headers, metadata blocks)."""
+
+    block_type: BlockType = BlockType.KEY_VALUE
+    pairs: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="List of {'key': ..., 'value': ...} dicts",
+    )
+    source_context: str = Field(
+        "", description="Where the KV pairs were extracted from (form, header, etc.)"
+    )
+
+
+class ChartBlock(BaseModel):
+    """A chart or graph extracted from a document."""
+
+    block_type: BlockType = BlockType.CHART
+    chart_type: str = Field("", description="bar, line, pie, scatter, etc.")
+    title: str = ""
+    axes: dict[str, str] = Field(
+        default_factory=dict, description="e.g. {'x': 'Quarter', 'y': 'Revenue (USD)'}"
+    )
+    legend: list[str] = Field(default_factory=list)
+    data_points: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Visible data values extracted from the chart",
+    )
+    trend_summary: str = Field(
+        "", description="Brief description of the trend shown in the chart"
+    )
+    description: str = Field(
+        "", description="Full textual description of the chart"
+    )
+
+
+class DiagramBlock(BaseModel):
+    """A diagram (flowchart, architecture, org chart, etc.)."""
+
+    block_type: BlockType = BlockType.DIAGRAM
+    diagram_type: str = Field("", description="flowchart, architecture, sequence, org_chart, etc.")
+    title: str = ""
+    components: list[str] = Field(
+        default_factory=list, description="Named components/nodes in the diagram"
+    )
+    relationships: list[str] = Field(
+        default_factory=list,
+        description="Edges/arrows as 'A -> B: label' strings",
+    )
+    description: str = Field(
+        "", description="Full textual description of the diagram"
+    )
+
+
+class BlockProvenance(BaseModel):
+    """Per-block provenance: tracks how a block was produced."""
+
+    extractor: str = Field("", description="Name of the extractor that created this block")
+    confidence: float = Field(
+        1.0, ge=0.0, le=1.0, description="Extraction confidence (1.0 = deterministic parser)"
+    )
+    source_page: int | None = Field(None, description="PDF page number (1-based) if applicable")
+    source_sheet: str | None = Field(None, description="Excel sheet name if applicable")
+    warnings: list[str] = Field(default_factory=list)
+
+
 class LinkRef(BaseModel):
     """A hyperlink extracted from document content."""
 
@@ -95,7 +163,10 @@ class LinkRef(BaseModel):
 
 
 # Union of all content block types for use in CanonicalDocument
-ContentBlock = TextBlock | HeadingBlock | TableBlock | ImageBlock | CodeBlock | ListBlock
+ContentBlock = (
+    TextBlock | HeadingBlock | TableBlock | ImageBlock | CodeBlock
+    | ListBlock | KeyValueBlock | ChartBlock | DiagramBlock
+)
 
 
 class SectionNode(BaseModel):

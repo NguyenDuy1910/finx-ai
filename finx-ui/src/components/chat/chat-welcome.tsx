@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, Search, GitBranch, Sparkles, Users, ArrowUpRight, BookOpen, TrendingUp, Shield } from "lucide-react";
+import { Database, Search, GitBranch, Sparkles, Users, BookOpen, TrendingUp, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMode } from "@/types/common.types";
 
@@ -156,18 +156,17 @@ export function ChatWelcome({ mode = "team", onSuggestionClick }: ChatWelcomePro
   const HeroIcon = config.icon;
 
   return (
-    <div className="flex h-full items-center justify-center px-4 py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-[560px] animate-fade-in">
+    <div className="flex h-full w-full items-center justify-center px-4 py-12 sm:py-20">
+      <div className="mx-auto w-full max-w-[580px] animate-fade-in">
         {/* Identity block */}
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <div className={cn(
-            "mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl",
-            config.iconBg,
+            "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary",
           )}>
-            <HeroIcon className={cn("h-5 w-5", config.iconColor)} />
+            <HeroIcon className={cn("h-5 w-5")} />
           </div>
 
-          <h2 className="text-[1.25rem] font-bold tracking-[-0.02em] text-foreground">
+          <h2 className="text-[1.125rem] font-semibold tracking-[-0.01em] text-foreground">
             {config.label}
           </h2>
           <p className="mx-auto mt-2.5 max-w-[420px] text-[0.9rem] leading-[1.7] text-muted-foreground">
@@ -193,33 +192,31 @@ export function ChatWelcome({ mode = "team", onSuggestionClick }: ChatWelcomePro
 
         {/* Suggestion cards */}
         <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          {config.suggestions.map(({ icon: Icon, text, description: desc, color, surface }) => (
+          {config.suggestions.map(({ icon: Icon, text, description: desc }) => (
             <button
               key={text}
               type="button"
               onClick={() => onSuggestionClick(text)}
               className={cn(
-                "group relative flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all duration-150",
+                "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-all duration-150",
                 "bg-surface hover:bg-surface-raised",
                 "border-border hover:border-border-strong",
-                "hover:shadow-sm active:scale-[0.985]"
+                "hover:shadow-sm active:scale-[0.98]"
               )}
             >
               <div className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-lg border",
-                surface,
+                "flex h-6 w-6 items-center justify-center rounded border bg-muted text-muted-foreground/50",
               )}>
-                <Icon className={cn("h-3.5 w-3.5", color)} />
+                <Icon className={cn("h-3 w-3")} />
               </div>
               <div className="min-w-0 w-full">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50 mb-1">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.04em] text-muted-foreground/50 mb-0.5">
                   {desc}
                 </p>
-                <p className="text-[0.8125rem] leading-[1.5] text-foreground/70 group-hover:text-foreground transition-colors">
+                <p className="text-[0.8125rem] leading-[1.4] text-foreground/70 group-hover:text-foreground transition-colors">
                   {text}
                 </p>
               </div>
-              <ArrowUpRight className="absolute right-3.5 top-3.5 h-3.5 w-3.5 text-muted-foreground/20 opacity-0 transition-all group-hover:opacity-100 group-hover:text-muted-foreground/40" />
             </button>
           ))}
         </div>

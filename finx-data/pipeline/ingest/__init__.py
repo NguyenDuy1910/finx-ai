@@ -1,10 +1,8 @@
 """Qdrant ingestion stage for the finx-data pipeline.
 
-Reads processed knowledge files from output/knowledge/ and upserts them
-into a Qdrant collection as dense vector embeddings.
+Chunk-level ingestion: reads ChunkDocument JSON and upserts into Qdrant.
 """
 
-from .config import QdrantIngestConfig
-from .pipeline import IngestResult, QdrantIngestionPipeline
+from .chunk_ingest import ChunkIngestConfig, ChunkIngestionPipeline
 
-__all__ = ["QdrantIngestConfig", "QdrantIngestionPipeline", "IngestResult"]
+__all__ = ["ChunkIngestConfig", "ChunkIngestionPipeline"]

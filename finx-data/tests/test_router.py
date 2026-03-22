@@ -4,7 +4,7 @@ import pytest
 
 from pipeline.adapters.base import RawDocument
 from pipeline.extractors.base import BaseExtractor
-from pipeline.extractors.html import HTMLExtractor, MarkdownExtractor, SchemaExtractor
+from pipeline.extractors.html import HTMLExtractor, MarkdownExtractor
 from pipeline.router import ContentCategory, InputRouter, classify
 from pipeline.schemas.canonical import CanonicalDocument
 
@@ -14,7 +14,7 @@ from pipeline.schemas.canonical import CanonicalDocument
 
 class TestClassify:
     def test_pdf_by_mime(self):
-        raw = RawDocument(source_system="s3", source_uri="s3://bucket/report.pdf", mime_type="application/pdf")
+        raw = RawDocument(source_system="local", source_uri="/data/report.pdf", mime_type="application/pdf")
         assert classify(raw) == ContentCategory.PDF
 
     def test_pdf_by_extension(self):
@@ -45,14 +45,6 @@ class TestClassify:
         raw = RawDocument(source_system="local", source_uri="/data/file.markdown")
         assert classify(raw) == ContentCategory.MARKDOWN
 
-    def test_schema_by_source_system(self):
-        raw = RawDocument(source_system="athena", source_uri="athena://db/table")
-        assert classify(raw) == ContentCategory.SCHEMA
-
-    def test_schema_by_glue_source(self):
-        raw = RawDocument(source_system="glue", source_uri="glue://catalog/db/t")
-        assert classify(raw) == ContentCategory.SCHEMA
-
     def test_csv_by_mime(self):
         raw = RawDocument(source_system="local", source_uri="/data/file.csv", mime_type="text/csv")
         assert classify(raw) == ContentCategory.CSV
@@ -66,11 +58,11 @@ class TestClassify:
         assert classify(raw) == ContentCategory.JSON
 
     def test_image_by_mime(self):
-        raw = RawDocument(source_system="s3", source_uri="s3://b/img.png", mime_type="image/png")
+        raw = RawDocument(source_system="local", source_uri="/data/img.png", mime_type="image/png")
         assert classify(raw) == ContentCategory.IMAGE
 
     def test_image_generic_mime(self):
-        raw = RawDocument(source_system="s3", source_uri="s3://b/img.bmp", mime_type="image/bmp")
+        raw = RawDocument(source_system="local", source_uri="/data/img.bmp", mime_type="image/bmp")
         assert classify(raw) == ContentCategory.IMAGE
 
     def test_plaintext_fallback(self):
@@ -78,7 +70,7 @@ class TestClassify:
         assert classify(raw) == ContentCategory.PLAINTEXT
 
     def test_extension_with_query_params(self):
-        raw = RawDocument(source_system="s3", source_uri="https://s3.example.com/file.pdf?token=abc")
+        raw = RawDocument(source_system="local", source_uri="https://example.com/file.pdf?token=abc")
         assert classify(raw) == ContentCategory.PDF
 
 
@@ -121,14 +113,6 @@ class TestInputRouter:
         }
         router = InputRouter(table)
         assert set(router.categories) == {ContentCategory.HTML, ContentCategory.PDF}
-
-    def test_schema_routed_by_source_system(self):
-        schema_ext = _DummyExtractor("schema")
-        router = InputRouter({ContentCategory.SCHEMA: schema_ext})
-        raw = RawDocument(source_system="athena", source_uri="athena://db/t", raw_content="col info")
-        cat, ext = router.route(raw)
-        assert cat == ContentCategory.SCHEMA
-        assert ext is schema_ext
 
     def test_confluence_routed_to_html(self):
         """Confluence source_system should always route to HTML extractor."""

@@ -19,9 +19,9 @@ class QdrantUpserter:
         self._name = collection_name
 
     def check_existing(self, point_ids: list[str]) -> dict[str, str]:
-        """Retrieve the content_hash of already-indexed points.
+        """Retrieve the chunk_hash of already-indexed points.
 
-        Returns a mapping of {point_id: content_hash} for points that exist.
+        Returns a mapping of {point_id: chunk_hash} for points that exist.
         Unknown IDs are simply absent from the result dict.
         """
         if not point_ids:
@@ -31,11 +31,11 @@ class QdrantUpserter:
             records = self._client.retrieve(
                 collection_name=self._name,
                 ids=point_ids,
-                with_payload=["content_hash"],
+                with_payload=["chunk_hash"],
                 with_vectors=False,
             )
             return {
-                str(r.id): r.payload.get("content_hash", "")
+                str(r.id): r.payload.get("chunk_hash", "")
                 for r in records
                 if r.payload
             }

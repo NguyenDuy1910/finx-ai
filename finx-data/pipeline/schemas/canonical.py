@@ -1,26 +1,3 @@
-"""Canonical document schema — the single unified output format.
-
-Every document flowing through the pipeline is represented as a
-``CanonicalDocument``. This schema is intentionally rich enough to support:
-
-- **Vector retrieval**: content_blocks provide embeddable text chunks with
-  structural context (section path, block type, position).
-- **Graph extraction**: structured fields (tables, links, metadata, section
-  hierarchy) give graph-building agents typed input.
-- **Auditing / lineage**: provenance chain and stable IDs enable traceability.
-
-Design decisions
-----------------
-1. ``document_id`` is deterministic (SHA-256 of source_system + source_uri)
-   so reprocessing the same source yields the same ID → idempotent upserts.
-2. ``content_blocks`` is an ordered list of typed blocks (text, table, image,
-   code, heading, list) preserving original document order.
-3. ``section_hierarchy`` mirrors the document's heading structure as a tree
-   so chunkers can split at section boundaries.
-4. ``metadata`` is a free-form dict for adapter-specific fields that don't
-   belong in the canonical envelope.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -29,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from .blocks import ContentBlock, LinkRef, SectionNode
+from .blocks import BlockProvenance, ContentBlock, LinkRef, SectionNode
 from .provenance import Provenance
 
 
@@ -39,6 +16,8 @@ class CanonicalDocument(BaseModel):
     This is the contract between finx-data and all downstream consumers
     (bootstrap indexing, knowledge graph, vector store).
     """
+    model_config = {"use_attribute_docstrings": True}
+
 
     # ── Identity ──────────────────────────────────────────────────────────
     document_id: str = Field(
@@ -47,7 +26,7 @@ class CanonicalDocument(BaseModel):
         "Auto-computed if left empty.",
     )
     source_system: str = Field(
-        ..., description="Origin system: confluence, athena, s3, local, mineru"
+        ..., description="Origin system: confluence, jira, local"
     )
     source_uri: str = Field(
         ..., description="Unique locator within the source system"
@@ -63,6 +42,21 @@ class CanonicalDocument(BaseModel):
         "document",
         description="High-level type: document, schema, api_spec, faq, etc.",
     )
+    source_content_type: str = Field(
+        "",
+        description="Source-specific content type: page, blogpost, comment, "
+        "attachment, issue, worklog, custom_content, database_row, etc. "
+        "Maps to SourceContentType enum values.",
+    )
+    parent_document_id: str = Field(
+        "",
+        description="document_id of the parent content object. "
+        "Links comments/attachments back to their parent page/issue.",
+    )
+    version: int = Field(
+        0,
+        description="Content version from the source system for change detection.",
+    )
 
     # ── Structure ─────────────────────────────────────────────────────────
     section_hierarchy: list[SectionNode] = Field(
@@ -72,6 +66,11 @@ class CanonicalDocument(BaseModel):
     content_blocks: list[ContentBlock] = Field(
         default_factory=list,
         description="Ordered list of typed content blocks",
+    )
+    block_provenance: list[BlockProvenance] = Field(
+        default_factory=list,
+        description="Per-block provenance, parallel to content_blocks. "
+        "If non-empty, block_provenance[i] corresponds to content_blocks[i].",
     )
 
     # ── Structured extractions ────────────────────────────────────────────
@@ -84,15 +83,15 @@ class CanonicalDocument(BaseModel):
     )
     tags: list[str] = Field(default_factory=list)
 
+    # ── Provenance ────────────────────────────────────────────────────────
+    provenance: Provenance = Field(default_factory=Provenance)
+
     # ── Timestamps ────────────────────────────────────────────────────────
     source_created_at: datetime | None = None
     source_modified_at: datetime | None = None
     processed_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-
-    # ── Provenance ────────────────────────────────────────────────────────
-    provenance: Provenance = Field(default_factory=Provenance)
 
     @model_validator(mode="after")
     def _compute_document_id(self) -> "CanonicalDocument":
@@ -117,6 +116,20 @@ class CanonicalDocument(BaseModel):
                 parts.append(block.markdown)
             elif hasattr(block, "items"):
                 parts.append("\n".join(block.items))
+            elif hasattr(block, "description") and block.description:
+                parts.append(block.description)
+            elif hasattr(block, "pairs"):
+                # KeyValueBlock
+                lines = [f"{p.get('key', '')}: {p.get('value', '')}" for p in block.pairs if p.get("key")]
+                if lines:
+                    parts.append("\n".join(lines))
+            elif hasattr(block, "trend_summary") and block.trend_summary:
+                # ChartBlock
+                parts.append(block.trend_summary)
+            elif hasattr(block, "components"):
+                # DiagramBlock
+                if block.description:
+                    parts.append(block.description)
         return "\n\n".join(parts)
 
     def word_count(self) -> int:

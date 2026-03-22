@@ -1,4 +1,4 @@
-"""Load knowledge JSON files from the preprocessed output directory."""
+"""Load canonical CanonicalDocument JSON files."""
 
 from __future__ import annotations
 
@@ -7,33 +7,45 @@ import logging
 from collections.abc import Iterator
 from pathlib import Path
 
+from pipeline.schemas.canonical import CanonicalDocument
+
 log = logging.getLogger("finx-data.ingest.loader")
 
 # Files produced by the pipeline infrastructure — not knowledge documents
 _SKIP_FILES = {".pipeline_progress.json"}
 
 
-class KnowledgeLoader:
-    """Yields knowledge document dicts from a directory of JSON files."""
+class CanonicalLoader:
+    """Yields CanonicalDocument objects from canonical JSON files."""
 
-    def __init__(self, knowledge_dir: str | Path) -> None:
-        self.knowledge_dir = Path(knowledge_dir)
+    def __init__(self, canonical_dir: str | Path) -> None:
+        """Initialize loader.
 
-    def load_all(self) -> Iterator[dict]:
-        """Yield each knowledge document as a plain dict.
-
-        Skips infrastructure files and logs a warning on malformed JSON.
+        Args:
+            canonical_dir: Directory containing canonical JSON files (from JSONWriter)
         """
-        files = sorted(self.knowledge_dir.glob("*.json"))
+        self.canonical_dir = Path(canonical_dir)
+
+    def load_all(self) -> Iterator[CanonicalDocument]:
+        """Yield each CanonicalDocument parsed from JSON.
+
+        Skips infrastructure files and logs warnings on malformed JSON.
+
+        Yields:
+            CanonicalDocument instances
+        """
+        files = sorted(self.canonical_dir.glob("*.json"))
         # Exclude pipeline infrastructure files
         files = [f for f in files if f.name not in _SKIP_FILES]
 
-        log.info("Loading %d knowledge files from %s", len(files), self.knowledge_dir)
+        log.info("Loading %d canonical files from %s", len(files), self.canonical_dir)
 
         for path in files:
             try:
-                doc = json.loads(path.read_text(encoding="utf-8"))
-                doc["_source_path"] = str(path)
+                data = json.loads(path.read_text(encoding="utf-8"))
+                doc = CanonicalDocument.model_validate(data)
                 yield doc
             except json.JSONDecodeError as exc:
                 log.warning("Skipping malformed JSON file %s: %s", path.name, exc)
+            except Exception as exc:
+                log.warning("Skipping unparseable canonical document %s: %s", path.name, exc)

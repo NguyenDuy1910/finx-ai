@@ -1,8 +1,6 @@
 """Local filesystem adapter.
 
 Reads JSON, markdown, CSV/TSV, and PDF files from local directories.
-Wraps existing ``readers.read_json_dir``, ``read_text_files``, and
-``athena_query_to_text`` for backward compatibility.
 """
 
 from __future__ import annotations

@@ -28,22 +28,12 @@ class TestRuleBasedNormalizer:
     def test_detects_vietnamese(self):
         doc = self._make_doc("Dữ liệu được lưu trữ trong các bảng của hệ thống ngân hàng.")
         doc = self.normalizer.normalize(doc)
-        assert doc.provenance.quality.language_detected in ("vi", "mixed")
+        assert doc.metadata.get("language") in ("vi", "mixed")
 
     def test_detects_english(self):
         doc = self._make_doc("The system processes banking transactions daily.")
         doc = self.normalizer.normalize(doc)
-        assert doc.provenance.quality.language_detected == "en"
-
-    def test_word_count_updated(self):
-        doc = self._make_doc("one two three four five")
-        doc = self.normalizer.normalize(doc)
-        assert doc.provenance.quality.word_count == 5
-
-    def test_provenance_step_added(self):
-        doc = self._make_doc("Test content")
-        doc = self.normalizer.normalize(doc)
-        assert any(s.processor == "rule_normalizer" for s in doc.provenance.steps)
+        assert doc.metadata.get("language") == "en"
 
     def test_no_abbreviations_for_unrelated_text(self):
         doc = self._make_doc("The weather is nice today.")

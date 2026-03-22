@@ -62,7 +62,7 @@ export function Header({
   };
 
   return (
-    <header className="flex h-[var(--header-height,52px)] shrink-0 items-center justify-between border-b border-border bg-surface/90 px-3 backdrop-blur-md sm:px-5">
+    <header className="flex h-[var(--header-height,52px)] shrink-0 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
       {/* ── Left: toggle + wordmark ── */}
       <div className="flex items-center gap-3">
         {showSidebarToggle && (

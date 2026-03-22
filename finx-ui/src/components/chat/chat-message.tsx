@@ -10,6 +10,7 @@ import { ToolCallList } from "./tool-call-block";
 import { KnowledgePanel, type KnowledgeData } from "./knowledge-panel";
 import { ChartBlock, parseChartSpecFromToolCalls, type ChartSpec } from "./chart-block";
 import { CitationPanel } from "./citation-panel";
+import { InlineFileEmbeds, getEmbeddedCitationIds } from "./inline-file-embed";
 import { Badge } from "@/components/ui/badge";
 import { ThinkingBlock } from "./thinking-block";
 import { useClipboard } from "@/hooks/use-clipboard";
@@ -274,10 +275,16 @@ export const ChatMessage = memo(function ChatMessage({
             {/* Knowledge panel */}
             {knowledgeData && <KnowledgePanel data={knowledgeData} />}
 
-            {/* Citations */}
+            {/* Inline file embeds — images, PDFs, spreadsheets rendered directly */}
+            {hasCitations && (
+              <InlineFileEmbeds citations={citations!} />
+            )}
+
+            {/* Citations — excluding those already rendered as inline embeds */}
             {hasCitations && (
               <CitationPanel
                 citations={citations!}
+                excludeIds={hasCitations ? getEmbeddedCitationIds(citations!) : undefined}
                 onCitationClick={onCitationClick ? (c) => onCitationClick(c, citations!) : undefined}
               />
             )}

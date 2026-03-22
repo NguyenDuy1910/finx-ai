@@ -73,6 +73,19 @@ function writeCitationEvent(
       url: (citation.url as string) || undefined,
       score: typeof citation.score === "number" ? citation.score : undefined,
       index: typeof citation.index === "number" ? citation.index : undefined,
+      // Artifact metadata
+      artifactUri: (citation.artifact_uri as string) || undefined,
+      mimeType: (citation.mime_type as string) || undefined,
+      isArtifact: citation.is_artifact === true ? true : undefined,
+      artifactType: (citation.artifact_type as string) || undefined,
+      // Parent Confluence page context
+      parentContentId: (citation.parent_content_id as string) || undefined,
+      parentTitle: (citation.parent_title as string) || undefined,
+      parentUrl: (citation.parent_url as string) || undefined,
+      spaceKey: (citation.space_key as string) || undefined,
+      // Source classification
+      contentSourceType: (citation.content_source_type as string) || (citation.source_type_raw as string) || undefined,
+      chunkKind: (citation.chunk_kind as string) || undefined,
     },
   });
 }
