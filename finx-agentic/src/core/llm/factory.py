@@ -126,7 +126,7 @@ def create_agno_model(config: Optional[AIModelConfig] = None):
     raise ValueError(f"Unsupported AI provider: {provider}")
 
 
-def create_agno_model_for_agent(agent_name: str):
+def _agent_provider(agent_name: str):
     """Create an agno Model for a named agent (falls back to global config)."""
     app_config = get_config()
     agent_config = app_config.get_agent_model_config(agent_name)

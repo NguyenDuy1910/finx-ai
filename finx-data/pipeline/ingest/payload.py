@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import hashlib
 import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 from pipeline.schemas.chunk import ChunkDocument, ChunkKind
@@ -27,107 +25,94 @@ def chunk_to_point_id(chunk_id: str) -> str:
     return str(uuid.UUID(hex32))
 
 
-def _build_heading_prefix(chunk: ChunkDocument) -> str:
-    """Build the '[doc_title] path > heading' prefix line."""
-    parts = [f"[{chunk.doc_title}]"]
-    if chunk.heading_path:
-        parts.append(" > ".join(chunk.heading_path))
-    if chunk.heading:
-        parts.append(chunk.heading)
-    return " > ".join(parts) if len(parts) > 1 else parts[0]
+_TABLE_KINDS = frozenset({
+    ChunkKind.TABLE_SUMMARY, ChunkKind.TABLE_SCHEMA,
+    ChunkKind.TABLE_ROW_GROUP, ChunkKind.SCHEMA_SUMMARY,
+})
+
+_SUMMARY_MAX_WORDS = 40
 
 
 def _build_dense_text(chunk: ChunkDocument) -> str:
-    """Assemble rich embedding text for dense (semantic) vector.
+    """Build text for the dense (semantic) embedding vector.
 
-    Combines structural context + content + LLM enrichments so the
-    embedding captures both *what* the chunk says and *where* it sits.
+    Dense embeddings capture *meaning*. We include only high-signal
+    fields and keep token count tight to avoid dilution.
 
-    Layer order (each on its own paragraph):
-        1. doc_title  +  heading_path / heading          (structural)
-        2. display_text  (main human-readable content)   (content)
-        3. summary — only if short and accurate           (semantic boost)
-        4. keywords                                       (term boost)
-        5. kind-specific metadata:
-           - table_summary / table_schema → table headers + schema context
-           - spreadsheet / SCHEMA_SUMMARY → column descriptions
-           - COMMENT                      → comment_text already in chunk_text
-           - RESOLUTION                   → resolution already in chunk_text
-        6. acronym_expansions                             (disambiguation)
+    Layers (each separated by ``\\n\\n``):
+        1. doc_title + heading   — anchors the semantic space
+        2. body content          — display_text preferred (richer), else chunk_text
+        3. short summary         — only ≤ 40 words; paraphrases add marginal gain
+        4. table column headers  — strong semantic signal for structured data
     """
     sections: list[str] = []
 
-    # ── 1. structural prefix ─────────────────────────────────────────────
-    # Prefer section_path (content-graph prefix) if available
-    if chunk.section_path:
-        sections.append("\n".join(f"[{p}]" for p in chunk.section_path))
+    # 1. Lightweight structural anchor — title + heading only.
+    #    Avoids full heading_path / section_path which add noise.
+    title = chunk.doc_title
+    if chunk.heading:
+        sections.append(f"{title} > {chunk.heading}")
     else:
-        sections.append(_build_heading_prefix(chunk))
+        sections.append(title)
 
+    # 2. Core content — pick the richer representation.
     body = chunk.display_text or chunk.chunk_text
     if body:
         sections.append(body)
 
-    # ── 3. summary (short only — avoids diluting the embedding) ──────────
-    if chunk.summary:
-        word_count = len(chunk.summary.split())
-        # Only include summaries ≤ 60 words — long summaries add noise
-        if word_count <= 60:
-            sections.append(f"Summary: {chunk.summary}")
+    # 3. Summary — only very short ones; longer summaries duplicate the body.
+    if chunk.summary and len(chunk.summary.split()) <= _SUMMARY_MAX_WORDS:
+        sections.append(chunk.summary)
 
-    # ── 4. keywords ──────────────────────────────────────────────────────
-    if chunk.keywords:
-        sections.append(f"Keywords: {', '.join(chunk.keywords)}")
-
-    # ── 5. kind-specific metadata ────────────────────────────────────────
-    kind = chunk.chunk_kind
-
-    if kind in (ChunkKind.TABLE_SUMMARY, ChunkKind.TABLE_SCHEMA, ChunkKind.TABLE_ROW_GROUP):
-        # table_headers are always useful for matching column-name queries
-        if chunk.table_headers:
-            sections.append(f"Columns: {', '.join(chunk.table_headers)}")
-        if chunk.table_row_count:
-            sections.append(f"Total rows: {chunk.table_row_count}")
-
-    if kind == ChunkKind.SCHEMA_SUMMARY:
-        # For spreadsheet/schema chunks the chunk_text already contains
-        # column descriptions — no extra layer needed, but add headers
-        # separately so partial column-name queries still hit.
-        if chunk.table_headers:
-            sections.append(f"Columns: {', '.join(chunk.table_headers)}")
-
-    # KEY_VALUE chunks: content already in chunk_text — no extra layer.
-
-    # CHART_SUMMARY: content already in chunk_text — include chart type for matching.
-    if kind == ChunkKind.CHART_SUMMARY and chunk.content_type == "chart":
-        sections.append("Content type: chart/graph")
-
-    # DIAGRAM_SUMMARY: content already in chunk_text — include type for matching.
-    if kind == ChunkKind.DIAGRAM_SUMMARY and chunk.content_type == "diagram":
-        sections.append("Content type: diagram")
-
-    # COMMENT and RESOLUTION kinds: their chunk_text already carries the
-    # "[Comment by …]" / resolution preamble — no extra layer needed.
-
-    # ── 6. acronym expansions ────────────────────────────────────────────
-    if chunk.acronym_expansions:
-        expansions = "; ".join(
-            f"{acr} = {full}" for acr, full in chunk.acronym_expansions.items()
-        )
-        sections.append(f"Terminology: {expansions}")
+    # 4. Table headers — column names carry strong topical signal.
+    if chunk.chunk_kind in _TABLE_KINDS and chunk.table_headers:
+        sections.append(f"Columns: {', '.join(chunk.table_headers)}")
 
     return "\n\n".join(sections)
 
 
+def _build_sparse_text(chunk: ChunkDocument) -> str:
+    """Build text for the sparse (lexical/BM25) embedding vector.
+
+    Sparse vectors power exact-term matching. We combine every field
+    that users might type verbatim: titles, headings, raw content,
+    keywords, column names, and acronym expansions (both forms).
+    """
+    parts: list[str] = []
+
+    # Document & section identifiers — users search by name.
+    if chunk.doc_title:
+        parts.append(chunk.doc_title)
+    if chunk.heading:
+        parts.append(chunk.heading)
+
+    # Raw content — the primary term source.
+    parts.append(chunk.chunk_text)
+
+    # Keywords — explicit term-boost, ideal for sparse.
+    if chunk.keywords:
+        parts.append(" ".join(chunk.keywords))
+
+    # Table column headers — users search by column name.
+    if chunk.chunk_kind in _TABLE_KINDS and chunk.table_headers:
+        parts.append(" ".join(chunk.table_headers))
+
+    # Acronym expansions — both the abbreviation and its full form
+    # so searches for "OTP" and "One-Time Password" both hit.
+    if chunk.acronym_expansions:
+        for abbr, full in chunk.acronym_expansions.items():
+            parts.append(f"{abbr} {full}")
+
+    return "\n".join(parts)
+
+
 def chunk_to_embedding_texts(chunk: ChunkDocument) -> tuple[str, str]:
+    """Return ``(dense_text, sparse_text)`` for a chunk.
 
-    dense_text = _build_dense_text(chunk)
-
-    # Sparse embedding: raw text only (keyword matching should match actual
-    # document terms without structural noise)
-    sparse_text = chunk.chunk_text
-
-    return dense_text, sparse_text
+    - **dense_text** → sent to the embedding model (semantic vector).
+    - **sparse_text** → hashed into a sparse vector (lexical matching).
+    """
+    return _build_dense_text(chunk), _build_sparse_text(chunk)
 
 
 def chunk_to_payload(chunk: ChunkDocument) -> dict[str, Any]:
@@ -147,6 +132,8 @@ def chunk_to_payload(chunk: ChunkDocument) -> dict[str, Any]:
         "heading": chunk.heading,
         "heading_path": chunk.heading_path,
         "chunk_kind": chunk.chunk_kind.value,
+        "chunk_text": chunk.chunk_text,
+        "display_text": chunk.display_text or "",
 
         # ── Classification ────────────────────────────────────────────────
         "language": chunk.language,
@@ -202,7 +189,10 @@ def chunk_to_payload(chunk: ChunkDocument) -> dict[str, Any]:
         # ── Table-Specific ────────────────────────────────────────────────
         "table_headers": chunk.table_headers,
         "table_row_count": chunk.table_row_count,
-
+        # ── Attachment / Document Location ────────────────────────────────────
+        "page_range": chunk.page_range or None,
+        "sheet_name": chunk.sheet_name or None,
+        "page_numbers": chunk.page_numbers or None,
         # ── Terminology ──────────────────────────────────────────────────
         "acronym_expansions": chunk.acronym_expansions or None,
 

@@ -273,6 +273,9 @@ export async function POST(req: NextRequest) {
                         timestamp: Date.now(),
                       },
                     });
+                    // Skip emitting tool call UI block for retrieval tools —
+                    // these are technical internals, not useful for end users.
+                    break;
                   }
 
                   writer.write({
@@ -318,6 +321,9 @@ export async function POST(req: NextRequest) {
                       type: "data-activity" as `data-${string}`,
                       data: { status: "drafting", timestamp: Date.now() },
                     });
+                    // Skip emitting tool call UI block for retrieval tools —
+                    // these are technical internals, not useful for end users.
+                    break;
                   }
 
                   writer.write({
@@ -342,6 +348,8 @@ export async function POST(req: NextRequest) {
                       type: "data-activity" as `data-${string}`,
                       data: { status: "done", timestamp: Date.now() },
                     });
+                    // Skip emitting tool call UI block for retrieval tools
+                    break;
                   }
 
                   writer.write({

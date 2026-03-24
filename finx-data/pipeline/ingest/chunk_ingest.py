@@ -34,6 +34,7 @@ class ChunkIngestConfig:
     batch_size: int = 100
     dry_run: bool = False
     overwrite: bool = False
+    requests_per_minute: int = 500  # proactive OpenAI RPM throttle
 
 
 @dataclass
@@ -167,6 +168,7 @@ class ChunkIngestionPipeline:
         embedder = OpenAIEmbedder(
             model=self._config.embedding_model,
             expected_dim=self._config.embedding_dim,
+            max_requests_per_minute=self._config.requests_per_minute,
         )
         upserter = QdrantUpserter(client, self._config.collection_name)
 

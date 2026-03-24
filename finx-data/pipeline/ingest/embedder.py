@@ -70,7 +70,12 @@ class OpenAIEmbedder(EmbeddingProvider):
     with exponential back-off.
     """
 
-    def __init__(self, model: str = "text-embedding-3-small", expected_dim: int = 1536) -> None:
+    def __init__(
+        self,
+        model: str = "text-embedding-3-small",
+        expected_dim: int = 1536,
+        max_requests_per_minute: int = 500,
+    ) -> None:
         try:
             from openai import OpenAI
         except ImportError as exc:
@@ -79,6 +84,9 @@ class OpenAIEmbedder(EmbeddingProvider):
         self._client = OpenAI()
         self._model = os.environ.get("EMBEDDING_MODEL", model)
         self._expected_dim = expected_dim
+        # Proactive rate limiter: enforce a minimum interval between API requests.
+        self._min_request_interval: float = 60.0 / max(1, max_requests_per_minute)
+        self._last_request_at: float = 0.0
 
     @property
     def dim(self) -> int:
@@ -100,13 +108,13 @@ class OpenAIEmbedder(EmbeddingProvider):
         current_tokens = 0
 
         for text in texts:
-            estimated = max(1, len(text) // _CHARS_PER_TOKEN)
-            if current and current_tokens + estimated > _MAX_TOKENS_PER_REQUEST:
+            t = _token_count(text)
+            if current and current_tokens + t > _MAX_TOKENS_PER_REQUEST:
                 sub_batches.append(current)
                 current = []
                 current_tokens = 0
             current.append(text)
-            current_tokens += estimated
+            current_tokens += t
 
         if current:
             sub_batches.append(current)
@@ -125,6 +133,12 @@ class OpenAIEmbedder(EmbeddingProvider):
         return all_vectors
 
     def _embed_single_request(self, texts: list[str]) -> list[list[float]]:
+        # Proactive rate throttle — sleep if we're sending faster than max_requests_per_minute.
+        now = time.monotonic()
+        wait = self._min_request_interval - (now - self._last_request_at)
+        if wait > 0:
+            time.sleep(wait)
+        self._last_request_at = time.monotonic()
 
         # Always truncate each text to the model's per-input limit before sending.
         safe_texts = [truncate_to_token_limit(t) for t in texts]
@@ -172,6 +186,15 @@ class OpenAIEmbedder(EmbeddingProvider):
                     raise
 
                 delay = _RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                # Honour the server's Retry-After hint when present (429 responses).
+                headers = getattr(getattr(exc, "response", None), "headers", None)
+                if headers:
+                    ra = headers.get("retry-after") or headers.get("x-ratelimit-reset-requests")
+                    if ra:
+                        try:
+                            delay = max(delay, float(ra))
+                        except (ValueError, TypeError):
+                            pass
                 log.warning(
                     "Embedding attempt %d/%d failed (%s). Retrying in %.1fs…",
                     attempt,

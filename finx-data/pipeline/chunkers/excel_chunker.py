@@ -60,9 +60,17 @@ class ExcelChunker(BaseChunker):
         columns = doc.metadata.get("columns", [])
         row_count = doc.metadata.get("row_count", 0)
 
+        # Extract a sample row from the first table block (for richer schema context)
+        sample_row: list[list[str]] = []
+        for block in doc.content_blocks:
+            if hasattr(block, "block_type") and block.block_type.value == "table":
+                if block.rows:
+                    sample_row = block.rows[:1]
+                break
+
         # Chunk 1: SCHEMA_SUMMARY
         if columns:
-            schema_text = self._build_schema_text(doc.title, columns, row_count)
+            schema_text = self._build_schema_text(doc.title, columns, row_count, sample_row=sample_row)
             chunk = ChunkDocument(
                 chunk_kind=ChunkKind.SCHEMA_SUMMARY,
                 heading=f"File Schema: {doc.title}",
@@ -110,24 +118,34 @@ class ExcelChunker(BaseChunker):
         filename: str,
         columns: list[dict],
         row_count: int,
+        *,
+        sample_row: list[list[str]] | None = None,
     ) -> str:
-        """Build SCHEMA_SUMMARY chunk text."""
+        """Build SCHEMA_SUMMARY chunk text with real sample values when available."""
         lines = [f"File: {filename}"]
         lines.append(f"Columns ({len(columns)}):")
 
-        for col in columns:
+        first_row = sample_row[0] if sample_row else []
+        for i, col in enumerate(columns):
             name = col.get("name", "?")
             data_type = col.get("data_type", "unknown")
             description = col.get("description", "")
-            lines.append(f"  • {name} ({data_type})" + (f" - {description}" if description else ""))
+            sample_value = first_row[i] if i < len(first_row) else ""
+
+            col_line = f"  • {name} ({data_type})"
+            if description:
+                col_line += f" — {description}"
+            elif sample_value:
+                col_line += f" — e.g. {sample_value}"
+            lines.append(col_line)
 
         lines.append(f"Total rows: {row_count}")
 
-        # Add sample first row if available
-        if row_count > 0:
-            lines.append("Sample (first row):")
-            for col in columns:
-                name = col.get("name", "?")
-                lines.append(f"  {name}: [data]")
+        # Include sample row as a readable key=value block
+        if first_row and columns:
+            lines.append("Sample row:")
+            for i, col in enumerate(columns):
+                if i < len(first_row) and first_row[i]:
+                    lines.append(f"  {col.get('name', f'col_{i}')}: {first_row[i]}")
 
         return "\n".join(lines)

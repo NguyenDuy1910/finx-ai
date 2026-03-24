@@ -129,7 +129,7 @@ class DocumentChunker(BaseChunker):
                 if block_type == "text":
                     intro_blocks.append(block.content)
                 elif block_type == "code":
-                    intro_blocks.append(f"```{block.language or ""}\n{block.content}\n```")
+                    intro_blocks.append(f"```{block.language or ''}\n{block.content}\n```")
                 elif block_type == "list":
                     intro_blocks.append(
                         "\n".join(f"- {item}" for item in block.items)

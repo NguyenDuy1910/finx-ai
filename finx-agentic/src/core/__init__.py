@@ -9,9 +9,10 @@ from src.core.exceptions import (
 from src.core.llm import (
     LLMAdapter,
     create_agno_model,
-    create_agno_model_for_agent,
+    _agent_provider,
     create_llm_adapter,
 )
+
 
 try:
     from src.core.graph import GraphitiClient, get_graphiti_client
@@ -25,7 +26,7 @@ __all__ = [
     "LLMAdapter",
     "create_llm_adapter",
     "create_agno_model",
-    "create_agno_model_for_agent",
+    "_agent_provider",
     "Text2SQLError",
     "SchemaNotFoundError",
     "SQLGenerationError",

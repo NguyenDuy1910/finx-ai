@@ -17,7 +17,7 @@ class AppState:
 
     def __init__(self) -> None:
         self._client: Optional[GraphitiClient] = None
-        self._qdrant: Optional["AsyncQdrantClient"] = None
+        self._qdrant_wrapper: Optional["_QdrantRef"] = None
 
     @property
     def client(self) -> GraphitiClient:
@@ -31,14 +31,9 @@ class AppState:
     @property
     def qdrant(self) -> "AsyncQdrantClient":
         """Shared async Qdrant client for knowledge retrieval."""
-        if self._qdrant is None:
-            from qdrant_client import AsyncQdrantClient
+        from src.providers.qdrant import QdrantClient
 
-            self._qdrant = AsyncQdrantClient(
-                url=os.getenv("QDRANT_URL", "http://localhost:6333"),
-                api_key=os.getenv("QDRANT_API_KEY") or None,
-            )
-        return self._qdrant
+        return QdrantClient.get_instance().async_client
 
     @property
     def default_database(self) -> str:
@@ -57,11 +52,12 @@ class AppState:
                 await self._client.close()
             except Exception:
                 pass
-        if self._qdrant is not None:
-            try:
-                await self._qdrant.close()
-            except Exception:
-                pass
+        from src.providers.qdrant import QdrantClient
+
+        try:
+            await QdrantClient.get_instance().close()
+        except Exception:
+            pass
 
 
 _state: Optional[AppState] = None

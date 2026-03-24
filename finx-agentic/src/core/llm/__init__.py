@@ -19,13 +19,13 @@ Usage — agno model (for Agent / Team)::
 from src.core.llm.protocol import LLMAdapter
 from src.core.llm.factory import (
     create_agno_model,
-    create_agno_model_for_agent,
+    _agent_provider,
     create_llm_adapter,
 )
 
 __all__ = [
     "LLMAdapter",
     "create_agno_model",
-    "create_agno_model_for_agent",
+    "_agent_provider",
     "create_llm_adapter",
 ]

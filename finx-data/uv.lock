@@ -895,6 +895,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "qdrant-client" },
     { name = "rich" },
+    { name = "tiktoken" },
 ]
 
 [package.optional-dependencies]
@@ -904,9 +905,6 @@ dev = [
 ]
 mineru = [
     { name = "magic-pdf", extra = ["full"] },
-]
-qdrant-extra = [
-    { name = "tiktoken" },
 ]
 
 [package.metadata]
@@ -922,9 +920,9 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "qdrant-client", specifier = ">=1.9.0" },
     { name = "rich", specifier = ">=13.0.0" },
-    { name = "tiktoken", marker = "extra == 'qdrant-extra'", specifier = ">=0.7.0" },
+    { name = "tiktoken", specifier = ">=0.7.0" },
 ]
-provides-extras = ["dev", "mineru", "qdrant-extra"]
+provides-extras = ["dev", "mineru"]
 
 [[package]]
 name = "flatbuffers"

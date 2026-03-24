@@ -85,6 +85,8 @@ def _build_parser() -> argparse.ArgumentParser:
     chunk_ingest.add_argument("--embedding-model", default=None)
     chunk_ingest.add_argument("--embedding-dim", type=int, default=None)
     chunk_ingest.add_argument("--batch-size", type=int, default=100)
+    chunk_ingest.add_argument("--requests-per-minute", type=int, default=500,
+                              help="Max OpenAI embedding requests per minute (default: 500)")
     chunk_ingest.add_argument("--overwrite", action="store_true")
     chunk_ingest.add_argument("--dry-run", action="store_true")
     chunk_ingest.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
@@ -107,6 +109,7 @@ def main(argv: list[str] | None = None) -> None:
             batch_size=args.batch_size,
             dry_run=args.dry_run,
             overwrite=args.overwrite,
+            requests_per_minute=args.requests_per_minute,
         )
         if args.qdrant_url:
             cfg.qdrant_url = args.qdrant_url

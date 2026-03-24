@@ -4,7 +4,11 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.core.graph.client import GraphitiClient
-from src.knowledge.retrieval import GraphKnowledgeV2
+
+try:
+    from src.knowledge.retrieval import GraphKnowledgeV2
+except ImportError:
+    GraphKnowledgeV2 = None  # type: ignore[assignment,misc]
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +18,7 @@ class SearchService:
 
     def __init__(self, client: GraphitiClient) -> None:
         self._client = client
-        self._knowledge = GraphKnowledgeV2(client=client, max_results=10)
+        self._knowledge = GraphKnowledgeV2(client=client, max_results=10) if GraphKnowledgeV2 else None
 
     async def search_schema(
         self,
